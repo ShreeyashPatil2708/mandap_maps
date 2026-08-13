@@ -13,6 +13,20 @@ const SELECT = `
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
 /**
+ * Collapse a free-text area into a canonical neighbourhood used for the Explore
+ * filter chips. Takes the leading segment, drops "near " prefixes, bracketed
+ * notes and a trailing " area", so "Near Laxmi Road, Budhwar Peth area" and
+ * "Laxmi Road / Budhwar Peth area" both become "Laxmi Road".
+ */
+function normalizeArea(area) {
+  let s = (area || '').split(',')[0].split('/')[0].trim();
+  s = s.replace(/^near\s+/i, '');
+  s = s.replace(/\s*\([^)]*\)/g, '');
+  s = s.replace(/\s+area$/i, '');
+  return s.trim();
+}
+
+/**
  * Map a DB row (snake_case, Postgres types) to the camelCase shape the
  * frontend renders. jsonb (metro/food) and text[] (tags) arrive already
  * parsed by node-postgres; NUMERIC lat/lng arrive as strings.
@@ -23,9 +37,8 @@ function toApi(row) {
     name: row.name_english,
     nameMarathi: row.name_marathi,
     area: row.area,
-    // Leading segment of the area, e.g. "Kasba Peth, Pune" -> "Kasba Peth".
-    // Used by the Explore filter chips.
-    areaCategory: (row.area || '').split(',')[0].trim(),
+    // Canonical neighbourhood for the Explore filter chips.
+    areaCategory: normalizeArea(row.area),
     manacha: row.manacha_number,
     tier: row.tier,
     category: row.category,

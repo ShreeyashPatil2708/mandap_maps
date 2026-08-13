@@ -41,21 +41,31 @@ Prerequisites: Node 20+ and Docker Desktop (running).
 ```bash
 npm install                               # installs all workspaces
 
-# 1. Start Postgres + Redis in Docker (no local install needed)
+# 1. Config (defaults already match docker-compose; no editing needed)
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# 2. Start Postgres + Redis in Docker (no local install needed)
 docker-compose up -d
 
-# 2. Backend
-cp backend/.env.example backend/.env      # then edit PGPASSWORD to match docker-compose
+# 3. Backend
 npm run migrate --workspace backend       # create the tables (idempotent)
-npm run seed --workspace backend          # load all 45 Ganpatis (idempotent)
+npm run seed --workspace backend          # load the Ganpati data (idempotent)
 npm run dev:backend                       # http://localhost:4000/health
 
-# 3. Frontend (new terminal)
-cp frontend/.env.example frontend/.env
+# 4. Frontend (new terminal)
 npm run dev:frontend                      # http://localhost:5173
 ```
 
 Stop the database when done: `docker-compose down` (add `-v` to also wipe the data).
+
+### The dataset is not in the repo
+
+The Ganpati data (`backend/db/seed-data.json` and the source `data/*.xlsx`) is
+gitignored. A fresh clone has no data, so `npm run seed` will fail until you add
+it. Ask the maintainer for `seed-data.json` and drop it into `backend/db/`, then
+run the seed step. (With openpyxl installed, the maintainer regenerates it from
+the spreadsheets via `python backend/db/generate-seed-data.py`.)
 
 ## Tooling
 

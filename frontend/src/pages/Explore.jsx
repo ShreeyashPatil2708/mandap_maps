@@ -1,7 +1,29 @@
 import { useMemo } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
-import { filterOptions, manachaBadge } from '../data/helpers.js';
+import { manachaBadge } from '../data/helpers.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
+
+// An area becomes a filter chip once at least this many pandals share it.
+// Rarer one-off areas stay reachable via "All" and search.
+const AREA_CHIP_MIN = 2;
+
+// Build the filter chips from the live data so they never go stale as pandals
+// are added: "All", "Manache 5", then the busiest neighbourhoods.
+function buildFilters(ganpatis) {
+  const counts = {};
+  for (const g of ganpatis) {
+    if (g.areaCategory) counts[g.areaCategory] = (counts[g.areaCategory] || 0) + 1;
+  }
+  const areas = Object.entries(counts)
+    .filter(([, n]) => n >= AREA_CHIP_MIN)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([key]) => ({ key, label: key }));
+  return [
+    { key: 'all', label: 'All' },
+    { key: 'manache5', label: 'Manache 5' },
+    ...areas,
+  ];
+}
 
 // Grid card for the Explore results.
 function GanpatiCard({ g, onOpen }) {
@@ -28,6 +50,8 @@ function GanpatiCard({ g, onOpen }) {
 
 export default function Explore({ query, onQuery, activeFilter, onFilter, onOpenGanpati }) {
   const { ganpatis } = useGanpatis();
+
+  const filterOptions = useMemo(() => buildFilters(ganpatis), [ganpatis]);
 
   const results = useMemo(() => {
     let list = ganpatis;
