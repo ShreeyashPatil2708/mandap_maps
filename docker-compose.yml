@@ -1,0 +1,29 @@
+# Local development dependencies for the MandapMaps backend.
+# Postgres stands in for RDS and Redis for ElastiCache. No secrets live here:
+# the password is read from your shell/.env (defaults to a throwaway value).
+services:
+  postgres:
+    image: postgres:17
+    container_name: mandapmaps-postgres
+    environment:
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-ekdantadb}
+    ports:
+      - '${PGPORT:-5432}:5432'
+    volumes:
+      - mandapmaps_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${PGUSER:-postgres}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: mandapmaps-redis
+    ports:
+      - '6379:6379'
+
+volumes:
+  mandapmaps_pgdata:

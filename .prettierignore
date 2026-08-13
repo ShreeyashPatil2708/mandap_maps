@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+coverage
+frontend/design-reference
+backend/db/seed-data.json
+package-lock.json
