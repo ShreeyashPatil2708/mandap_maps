@@ -19,6 +19,8 @@ export default [
       '**/coverage/**',
       'frontend/design-reference/**',
       'backend/db/seed-data.json',
+      // Python chatbot service (incl. its venv) - not JavaScript, nothing to lint.
+      'chatbot/**',
     ],
   },
 
@@ -56,6 +58,14 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
+
+  // Build/tooling config files run in Node (need process, etc.)
+  {
+    files: ['**/*.config.{js,cjs,mjs}'],
+    languageOptions: {
       globals: { ...globals.node },
     },
   },

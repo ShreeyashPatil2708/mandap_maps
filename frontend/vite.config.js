@@ -7,7 +7,14 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Local dev: forward API calls to the backend so we don't need CORS.
+      // Local dev: forward API calls to the backends so we don't need CORS.
+      // The chatbot is a separate Python service, so /api/chat goes to it;
+      // everything else goes to the Node backend. List /api/chat first so it
+      // wins over the more general /api rule.
+      '/api/chat': {
+        target: process.env.VITE_DEV_CHATBOT_PROXY || 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/api': {
         target: process.env.VITE_DEV_API_PROXY || 'http://localhost:4000',
         changeOrigin: true,
