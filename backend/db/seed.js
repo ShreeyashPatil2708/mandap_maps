@@ -29,11 +29,13 @@ const COLUMNS = [
   'special_events',
   'category',
   'tags',
+  'did_you_know',
   'metro',
   'food',
   'photo_url',
   'google_maps_url',
   'is_manacha',
+  'data_verified',
 ];
 
 // jsonb columns must be sent as JSON text; TEXT[] (tags) is handled by pg natively.
