@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 
 import { loadSecrets } from '../src/config/secrets.js';
 import { getPool, closePool } from '../src/config/db.js';
+import { getRedis, closeRedis } from '../src/config/redis.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -86,6 +87,31 @@ async function seed() {
 
   // eslint-disable-next-line no-console
   console.log(`Seeded ${records.length} ganpatis.`);
+
+  // The API caches ganpati reads in Redis for 24h, so without this the site
+  // keeps serving pre-seed data until the TTL expires. Clear those keys now so
+  // a re-seed is visible immediately. Non-fatal if Redis is unreachable.
+  await clearGanpatiCache();
+}
+
+/** Delete every ganpatis:* cache entry (the list and per-id keys). */
+async function clearGanpatiCache() {
+  try {
+    const redis = getRedis();
+    const keys = [];
+    let cursor = '0';
+    do {
+      const [next, batch] = await redis.scan(cursor, 'MATCH', 'ganpatis:*', 'COUNT', 100);
+      cursor = next;
+      keys.push(...batch);
+    } while (cursor !== '0');
+    if (keys.length) await redis.del(...keys);
+    // eslint-disable-next-line no-console
+    console.log(`Cleared ${keys.length} cache key(s).`);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('Cache clear skipped (Redis unavailable):', err.message);
+  }
 }
 
 seed()
@@ -94,4 +120,6 @@ seed()
     console.error('Seed failed:', err);
     process.exitCode = 1;
   })
-  .finally(closePool);
+  .finally(async () => {
+    await Promise.allSettled([closePool(), closeRedis()]);
+  });

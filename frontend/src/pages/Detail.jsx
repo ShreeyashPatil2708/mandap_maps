@@ -10,8 +10,12 @@ const TABS = [
   { key: 'nearby', label: 'Nearby' },
 ];
 
-function mapsUrl(query) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+// Directions to the pandal with no origin set, so Google Maps starts from the
+// user's current location. Prefers exact coordinates, falls back to the address
+// string for records without lat/lng.
+function directionsUrl(g) {
+  const dest = g.lat != null && g.lng != null ? `${g.lat},${g.lng}` : g.address;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
 }
 
 function TimingRow({ title, value }) {
@@ -189,7 +193,7 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         {tab === 'getting' && (
           <div className="flex flex-col gap-4">
             <a
-              href={mapsUrl(ganpati.address)}
+              href={directionsUrl(ganpati)}
               target="_blank"
               rel="noopener noreferrer"
               className="cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-[15px] font-semibold text-maroon no-underline hover:bg-gold-dark"

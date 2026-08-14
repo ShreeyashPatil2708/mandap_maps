@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGanpatis } from './context/GanpatisContext.jsx';
 import { useRoute } from './context/RouteContext.jsx';
 import Navbar from './components/Navbar.jsx';
@@ -11,6 +11,14 @@ import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
 
+// Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
+// deep-linkable pandal URLs without pulling in a full router.
+function readGanpatiParam() {
+  const raw = new URLSearchParams(window.location.search).get('g');
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 // Single-file state machine mirroring the design reference: page routing,
 // the darshan route list, search/filter, drawer and support modal all live
 // here so every screen stays in sync. Ganpati data is loaded once from the
@@ -18,9 +26,12 @@ import Route from './pages/Route.jsx';
 export default function App() {
   const { ganpatis, loading, error } = useGanpatis();
   const { route } = useRoute();
-  const [page, setPage] = useState('home');
+  const initialGanpatiId = readGanpatiParam();
+  const [page, setPage] = useState(initialGanpatiId ? 'detail' : 'home');
   const [prevPage, setPrevPage] = useState('home');
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(initialGanpatiId);
+  // Listing page to return to when the browser back button leaves a detail view.
+  const prevPageRef = useRef(initialGanpatiId ? 'explore' : 'home');
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [showMenu, setShowMenu] = useState(false);
@@ -41,6 +52,7 @@ export default function App() {
   };
   const openGanpati = (id) => {
     setPrevPage(page);
+    prevPageRef.current = page;
     setSelectedId(id);
     setPage('detail');
     setShowMenu(false);
@@ -48,6 +60,35 @@ export default function App() {
   const goBack = () => setPage(prevPage || 'explore');
 
   const detailGanpati = ganpatis.find((g) => g.id === selectedId) || ganpatis[0];
+
+  // Keep the URL (?g=id) in sync with the detail view so pandals are shareable
+  // and openable in a new tab. Guarded so it never fights the browser's own
+  // history updates on back/forward.
+  useEffect(() => {
+    const currentG = new URLSearchParams(window.location.search).get('g');
+    if (page === 'detail' && selectedId) {
+      if (currentG !== String(selectedId)) {
+        window.history.pushState({}, '', `?g=${selectedId}`);
+      }
+    } else if (currentG !== null) {
+      window.history.pushState({}, '', window.location.pathname);
+    }
+  }, [page, selectedId]);
+
+  // Browser back/forward: reopen the pandal named in the URL, or leave detail.
+  useEffect(() => {
+    const onPop = () => {
+      const id = readGanpatiParam();
+      if (id) {
+        setSelectedId(id);
+        setPage('detail');
+      } else {
+        setPage(prevPageRef.current || 'explore');
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   return (
     <div className="relative min-h-screen max-w-full bg-cream">

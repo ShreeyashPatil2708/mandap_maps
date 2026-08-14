@@ -1,16 +1,20 @@
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
 
-// Build a Google Maps directions URL from the ordered stops. The first stop is
-// the origin, the last is the destination, and any stops in between become
-// waypoints separated by "|". No Maps API key is needed for this URL scheme.
+// Build a Google Maps directions URL from the ordered stops. The origin is left
+// unset so Maps starts from the user's current location; the stops become
+// waypoints in order and the last one is the destination. Each point prefers
+// exact coordinates and falls back to the address for records without lat/lng.
+// No Maps API key is needed for this URL scheme.
 function directionsUrl(stops) {
-  const coord = (g) => `${g.lat},${g.lng}`;
-  const origin = coord(stops[0]);
-  const destination = coord(stops[stops.length - 1]);
-  const middle = stops.slice(1, -1).map(coord).join('|');
-  let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
-  if (middle) url += `&waypoints=${middle}`;
+  const point = (g) => (g.lat != null && g.lng != null ? `${g.lat},${g.lng}` : g.address);
+  const destination = encodeURIComponent(point(stops[stops.length - 1]));
+  const waypoints = stops
+    .slice(0, -1)
+    .map((g) => encodeURIComponent(point(g)))
+    .join('|');
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+  if (waypoints) url += `&waypoints=${waypoints}`;
   return url;
 }
 
