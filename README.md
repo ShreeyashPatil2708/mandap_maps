@@ -1,84 +1,20 @@
 # MandapMaps
 
-A mobile-first darshan companion for Pune's **Ganeshotsav** festival: find pandals, plan your
-route, and learn the history of Pune's beloved Ganpatis.
+A mobile-first companion for Pune's Ganeshotsav festival. Find Ganpati pandals
+near you, plan a darshan route between them, and ask an assistant about timings,
+history, and directions.
 
-## Monorepo layout
+## What's inside
 
-```
-.
-├── frontend/               # Vite + React + Tailwind (builds to static, S3, CloudFront)
-│   ├── src/
-│   ├── tailwind.config.js  # Exact design tokens (maroon/gold/cream, serif + devanagari)
-│   └── .env.example
-├── backend/                # Express API (PostgreSQL + Redis)
-│   ├── src/
-│   │   ├── index.js        # Server bootstrap (helmet, CORS, rate limit, /health)
-│   │   └── config/         # db (pg), redis (ioredis), secrets (AWS Secrets Manager)
-│   ├── db/
-│   │   ├── schema.sql      # ganpatis table
-│   │   ├── migrate.js      # apply schema
-│   │   ├── seed.js         # seed all 45 Ganpatis (idempotent upsert)
-│   │   └── seed-data.json  # generated from data/MandapMaps_*.xlsx (gitignored)
-│   └── .env.example
-├── data/                   # Source spreadsheet
-├── eslint.config.js        # Flat config for frontend (React) + backend (Node)
-└── .prettierrc.json
-```
+- `frontend/` - the React app people use on their phone
+- `backend/` - the API that serves the Ganpati data
+- `chatbot/` - an AI assistant that answers questions about the festival
+- `data/` - the source dataset (private, kept out of the repo)
 
-## Architecture (target)
+## Running it
 
-- Frontend → static build → **S3** → **CloudFront**
-- API behind **API Gateway** (rate limit 1000 req/min per IP)
-- Reads served from **ElastiCache Redis** (24h TTL), falling back to **RDS PostgreSQL** on miss
-- Secrets from **AWS Secrets Manager**; credentials are never hardcoded
-- Route planner emits a Google Maps deep link only (no Maps API key)
+Setup and run steps will be added here once the project is further along.
 
-## Getting started (local)
+## Data
 
-Prerequisites: Node 20+ and Docker Desktop (running).
-
-```bash
-npm install                               # installs all workspaces
-
-# 1. Config (defaults already match docker-compose; no editing needed)
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-
-# 2. Start Postgres + Redis in Docker (no local install needed)
-docker-compose up -d
-
-# 3. Backend
-npm run migrate --workspace backend       # create the tables (idempotent)
-npm run seed --workspace backend          # load the Ganpati data (idempotent)
-npm run dev:backend                       # http://localhost:4000/health
-
-# 4. Frontend (new terminal)
-npm run dev:frontend                      # http://localhost:5173
-```
-
-Stop the database when done: `docker-compose down` (add `-v` to also wipe the data).
-
-### The dataset is not in the repo
-
-The Ganpati data (`backend/db/seed-data.json` and the source `data/*.xlsx`) is
-gitignored. A fresh clone has no data, so `npm run seed` will fail until you add
-it. Ask the maintainer for `seed-data.json` and drop it into `backend/db/`, then
-run the seed step. (With openpyxl installed, the maintainer regenerates it from
-the spreadsheets via `python backend/db/generate-seed-data.py`.)
-
-## Tooling
-
-```bash
-npm run lint          # ESLint (flat config)
-npm run format        # Prettier write
-```
-
-## Status
-
-**Phase 1 complete:** project scaffold, design tokens, ESLint + Prettier, `.env.example` files,
-PostgreSQL schema, and the seed of all 45 Ganpatis. Frontend components and AWS infrastructure are
-built in later phases.
-# MandapMaps
-# MandapMaps
-# MandapMaps
+The Ganpati dataset is private and shared by hand, so it is not committed to this repo.
