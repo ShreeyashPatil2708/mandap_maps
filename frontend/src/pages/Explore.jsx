@@ -3,25 +3,39 @@ import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge } from '../data/helpers.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
 
-// An area becomes a filter chip once at least this many pandals share it.
-// Rarer one-off areas stay reachable via "All" and search.
+// An area or tag becomes a filter chip once at least this many pandals share it.
+// Rarer one-off values stay reachable via "All" and search.
 const AREA_CHIP_MIN = 2;
+const TAG_CHIP_MIN = 2;
+
+// Prefix that marks a filter key as a tag filter (vs. "all", "manache5" or an
+// area name), so the single active-filter string can carry either dimension.
+const TAG_PREFIX = 'tag:';
 
 // Build the filter chips from the live data so they never go stale as pandals
-// are added: "All", "Manache 5", then the busiest neighbourhoods.
+// are added: "All", "Manache 5", the busiest neighbourhoods, then the tags that
+// appear often enough to be worth a chip.
 function buildFilters(ganpatis) {
-  const counts = {};
+  const areaCounts = {};
+  const tagCounts = {};
   for (const g of ganpatis) {
-    if (g.areaCategory) counts[g.areaCategory] = (counts[g.areaCategory] || 0) + 1;
+    if (g.areaCategory) areaCounts[g.areaCategory] = (areaCounts[g.areaCategory] || 0) + 1;
+    for (const t of g.tags || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
   }
-  const areas = Object.entries(counts)
+  const byCountThenName = (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]);
+  const areas = Object.entries(areaCounts)
     .filter(([, n]) => n >= AREA_CHIP_MIN)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .sort(byCountThenName)
     .map(([key]) => ({ key, label: key }));
+  const tags = Object.entries(tagCounts)
+    .filter(([, n]) => n >= TAG_CHIP_MIN)
+    .sort(byCountThenName)
+    .map(([key]) => ({ key: `${TAG_PREFIX}${key}`, label: key }));
   return [
     { key: 'all', label: 'All' },
     { key: 'manache5', label: 'Manache 5' },
     ...areas,
+    ...tags,
   ];
 }
 
@@ -43,6 +57,18 @@ function GanpatiCard({ g, onOpen }) {
       <div className="px-3.5 py-3">
         <div className="mb-0.5 font-serif text-sm leading-[1.3] text-maroon">{g.name}</div>
         <div className="font-sans text-[11px] text-maroon/40">{g.area}</div>
+        {g.tags?.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {g.tags.slice(0, 2).map((t) => (
+              <span
+                key={t}
+                className="rounded-badge border border-gold/40 bg-light px-1.5 py-0.5 font-sans text-[9px] font-medium text-maroon/70"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -56,7 +82,10 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
   const results = useMemo(() => {
     let list = ganpatis;
     if (activeFilter === 'manache5') list = list.filter((g) => g.manacha);
-    else if (activeFilter !== 'all') list = list.filter((g) => g.areaCategory === activeFilter);
+    else if (activeFilter.startsWith(TAG_PREFIX)) {
+      const tag = activeFilter.slice(TAG_PREFIX.length);
+      list = list.filter((g) => (g.tags || []).includes(tag));
+    } else if (activeFilter !== 'all') list = list.filter((g) => g.areaCategory === activeFilter);
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge } from '../data/helpers.js';
 import { OmMark } from '../components/icons.jsx';
+import Circuits from '../components/Circuits.jsx';
 
 const UPI_ID = import.meta.env.VITE_UPI_ID || 'yourname@upi';
 
@@ -198,6 +199,11 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onSupport }) {
             <VisitRow key={g.id} g={g} onOpen={() => onOpenGanpati(g.id)} />
           ))}
         </div>
+      </div>
+
+      {/* Suggested Circuits */}
+      <div className="px-gutter-lg pb-7">
+        <Circuits onOpenGanpati={onOpenGanpati} />
       </div>
 
       {/* Countdown + Did you know */}

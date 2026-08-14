@@ -45,12 +45,12 @@ function MetroWhatsApp() {
     <>
       <div
         className="w-full cursor-pointer rounded-card border-[1.5px] border-maroon/15 p-4 text-center font-sans text-[15px] font-semibold text-maroon hover:border-maroon"
-        onClick={() => window.open('https://wa.me/918669199099?text=Hi', '_blank')}
+        onClick={() => window.open('https://wa.me/919420101990?text=Hi', '_blank')}
       >
         Book Metro Ticket via WhatsApp
       </div>
       <div className="font-sans text-xs text-maroon/45">
-        Official Pune Metro WhatsApp: +91 86691 99099
+        Official Pune Metro WhatsApp: +91 94201 01990
       </div>
     </>
   );
@@ -123,7 +123,32 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         <div className="mt-1.5 font-sans text-[13px] text-maroon/45">
           {ganpati.area} · Est. {ganpati.est}
         </div>
+
+        {ganpati.tags?.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {ganpati.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-badge border border-gold/40 bg-surface px-2.5 py-1 font-sans text-[11px] font-medium text-maroon/70"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Did You Know */}
+      {ganpati.didYouKnow && (
+        <div className="mx-gutter-lg mt-5 rounded-card border border-gold/25 bg-surface px-4 py-4">
+          <div className="mb-1.5 font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">
+            Did you know?
+          </div>
+          <div className="font-sans text-[14px] leading-[1.6] text-maroon/75">
+            {ganpati.didYouKnow}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="mx-gutter-lg mt-5 flex border-b-2 border-maroon/[0.08]">
