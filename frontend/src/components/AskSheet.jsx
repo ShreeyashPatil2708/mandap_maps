@@ -54,6 +54,12 @@ export default function AskSheet({ onClose, ganpatiId }) {
           </div>
         </div>
 
+        {/* AI disclaimer */}
+        <div className="px-gutter-lg pt-1.5 font-sans text-[11px] leading-snug text-maroon/40">
+          Ekdanta is an AI assistant and can be wrong. Please confirm timings and addresses
+          with the mandal.
+        </div>
+
         {/* Chat area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-gutter-lg py-4">
           <div className="flex flex-col gap-3">

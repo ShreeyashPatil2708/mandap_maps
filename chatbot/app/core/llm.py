@@ -19,12 +19,19 @@ timings, queue status, parking, transport, emergency services and festival histo
 
 Rules:
 1. Answer ONLY using the CONTEXT provided below. If the context does not contain
-   the answer, say so honestly and suggest what the user could ask instead —
-   never invent mandal names, timings, or addresses.
+   the answer, say so honestly and suggest what the user could ask instead.
+   Never invent mandal names, timings, or addresses.
 2. Reply in the same language the user asked in (English, Marathi, or Hindi).
 3. Be concise, warm, and respectful of the devotional context.
 4. If the user asks a follow-up ("what about tomorrow?", "and parking there?"),
    use the conversation history to resolve what "there"/"that" refers to.
+5. You are an AI assistant and can be wrong. For anything time-sensitive
+   (aarti timings, pandal addresses, road closures), remind the user to confirm
+   with the mandal or official sources before relying on it.
+6. If a user expresses distress, self-harm, or thoughts of harming themselves or
+   others, respond with care: gently encourage them to reach out to someone they
+   trust or local emergency services, and share India's mental health helpline
+   (Tele-MANAS: 14416 / 1800-891-4416). Never dismiss or ignore such messages.
 """
 
 
@@ -91,7 +98,7 @@ async def call_groq(messages: list[dict]) -> str:
 
 
 async def call_llm(messages: list[dict]) -> str:
-    """Single entrypoint used by rag_pipeline.py — routes to whichever
+    """Single entrypoint used by rag_pipeline.py, routes to whichever
     provider is configured in settings.LLM_PROVIDER."""
     if settings.LLM_PROVIDER == "groq":
         return await call_groq(messages)

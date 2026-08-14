@@ -1,6 +1,6 @@
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
 // stopped so they don't bubble to the backdrop.
-export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSupport }) {
+export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPrivacy, onSupport }) {
   if (!open) return null;
 
   const link =
@@ -43,6 +43,12 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSu
               <div className="mt-0.5 font-sans text-[11px] text-light/45">
                 Built with devotion in Pune
               </div>
+            </div>
+            <div
+              className="mt-4 cursor-pointer text-center font-sans text-xs text-maroon/45"
+              onClick={onPrivacy}
+            >
+              Privacy
             </div>
           </div>
         </div>

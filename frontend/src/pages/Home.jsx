@@ -112,7 +112,7 @@ function CountdownCard() {
   );
 }
 
-export default function Home({ onExplore, onRoute, onOpenGanpati, onSupport }) {
+export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
   const { ganpatis } = useGanpatis();
 
   // The five Manache Ganpatis, ordered by rank.
@@ -236,8 +236,8 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onSupport }) {
           <div className="mb-1 font-serif text-[15px] text-gold">MandapMaps</div>
           <div className="font-sans text-[11px] text-light/35">Made with devotion in Pune</div>
         </div>
-        <div className="cursor-pointer font-sans text-xs text-gold" onClick={onSupport}>
-          Support Us 🙏
+        <div className="cursor-pointer font-sans text-xs text-gold" onClick={onPrivacy}>
+          Privacy
         </div>
       </div>
     </div>

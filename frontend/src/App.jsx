@@ -10,6 +10,7 @@ import Home from './pages/Home.jsx';
 import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
+import Privacy from './pages/Privacy.jsx';
 
 // Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
 // deep-linkable pandal URLs without pulling in a full router.
@@ -50,6 +51,10 @@ export default function App() {
     setPage('route');
     setShowMenu(false);
   };
+  const goPrivacy = () => {
+    setPage('privacy');
+    setShowMenu(false);
+  };
   const openGanpati = (id) => {
     setPrevPage(page);
     prevPageRef.current = page;
@@ -60,6 +65,13 @@ export default function App() {
   const goBack = () => setPage(prevPage || 'explore');
 
   const detailGanpati = ganpatis.find((g) => g.id === selectedId) || ganpatis[0];
+
+  // Show the Support popup whenever the home page becomes active (first load,
+  // refresh, or navigating back to Home). Closing it keeps it closed until the
+  // user leaves and returns to Home.
+  useEffect(() => {
+    if (page === 'home') setShowModal(true);
+  }, [page]);
 
   // Keep the URL (?g=id) in sync with the detail view so pandals are shareable
   // and openable in a new tab. Guarded so it never fights the browser's own
@@ -115,7 +127,7 @@ export default function App() {
           onExplore={goExplore}
           onRoute={goRoute}
           onOpenGanpati={openGanpati}
-          onSupport={() => setShowModal(true)}
+          onPrivacy={goPrivacy}
         />
       )}
 
@@ -135,6 +147,8 @@ export default function App() {
 
       {!loading && !error && page === 'route' && <Route onExplore={goExplore} />}
 
+      {!loading && !error && page === 'privacy' && <Privacy onBack={goHome} />}
+
       <BottomNav
         page={page}
         routeLen={route.length}
@@ -151,6 +165,7 @@ export default function App() {
         onHome={goHome}
         onExplore={goExplore}
         onRoute={goRoute}
+        onPrivacy={goPrivacy}
         onSupport={() => {
           setShowModal(true);
           setShowMenu(false);
