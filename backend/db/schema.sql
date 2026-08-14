@@ -23,11 +23,13 @@ CREATE TABLE IF NOT EXISTS ganpatis (
     evening_aarti      TEXT,
     special_events     TEXT,
     tags               TEXT[]      NOT NULL DEFAULT '{}',  -- app filter chips
+    did_you_know       TEXT,                      -- single surprising fact shown on the detail view
     metro              JSONB       NOT NULL DEFAULT '[]',  -- [{ name, line, dist }]
     food               JSONB       NOT NULL DEFAULT '[]',  -- [{ name, type, dist }]
     photo_url          TEXT,
     google_maps_url    TEXT,
     is_manacha         BOOLEAN     NOT NULL DEFAULT FALSE,
+    data_verified      BOOLEAN     NOT NULL DEFAULT FALSE,  -- editorially verified vs. auto-seeded
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -38,6 +40,12 @@ CREATE TABLE IF NOT EXISTS ganpatis (
     CONSTRAINT ganpatis_manacha_flag_chk
         CHECK (is_manacha = (manacha_number IS NOT NULL))
 );
+
+-- Backfill columns on databases created before these fields existed. Idempotent,
+-- so `npm run migrate` can be re-run safely. (See db/migrations/ for the record.)
+ALTER TABLE ganpatis ADD COLUMN IF NOT EXISTS tags          TEXT[]  NOT NULL DEFAULT '{}';
+ALTER TABLE ganpatis ADD COLUMN IF NOT EXISTS did_you_know  TEXT;
+ALTER TABLE ganpatis ADD COLUMN IF NOT EXISTS data_verified BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Natural key used by the seed script for idempotent upserts.
 CREATE UNIQUE INDEX IF NOT EXISTS ganpatis_name_english_uidx
