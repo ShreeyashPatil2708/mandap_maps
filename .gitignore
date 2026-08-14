@@ -43,9 +43,10 @@ coverage/
 
 # Private dataset (curated content). Kept out of the public repo; lives in
 # RDS/seed source only. Regenerate seed-data.json with backend/db/generate-seed-data.py.
-data/*.xlsx
+# NOTE: leading slash anchors this to the top-level data/ folder only, so app
+# code folders like frontend/src/data/ are NOT ignored.
+/data/
 backend/db/seed-data.json
 
 claude.md
-data/
 
