@@ -23,7 +23,9 @@ class Settings(BaseSettings):
 
     # ---- Groq (hosted LLM) ----
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.1-8b-instant"   # fast + free-tier friendly
+    # 70B follows the "don't fabricate / stay on-topic / formatting" rules in the
+    # system prompt noticeably better than 8B, and is still fast on Groq.
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_TIMEOUT: int = 30
 
     # ---- Embeddings ----
@@ -39,6 +41,11 @@ class Settings(BaseSettings):
     DENSE_WEIGHT: float = 0.65     # FAISS (semantic) contribution
     SPARSE_WEIGHT: float = 0.35    # BM25 (keyword) contribution
     TOP_K: int = 5
+    # Relevance gate: if the best semantic (dense) match for a query is below
+    # this cosine score, the corpus has nothing on-topic, so we return no context
+    # and let the model say it can only help with Ganeshotsav questions. Tuned
+    # so real mandal queries (>=~0.4) pass while off-topic ones (<=~0.27) don't.
+    MIN_RELEVANCE_SCORE: float = 0.32
 
     # ---- Postgres (chat history / users) ----
     POSTGRES_URL: str = "postgresql://ekdanta:ekdanta@localhost:5432/ekdanta_db"

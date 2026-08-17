@@ -48,6 +48,15 @@ class HybridRetriever:
         q_vec = embed_query(query)
         dense_hits = self.store.search(q_vec, top_k=min(len(chunks), top_k * 4))
 
+        # ---- Relevance gate ----
+        # The blended score is a poor on-topic signal (BM25 is max-normalized, so
+        # even a junk query gets a 1.0 sparse hit on a common word). The dense
+        # cosine is far more discriminative, so gate on the best semantic match:
+        # if nothing is close, treat the query as off-topic and return no context.
+        best_dense = max((h["score"] for h in dense_hits), default=0.0)
+        if best_dense < settings.MIN_RELEVANCE_SCORE:
+            return []
+
         # ---- Sparse (BM25 keyword) scores ----
         bm25 = self._get_bm25()
         sparse_scores_raw = bm25.get_scores(_tokenize(query)) if bm25 else np.zeros(len(chunks))

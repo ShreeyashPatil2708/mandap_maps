@@ -39,8 +39,13 @@ class VectorStore:
             json.dump(self.metadata, f, ensure_ascii=False, indent=2)
 
     @staticmethod
-    def chunk_text(text: str, chunk_size: int = 220, overlap: int = 40) -> list[str]:
-        """Simple word-count based sliding-window chunker."""
+    def chunk_text(text: str, chunk_size: int = 90, overlap: int = 20) -> list[str]:
+        """Simple word-count based sliding-window chunker.
+
+        Kept at ~90 words because the multilingual embedding model truncates at
+        128 tokens: larger chunks would have their tail silently dropped from the
+        semantic vector. Small overlap preserves context across chunk boundaries.
+        """
         words = text.split()
         chunks = []
         start = 0

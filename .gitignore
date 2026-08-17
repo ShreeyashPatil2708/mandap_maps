@@ -47,19 +47,17 @@ coverage/
 # code folders like frontend/src/data/ are NOT ignored.
 /data/
 backend/db/seed-data.json
-# Same private dataset in the chatbot service (curated content + everything
-# derived from it). Kept fully out of the public repo; shared by hand.
-# The committed *.example.py placeholder documents the shape so code still runs.
+# Same private dataset the chatbot uses (the website's seed-data.json copy).
+# Shared by hand, never committed. The committed seed-data.example.json documents
+# the shape so a fresh clone still runs with placeholder data.
 chatbot/seed-data.json
-chatbot/app/data/mandals_data.py
-chatbot/app/data/sample_docs/
 
 # Python (chatbot FastAPI service)
 venv/
 .venv/
 __pycache__/
 *.pyc
-# Chatbot build artifact - rebuild with: cd chatbot && python ingest_sample_docs.py
+# Chatbot build artifact - rebuild with: cd chatbot && python ingest_seed_data.py
 chatbot/app/data/faiss_index/
 
 claude.md
