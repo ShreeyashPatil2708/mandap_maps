@@ -94,3 +94,4 @@ The Vite dev server proxies:
 The Ganpati dataset (`seed-data.json`) is private and shared by hand, so it is
 not committed to this repo. The chatbot ships a `seed-data.example.json` you can
 use to test the pipeline without the real dataset.
+
