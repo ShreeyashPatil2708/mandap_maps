@@ -4,8 +4,8 @@ import hashlib
 import json
 import logging
 
-from app.core.memory import redis_client
 from app.config import get_settings
+from app.core.memory import redis_client
 
 logger = logging.getLogger("ekdanta.cache")
 settings = get_settings()

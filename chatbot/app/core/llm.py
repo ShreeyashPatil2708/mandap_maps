@@ -9,6 +9,7 @@ Both are called through the single call_llm() entrypoint so the rest of the
 RAG pipeline (rag_pipeline.py) never needs to know which backend is active.
 """
 import httpx
+
 from app.config import get_settings
 
 settings = get_settings()

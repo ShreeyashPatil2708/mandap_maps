@@ -14,8 +14,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.data.loader import load_records, to_text, slugify
 from app.core.vector_store import get_vector_store
+from app.data.loader import load_records, slugify, to_text
 
 
 def main(path: str | None = None):

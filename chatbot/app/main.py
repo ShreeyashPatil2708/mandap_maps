@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.config import get_settings
 from app.api import chat, ingest, mandals
+from app.config import get_settings
 from app.core.limiter import limiter
 
 logging.basicConfig(level=logging.INFO)

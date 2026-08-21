@@ -4,7 +4,8 @@ Very small language detector: script-based check for Devanagari
 and English. Good enough for routing/logging; the LLM itself handles
 actually answering in the right language via the system prompt.
 """
-from langdetect import detect, DetectorFactory
+from langdetect import DetectorFactory, detect
+from langdetect.lang_detect_exception import LangDetectException
 
 DetectorFactory.seed = 0  # deterministic results
 
@@ -16,10 +17,10 @@ def detect_language(text: str) -> str:
         try:
             code = detect(text)
             return "mr" if code == "mr" else "hi"
-        except Exception:
+        except LangDetectException:
             return "hi"  # default Devanagari fallback
     try:
         code = detect(text)
         return code if code in ("en", "mr", "hi") else "en"
-    except Exception:
+    except LangDetectException:
         return "en"

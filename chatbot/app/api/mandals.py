@@ -7,6 +7,7 @@ Reads through app.data.loader, so it shares one dataset (seed-data.json)
 and one field mapping with the RAG ingester.
 """
 import math
+
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.config import get_settings

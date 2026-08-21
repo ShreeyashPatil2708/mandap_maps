@@ -3,10 +3,10 @@ import logging
 from fastapi import APIRouter, HTTPException, Request
 
 from app.config import get_settings
-from app.core.limiter import limiter
-from app.models.schemas import ChatRequest, ChatResponse
-from app.core.rag_pipeline import answer_query
 from app.core import memory
+from app.core.limiter import limiter
+from app.core.rag_pipeline import answer_query
+from app.models.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger("ekdanta.api")
 settings = get_settings()

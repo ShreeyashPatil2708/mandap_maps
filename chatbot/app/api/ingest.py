@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.config import get_settings
 from app.core.limiter import limiter
 from app.core.security import require_ingest_key
-from app.models.schemas import IngestDocument, IngestResponse
 from app.core.vector_store import get_vector_store
+from app.models.schemas import IngestDocument, IngestResponse
 
 logger = logging.getLogger("ekdanta.api")
 settings = get_settings()

@@ -6,8 +6,8 @@ Why hybrid: pure dense retrieval can miss exact proper nouns (mandal
 names, street names, timings written as digits) that BM25 catches
 easily, while BM25 alone misses paraphrased/multilingual queries.
 """
-from rank_bm25 import BM25Okapi
 import numpy as np
+from rank_bm25 import BM25Okapi
 
 from app.config import get_settings
 from app.core.embeddings import embed_query
@@ -38,7 +38,7 @@ class HybridRetriever:
             self._build_bm25()
         return self._bm25_index
 
-    def retrieve(self, query: str, top_k: int = None) -> list[dict]:
+    def retrieve(self, query: str, top_k: int | None = None) -> list[dict]:
         top_k = top_k or settings.TOP_K
         chunks = self.store.all_chunks()
         if not chunks:
