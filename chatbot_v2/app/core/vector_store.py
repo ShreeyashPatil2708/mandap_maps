@@ -74,9 +74,32 @@ class VectorStore:
             self._persist()
         return len(chunks)
 
-    def search(self, query_vector: np.ndarray, top_k: int) -> list[dict]:
+    def search(
+        self, query_vector: np.ndarray, top_k: int, allowed_doc_ids: set[str] | None = None
+    ) -> list[dict]:
+        """When allowed_doc_ids is given, restricts results to only those
+        mandals (see hybrid_retriever.py). FAISS's flat index has no
+        native metadata filtering, so for the filtered case we
+        reconstruct just the allowed vectors and brute-force the cosine
+        scores with numpy — fine at this corpus size (a few hundred
+        chunks total, and only a handful per mandal)."""
         if self.index.ntotal == 0:
             return []
+
+        if allowed_doc_ids:
+            candidate_idxs = [
+                i for i, m in enumerate(self.metadata) if m["doc_id"] in allowed_doc_ids
+            ]
+            if not candidate_idxs:
+                return []
+            vectors = np.vstack([self.index.reconstruct(i) for i in candidate_idxs])
+            scores = vectors @ query_vector
+            order = np.argsort(-scores)[:top_k]
+            return [
+                {**self.metadata[candidate_idxs[o]], "score": float(scores[o])}
+                for o in order
+            ]
+
         scores, indices = self.index.search(query_vector.reshape(1, -1), top_k)
         results = []
         for score, idx in zip(scores[0], indices[0]):

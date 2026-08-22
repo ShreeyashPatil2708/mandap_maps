@@ -38,15 +38,31 @@ class HybridRetriever:
             self._build_bm25()
         return self._bm25_index
 
-    def retrieve(self, query: str, top_k: int = None) -> list[dict]:
+    def retrieve(
+        self, query: str, top_k: int = None, entity_doc_ids: list[str] | None = None
+    ) -> list[dict]:
+        """
+        entity_doc_ids: when given (from entity_resolver — a mandal named
+        explicitly in the query, or carried forward from conversation
+        context), retrieval is restricted to chunks from those mandals
+        ONLY. This is the fix for cross-entity contamination: previously
+        a query about Kasba Ganpati could surface a semantically-similar
+        chunk from Tambat Ali Ganpati and the LLM would answer from it.
+        With entity_doc_ids set, chunks from other mandals are excluded
+        before scoring, not just down-weighted, so they can't leak in.
+        """
         top_k = top_k or settings.TOP_K
-        chunks = self.store.all_chunks()
-        if not chunks:
+        all_chunks = self.store.all_chunks()
+        if not all_chunks:
             return []
+
+        allowed = set(entity_doc_ids) if entity_doc_ids else None
 
         # ---- Dense (semantic) scores ----
         q_vec = embed_query(query)
-        dense_hits = self.store.search(q_vec, top_k=min(len(chunks), top_k * 4))
+        dense_hits = self.store.search(
+            q_vec, top_k=min(len(all_chunks), top_k * 4), allowed_doc_ids=allowed
+        )
 
         # ---- Relevance gate ----
         # The blended score is a poor on-topic signal (BM25 is max-normalized, so
@@ -58,8 +74,11 @@ class HybridRetriever:
             return []
 
         # ---- Sparse (BM25 keyword) scores ----
+        # Scored against the cached full-corpus index (rebuilding per-request
+        # for a filtered subset isn't worth it at this corpus size), then
+        # zeroed out for any chunk outside the entity filter below.
         bm25 = self._get_bm25()
-        sparse_scores_raw = bm25.get_scores(_tokenize(query)) if bm25 else np.zeros(len(chunks))
+        sparse_scores_raw = bm25.get_scores(_tokenize(query)) if bm25 else np.zeros(len(all_chunks))
         max_sparse = max(sparse_scores_raw) if len(sparse_scores_raw) and max(sparse_scores_raw) > 0 else 1.0
 
         # ---- Merge ----
@@ -71,7 +90,9 @@ class HybridRetriever:
                 "dense_score": h["score"],
                 "sparse_score": 0.0,
             }
-        for i, chunk in enumerate(chunks):
+        for i, chunk in enumerate(all_chunks):
+            if allowed is not None and chunk["doc_id"] not in allowed:
+                continue
             key = chunk["text"]
             norm_sparse = sparse_scores_raw[i] / max_sparse
             if key in merged:

@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,14 +9,28 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.api import chat, ingest, mandals
 from app.core.limiter import limiter
+from app.core import memory
+from app.core.llm import close_http_client
 
 logging.basicConfig(level=logging.INFO)
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: establish the async Redis connection once (see core/memory.py).
+    await memory.init_redis()
+    yield
+    # Shutdown: close the shared httpx client's pooled connections cleanly
+    # (see core/llm.py get_http_client()).
+    await close_http_client()
+
+
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta) — powered by FAISS + BM25 + Ollama.",
+    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta) — powered by FAISS + BM25 + Groq/Ollama.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Rate limiting (per client IP). Endpoints opt in via @limiter.limit(...).
