@@ -57,6 +57,7 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+.ruff_cache/
 # Chatbot build artifact - rebuild with: cd chatbot && python ingest_seed_data.py
 chatbot/app/data/faiss_index/
 
