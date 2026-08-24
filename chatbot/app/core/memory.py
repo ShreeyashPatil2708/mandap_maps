@@ -12,8 +12,9 @@ users' requests queued up behind each other even before the LLM call.
 Redis calls are wrapped so that an outage *after* startup degrades to the
 in-memory store for that call instead of raising 500s on every request.
 """
-import logging
 import json
+import logging
+
 import redis.asyncio as redis
 
 from app.config import get_settings
@@ -35,7 +36,7 @@ async def init_redis():
         _redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
         await _redis_client.ping()
         REDIS_AVAILABLE = True
-    except Exception:
+    except Exception:  # noqa: BLE001
         REDIS_AVAILABLE = False
         _redis_client = None
 

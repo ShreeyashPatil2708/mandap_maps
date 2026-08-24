@@ -2,9 +2,10 @@
 Wraps a multilingual sentence-transformer so the same embedding space
 covers English, Marathi and Hindi queries/documents.
 """
-from sentence_transformers import SentenceTransformer
 from functools import lru_cache
+
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from app.config import get_settings
 

@@ -1,14 +1,14 @@
 import logging
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from starlette.concurrency import run_in_threadpool
 
-from app.core.hybrid_retriever import get_retriever
-from app.core.llm import build_prompt, call_llm, stream_llm, translate_to_english
 from app.core import memory
-from app.core.lang_detect import detect_language
 from app.core.cache import get_cached_response, set_cached_response
-from app.core.entity_resolver import resolve_entities, is_broad_query
+from app.core.entity_resolver import is_broad_query, resolve_entities
+from app.core.hybrid_retriever import get_retriever
+from app.core.lang_detect import detect_language
+from app.core.llm import build_prompt, call_llm, stream_llm, translate_to_english
 from app.models.schemas import ChatResponse, SourceChunk
 
 logger = logging.getLogger("ekdanta.rag")
