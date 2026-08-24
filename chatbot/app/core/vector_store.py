@@ -5,9 +5,10 @@ is kept in a parallel JSON file, indexed by position.
 """
 import json
 import os
+from threading import Lock
+
 import faiss
 import numpy as np
-from threading import Lock
 
 from app.config import get_settings
 from app.core.embeddings import embed_texts
