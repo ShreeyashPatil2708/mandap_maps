@@ -2,8 +2,9 @@
 Central configuration for the Ekdanta RAG chatbot backend.
 All values are overridable via environment variables (.env file).
 """
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):

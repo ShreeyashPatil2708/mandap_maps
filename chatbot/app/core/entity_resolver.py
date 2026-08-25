@@ -92,8 +92,7 @@ def _fuzzy_matches(query_lower: str, registry: list[dict]) -> list[dict]:
         for i in range(max(1, len(tokens) - n_tokens + 1)):
             window = " ".join(tokens[i:i + n_tokens])
             score = fuzz.ratio(window, name_l)
-            if score > best_score:
-                best_score = score
+            best_score = max(best_score, score)
         if best_score >= _FUZZY_THRESHOLD:
             best_by_doc[e["doc_id"]] = {**e, "match_score": best_score, "match_type": "fuzzy"}
     return list(best_by_doc.values())

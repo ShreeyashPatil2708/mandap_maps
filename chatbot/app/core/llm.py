@@ -9,8 +9,9 @@ Both are called through the single call_llm() entrypoint so the rest of the
 RAG pipeline (rag_pipeline.py) never needs to know which backend is active.
 """
 import json
+from collections.abc import AsyncIterator
+
 import httpx
-from typing import AsyncIterator
 
 from app.config import get_settings
 
@@ -245,5 +246,5 @@ async def translate_to_english(text: str) -> str:
         ]
         translated = await call_groq(messages)
         return translated.strip() or text
-    except Exception:
+    except Exception:  # noqa: BLE001
         return text
