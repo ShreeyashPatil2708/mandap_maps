@@ -1,0 +1,28 @@
+[Unit]
+Description=MandapMaps Production API (Node.js, port 3000)
+After=network.target redis.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/mandapmaps/prod
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=AWS_REGION=ap-south-1
+Environment=DB_SECRET_ID=mandapmaps-prod/database
+Environment=PGSSL=true
+Environment=REDIS_URL=redis://localhost:6379
+Environment=GANPATI_CACHE_TTL=86400
+Environment=CORS_ORIGINS=https://mandapmaps.in,https://www.mandapmaps.in
+Environment=RATE_LIMIT_WINDOW_MS=60000
+Environment=RATE_LIMIT_MAX=1000
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mandapmaps-prod
+
+[Install]
+WantedBy=multi-user.target

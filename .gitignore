@@ -41,6 +41,14 @@ coverage/
 .cache/
 .turbo/
 
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+# Lambda zip built by archive_file data source -- regenerated on terraform apply
+infra/modules/festival/festival_lambda.zip
+
 # Private dataset (curated content). Kept out of the public repo; lives in
 # RDS/seed source only. Regenerate seed-data.json with backend/db/generate-seed-data.py.
 # NOTE: leading slash anchors this to the top-level data/ folder only, so app

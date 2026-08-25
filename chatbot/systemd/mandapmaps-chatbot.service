@@ -1,0 +1,23 @@
+[Unit]
+Description=MandapMaps RAG Chatbot (Python/FastAPI, port 8000)
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/mandapmaps/python
+Environment=ENV=production
+Environment=AWS_REGION=ap-south-1
+Environment=APP_SECRET_ID=mandapmaps-prod/app
+Environment=FAISS_INDEX_PATH=/opt/mandapmaps/faiss/index.bin
+Environment=FAISS_METADATA_PATH=/opt/mandapmaps/faiss/metadata.json
+Environment=ALLOWED_ORIGINS=["https://mandapmaps.in","https://www.mandapmaps.in"]
+ExecStart=/opt/mandapmaps/python/scripts/run.sh
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mandapmaps-chatbot
+
+[Install]
+WantedBy=multi-user.target
