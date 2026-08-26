@@ -186,8 +186,12 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
         setNearMe(true);
         setLocating(false);
       },
-      () => {
-        setGeoError('Could not get your location');
+      (err) => {
+        setGeoError(
+          err.code === 1
+            ? 'Allow location access in your browser settings to use Near Me'
+            : 'Could not get your location'
+        );
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }

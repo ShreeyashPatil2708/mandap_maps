@@ -18,6 +18,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.ENV != "development" and not settings.INGEST_API_KEY:
+        raise RuntimeError("INGEST_API_KEY must be set in non-development environments")
     # Startup: establish the async Redis connection once (see core/memory.py).
     await memory.init_redis()
     yield
