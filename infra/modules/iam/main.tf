@@ -137,7 +137,7 @@ resource "aws_iam_role_policy" "node_custom" {
         Effect = "Allow"
         Action = ["secretsmanager:GetSecretValue"]
         # Scoped to secrets with this project prefix -- RDS creds, JWT secret.
-        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}-*"
+        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}/*"
       },
       {
         Sid    = "CodeDeployArtifactsDownload"
@@ -195,7 +195,7 @@ resource "aws_iam_role_policy" "python_custom" {
         Sid    = "SecretsManagerRead"
         Effect = "Allow"
         Action = ["secretsmanager:GetSecretValue"]
-        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}-*"
+        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}/*"
       },
       {
         # Read on boot (hydrate index), write after rebuild (push updated index).
