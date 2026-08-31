@@ -26,6 +26,11 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_oidc_sub" {
+  description = "StringLike pattern for the OIDC sub claim -- ID-based because this org enabled a custom subject claim template"
+  type        = string
+}
+
 variable "domain_name" {
   description = "Root domain name (e.g. mandapmaps.in)"
   type        = string
