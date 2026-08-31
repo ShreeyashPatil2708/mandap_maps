@@ -49,17 +49,18 @@ locals {
     printf '\nmaxmemory 256mb\nmaxmemory-policy allkeys-lru\n' >> /etc/redis6/redis6.conf
     systemctl enable --now redis6
 
-    # Clone repo and set up backend
+    # Clone repo and install the backend workspace. This is an npm-workspaces
+    # monorepo, so the single package-lock.json lives at the repo root: npm ci
+    # must run there, not in a standalone copy of backend/. The service runs
+    # from the repo (WorkingDirectory=repo/backend) and resolves deps from the
+    # hoisted repo/node_modules.
     REPO_DIR="/opt/mandapmaps/repo"
-    APP_DIR="/opt/mandapmaps/prod"
-    mkdir -p "$APP_DIR" /opt/mandapmaps/dev
+    mkdir -p /opt/mandapmaps
 
     retry git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
-    rsync -a "$REPO_DIR/backend/" "$APP_DIR/"
-    chown -R ec2-user:ec2-user /opt/mandapmaps
-
-    cd "$APP_DIR"
+    cd "$REPO_DIR"
     retry npm ci --omit=dev
+    chown -R ec2-user:ec2-user /opt/mandapmaps
 
     # Install and start systemd service
     cp "$REPO_DIR/backend/systemd/mandapmaps-prod.service" /etc/systemd/system/

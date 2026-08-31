@@ -73,8 +73,7 @@ jobs:
               "git config --system --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
-              "rsync -a --delete backend/ /opt/mandapmaps/prod/",
-              "cd /opt/mandapmaps/prod && npm ci --omit=dev",
+              "npm ci --omit=dev",
               "systemctl restart mandapmaps-prod"
             ]' \
             --timeout-seconds 300 \
