@@ -1,6 +1,6 @@
 # MandapMaps
 
-A mobile-first companion for Pune's Ganeshotsav festival. Find Ganpati pandals
+A website for Pune's Ganeshotsav festival. Find Ganpati pandals
 near you, plan a darshan route between them, and ask an assistant about timings,
 history, and directions.
 
