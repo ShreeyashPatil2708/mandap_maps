@@ -6,7 +6,7 @@ Requires=redis6.service
 [Service]
 Type=simple
 User=ec2-user
-WorkingDirectory=/opt/mandapmaps/prod
+WorkingDirectory=/opt/mandapmaps/repo/backend
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=AWS_REGION=us-east-1
