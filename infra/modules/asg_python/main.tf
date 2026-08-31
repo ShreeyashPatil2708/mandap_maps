@@ -47,6 +47,12 @@ locals {
     export PIP_DEFAULT_TIMEOUT=120
     retry pip3 install --upgrade pip
 
+    # Switching the python3 alternative to 3.11 (below/above) breaks the system
+    # aws CLI, whose awscli module lives under the 3.9 site-packages. Reinstall
+    # awscli into 3.11 (lands at /usr/local/bin/aws, ahead of /usr/bin/aws on
+    # PATH) so the FAISS s3 sync and the chatbot's run.sh secret fetch work.
+    retry pip3 install awscli
+
     # Clone repo and set up chatbot
     REPO_DIR="/opt/mandapmaps/repo"
     APP_DIR="/opt/mandapmaps/python"
@@ -129,8 +135,12 @@ resource "aws_autoscaling_group" "python" {
   max_size                  = var.max_size
   desired_capacity          = var.desired_capacity
   vpc_zone_identifier       = var.private_app_subnet_ids
-  health_check_type         = "ELB"
-  health_check_grace_period = 180
+  health_check_type = "ELB"
+  # Long grace: the instance provisions on boot (dnf update, torch CPU wheel,
+  # sentence-transformers, faiss, psycopg2 build), which takes many minutes. A
+  # short grace kills the instance before the service starts, causing an endless
+  # replace loop.
+  health_check_grace_period = 900
 
   target_group_arns = [var.python_tg_arn]
 

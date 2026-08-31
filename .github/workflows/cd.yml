@@ -70,7 +70,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "set -e",
-              "git config --global --add safe.directory /opt/mandapmaps/repo",
+              "git config --system --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
               "rsync -a --delete backend/ /opt/mandapmaps/prod/",
@@ -122,7 +122,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "set -e",
-              "git config --global --add safe.directory /opt/mandapmaps/repo",
+              "git config --system --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
               "rsync -a --delete chatbot/ /opt/mandapmaps/python/",

@@ -43,10 +43,11 @@ locals {
     retry bash -c "curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -"
     retry dnf install -y nodejs git
 
-    # Redis on-box: 256 MB cap, evict LRU keys when full
-    retry dnf install -y redis
-    printf '\nmaxmemory 256mb\nmaxmemory-policy allkeys-lru\n' >> /etc/redis/redis.conf
-    systemctl enable --now redis
+    # Redis on-box: 256 MB cap, evict LRU keys when full.
+    # AL2023 ships Redis as the redis6 package/service, not redis.
+    retry dnf install -y redis6
+    printf '\nmaxmemory 256mb\nmaxmemory-policy allkeys-lru\n' >> /etc/redis6/redis6.conf
+    systemctl enable --now redis6
 
     # Clone repo and set up backend
     REPO_DIR="/opt/mandapmaps/repo"
@@ -124,8 +125,11 @@ resource "aws_autoscaling_group" "node" {
   max_size                  = var.max_size
   desired_capacity          = var.desired_capacity
   vpc_zone_identifier       = var.private_app_subnet_ids
-  health_check_type         = "ELB"
-  health_check_grace_period = 120
+  health_check_type = "ELB"
+  # Long grace: the instance provisions on boot (dnf update, Node install,
+  # npm ci), which takes several minutes. A short grace kills the instance
+  # before the service starts, causing an endless replace loop.
+  health_check_grace_period = 600
 
   target_group_arns = [
     var.node_prod_tg_arn,
