@@ -26,25 +26,41 @@ locals {
     #!/bin/bash
     set -euo pipefail
 
-    dnf update -y
+    # Retry network-bound steps so a transient failure does not abort the whole
+    # bootstrap (set -e would otherwise leave the instance half-provisioned).
+    retry() {
+      for i in 1 2 3 4 5; do
+        "$@" && return 0
+        echo "retry $i failed for: $*" >&2
+        sleep 15
+      done
+      return 1
+    }
+
+    retry dnf update -y
 
     # Python 3.11 + pip + git
-    dnf install -y python3.11 python3.11-pip git
+    retry dnf install -y python3.11 python3.11-pip git
     alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
     alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 1
 
-    pip3 install --upgrade pip
+    export PIP_DEFAULT_TIMEOUT=120
+    retry pip3 install --upgrade pip
 
     # Clone repo and set up chatbot
     REPO_DIR="/opt/mandapmaps/repo"
     APP_DIR="/opt/mandapmaps/python"
     mkdir -p "$APP_DIR" /opt/mandapmaps/faiss
 
-    git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
+    retry git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
     rsync -a "$REPO_DIR/chatbot/" "$APP_DIR/"
     chown -R ec2-user:ec2-user /opt/mandapmaps
 
-    pip3 install -r "$APP_DIR/requirements.txt"
+    # sentence-transformers pulls torch, whose default PyPI wheel is the ~500MB
+    # CUDA build and repeatedly fails to download over NAT. Install the smaller
+    # CPU-only wheel first so the requirements install finds it already satisfied.
+    pip3 install --retries 10 --timeout 120 torch --index-url https://download.pytorch.org/whl/cpu
+    pip3 install --retries 10 --timeout 120 -r "$APP_DIR/requirements.txt"
 
     # Hydrate FAISS index from S3 at boot
     aws s3 sync s3://${var.faiss_bucket_name}/ /opt/mandapmaps/faiss/ --region ${var.region} || true

@@ -69,6 +69,8 @@ jobs:
             --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-node" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
+              "set -e",
+              "git config --global --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
               "rsync -a --delete backend/ /opt/mandapmaps/prod/",
@@ -119,10 +121,12 @@ jobs:
             --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-python" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
+              "set -e",
+              "git config --global --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
               "rsync -a --delete chatbot/ /opt/mandapmaps/python/",
-              "pip3 install -r /opt/mandapmaps/python/requirements.txt --quiet",
+              "pip3 install --retries 10 --timeout 120 -r /opt/mandapmaps/python/requirements.txt --quiet",
               "systemctl restart mandapmaps-chatbot"
             ]' \
             --timeout-seconds 300 \
