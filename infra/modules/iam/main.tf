@@ -28,6 +28,12 @@ resource "aws_iam_role" "github_actions" {
         Federated = aws_iam_openid_connect_provider.github.arn
       }
       Action = "sts:AssumeRoleWithWebIdentity"
+      # This org has GitHub's custom OIDC subject claim enabled, so sub is
+      # ID-based: repo:owner@<owner_id>/repo@<repo_id>:ref:refs/heads/master,
+      # not the default repo:owner/repo:... form. AWS requires the trust to
+      # condition on sub (or job_workflow_ref), so we match that ID-based
+      # subject via var.github_oidc_sub. repository and ref are standard claims
+      # unaffected by the customization and pin the exact repo and branch.
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud"        = "sts.amazonaws.com"
@@ -35,7 +41,7 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:ref"        = "refs/heads/master"
         }
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
+          "token.actions.githubusercontent.com:sub" = var.github_oidc_sub
         }
       }
     }]

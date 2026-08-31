@@ -70,6 +70,7 @@ module "iam" {
   source                 = "./modules/iam"
   name_prefix            = local.name_prefix
   github_repo            = var.github_repo
+  github_oidc_sub        = var.github_oidc_sub
   frontend_bucket_name   = local.frontend_bucket_name
   faiss_bucket_name      = local.faiss_bucket_name
   codedeploy_bucket_name = local.codedeploy_bucket_name

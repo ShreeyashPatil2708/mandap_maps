@@ -8,6 +8,11 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_oidc_sub" {
+  description = "StringLike pattern for the OIDC sub claim -- ID-based because this org enabled a custom subject claim template"
+  type        = string
+}
+
 variable "frontend_bucket_name" {
   description = "Name of the S3 bucket for the React frontend build"
   type        = string
