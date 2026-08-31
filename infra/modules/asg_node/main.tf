@@ -26,14 +26,25 @@ locals {
     #!/bin/bash
     set -euo pipefail
 
-    dnf update -y
+    # Retry network-bound steps so a transient failure does not abort the whole
+    # bootstrap (set -e would otherwise leave the instance half-provisioned).
+    retry() {
+      for i in 1 2 3 4 5; do
+        "$@" && return 0
+        echo "retry $i failed for: $*" >&2
+        sleep 15
+      done
+      return 1
+    }
+
+    retry dnf update -y
 
     # Node.js 20 LTS
-    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-    dnf install -y nodejs git
+    retry bash -c "curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -"
+    retry dnf install -y nodejs git
 
     # Redis on-box: 256 MB cap, evict LRU keys when full
-    dnf install -y redis
+    retry dnf install -y redis
     printf '\nmaxmemory 256mb\nmaxmemory-policy allkeys-lru\n' >> /etc/redis/redis.conf
     systemctl enable --now redis
 
@@ -42,12 +53,12 @@ locals {
     APP_DIR="/opt/mandapmaps/prod"
     mkdir -p "$APP_DIR" /opt/mandapmaps/dev
 
-    git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
+    retry git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
     rsync -a "$REPO_DIR/backend/" "$APP_DIR/"
     chown -R ec2-user:ec2-user /opt/mandapmaps
 
     cd "$APP_DIR"
-    npm ci --omit=dev
+    retry npm ci --omit=dev
 
     # Install and start systemd service
     cp "$REPO_DIR/backend/systemd/mandapmaps-prod.service" /etc/systemd/system/
