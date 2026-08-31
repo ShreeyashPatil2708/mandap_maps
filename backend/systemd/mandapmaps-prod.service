@@ -1,7 +1,7 @@
 [Unit]
 Description=MandapMaps Production API (Node.js, port 3000)
-After=network.target redis.service
-Requires=redis.service
+After=network.target redis6.service
+Requires=redis6.service
 
 [Service]
 Type=simple
