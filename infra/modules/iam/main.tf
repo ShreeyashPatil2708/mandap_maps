@@ -35,15 +35,10 @@ resource "aws_iam_role" "github_actions" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        }
-        StringLike = {
-          # Any branch/ref in this repo only -- support both legacy and ID-based
-          # subject formats from GitHub OIDC tokens.
-          "token.actions.githubusercontent.com:sub" = [
-            "repo:${var.github_repo}:*",
-            "repo:${local.github_repo_owner}@*/${local.github_repo_name}@*:*",
-          ]
+          "token.actions.githubusercontent.com:aud"        = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:repository" = var.github_repo
+          # CD runs only on pushes to master.
+          "token.actions.githubusercontent.com:ref" = "refs/heads/master"
         }
       }
     }]
