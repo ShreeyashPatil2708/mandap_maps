@@ -13,11 +13,11 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-south-1"
+  region = "us-east-1"
 }
 
 resource "aws_s3_bucket" "tf_state" {
-  bucket = "mandapmaps-tf-state"
+  bucket = "mandapmaps-tf-state-v2"
 
   lifecycle {
     prevent_destroy = true

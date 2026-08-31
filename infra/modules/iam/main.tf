@@ -51,27 +51,19 @@ resource "aws_iam_role_policy" "github_actions_cd" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "CodeDeployTrigger"
+        Sid    = "SSMSendCommand"
         Effect = "Allow"
-        Action = [
-          "codedeploy:CreateDeployment",
-          "codedeploy:GetDeployment",
-          "codedeploy:GetDeploymentConfig",
-          "codedeploy:RegisterApplicationRevision",
-          "codedeploy:GetApplicationRevision",
+        Action = ["ssm:SendCommand"]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript",
+          "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*",
         ]
-        # Scoped to this account -- CodeDeploy ARNs need the app+group name
-        # which aren't known yet; tighten after module 9/10 creates the apps.
-        Resource = "arn:aws:codedeploy:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
       },
       {
-        Sid    = "CodeDeployArtifactsUpload"
-        Effect = "Allow"
-        Action = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.codedeploy_bucket_name}",
-          "arn:aws:s3:::${var.codedeploy_bucket_name}/*",
-        ]
+        Sid      = "SSMWaitAndCheck"
+        Effect   = "Allow"
+        Action   = ["ssm:ListCommandInvocations", "ssm:GetCommandInvocation"]
+        Resource = "*"
       },
       {
         Sid    = "FrontendSync"
@@ -83,7 +75,6 @@ resource "aws_iam_role_policy" "github_actions_cd" {
         ]
       },
       {
-        # TODO (hardening): scope to specific distribution ARN after module 6
         Sid      = "CloudFrontInvalidation"
         Effect   = "Allow"
         Action   = ["cloudfront:CreateInvalidation"]

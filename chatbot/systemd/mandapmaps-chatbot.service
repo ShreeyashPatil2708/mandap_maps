@@ -7,7 +7,7 @@ Type=simple
 User=ec2-user
 WorkingDirectory=/opt/mandapmaps/python
 Environment=ENV=production
-Environment=AWS_REGION=ap-south-1
+Environment=AWS_REGION=us-east-1
 Environment=APP_SECRET_ID=mandapmaps-prod/app
 Environment=FAISS_INDEX_PATH=/opt/mandapmaps/faiss/index.bin
 Environment=FAISS_METADATA_PATH=/opt/mandapmaps/faiss/metadata.json

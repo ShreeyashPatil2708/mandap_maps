@@ -28,30 +28,31 @@ locals {
 
     dnf update -y
 
-    # Python 3.11 + pip
-    dnf install -y python3.11 python3.11-pip
+    # Python 3.11 + pip + git
+    dnf install -y python3.11 python3.11-pip git
     alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
     alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 1
 
-    # FAISS and FastAPI dependencies
     pip3 install --upgrade pip
-    pip3 install fastapi uvicorn[standard] faiss-cpu boto3 numpy
 
-    # CodeDeploy agent
-    dnf install -y ruby wget
-    cd /tmp
-    wget "https://aws-codedeploy-${var.region}.s3.${var.region}.amazonaws.com/latest/install"
-    chmod +x install
-    ./install auto
-    systemctl enable --now codedeploy-agent
+    # Clone repo and set up chatbot
+    REPO_DIR="/opt/mandapmaps/repo"
+    APP_DIR="/opt/mandapmaps/python"
+    mkdir -p "$APP_DIR" /opt/mandapmaps/faiss
 
-    # App and FAISS index directories
-    mkdir -p /opt/mandapmaps/python /opt/mandapmaps/faiss
+    git clone https://github.com/ShreeyashPatil2708/mandap_maps.git "$REPO_DIR"
+    rsync -a "$REPO_DIR/chatbot/" "$APP_DIR/"
     chown -R ec2-user:ec2-user /opt/mandapmaps
 
+    pip3 install -r "$APP_DIR/requirements.txt"
+
     # Hydrate FAISS index from S3 at boot
-    # The running app also refreshes this periodically, but we pre-load on startup
     aws s3 sync s3://${var.faiss_bucket_name}/ /opt/mandapmaps/faiss/ --region ${var.region} || true
+
+    # Install and start systemd service
+    cp "$REPO_DIR/chatbot/systemd/mandapmaps-chatbot.service" /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable --now mandapmaps-chatbot
   EOT
 }
 
@@ -142,35 +143,5 @@ resource "aws_autoscaling_group" "python" {
       value               = tag.value
       propagate_at_launch = true
     }
-  }
-}
-
-resource "aws_codedeploy_app" "python" {
-  name             = "${var.name_prefix}-app-python"
-  compute_platform = "Server"
-}
-
-resource "aws_codedeploy_deployment_group" "python" {
-  app_name               = aws_codedeploy_app.python.name
-  deployment_group_name  = "${var.name_prefix}-dg-python"
-  service_role_arn       = var.codedeploy_role_arn
-  deployment_config_name = "CodeDeployDefault.OneAtATime"
-
-  autoscaling_groups = [aws_autoscaling_group.python.name]
-
-  deployment_style {
-    deployment_option = "WITH_TRAFFIC_CONTROL"
-    deployment_type   = "IN_PLACE"
-  }
-
-  load_balancer_info {
-    target_group_info {
-      name = var.python_tg_name
-    }
-  }
-
-  auto_rollback_configuration {
-    enabled = true
-    events  = ["DEPLOYMENT_FAILURE"]
   }
 }

@@ -9,8 +9,7 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: ap-south-1
-  CODEDEPLOY_BUCKET: ${{ secrets.CODEDEPLOY_BUCKET }}
+  AWS_REGION: us-east-1
 
 jobs:
   deploy-frontend:
@@ -55,82 +54,101 @@ jobs:
             --paths "/*"
 
   deploy-backend:
-    name: Deploy Node.js backend via CodeDeploy
+    name: Deploy Node.js backend via SSM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Package backend
+      - name: Deploy to Node ASG via SSM
         run: |
-          BUNDLE_KEY="node/backend-${{ github.sha }}.zip"
-          cd backend
-          zip -r /tmp/backend.zip . \
-            --exclude "*.env" \
-            --exclude "node_modules/*" \
-            --exclude ".DS_Store"
-          echo "BUNDLE_KEY=$BUNDLE_KEY" >> $GITHUB_ENV
-
-      - name: Upload bundle to S3
-        run: |
-          aws s3 cp /tmp/backend.zip \
-            s3://${{ env.CODEDEPLOY_BUCKET }}/${{ env.BUNDLE_KEY }}
-
-      - name: Create CodeDeploy deployment (prod)
-        run: |
-          DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name ${{ secrets.NODE_CODEDEPLOY_APP_NAME }} \
-            --deployment-group-name ${{ secrets.NODE_CODEDEPLOY_PROD_DG }} \
-            --s3-location bucket=${{ env.CODEDEPLOY_BUCKET }},key=${{ env.BUNDLE_KEY }},bundleType=zip \
-            --description "Deploy ${{ github.sha }}" \
-            --query 'deploymentId' \
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-node" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "cd /opt/mandapmaps/repo",
+              "git pull origin master",
+              "rsync -a --delete backend/ /opt/mandapmaps/prod/",
+              "cd /opt/mandapmaps/prod && npm ci --omit=dev",
+              "systemctl restart mandapmaps-prod"
+            ]' \
+            --timeout-seconds 300 \
+            --comment "Deploy ${{ github.sha }}" \
+            --query 'Command.CommandId' \
             --output text)
-          echo "Deployment ID: $DEPLOYMENT_ID"
-          aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          for i in $(seq 1 30); do
+            sleep 10
+            STATUSES=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --region "$AWS_REGION" \
+              --query 'CommandInvocations[*].Status' \
+              --output text)
+            echo "Status: $STATUSES"
+            if echo "$STATUSES" | grep -qiE "Failed|Cancelled|TimedOut"; then
+              echo "Deployment failed"
+              exit 1
+            fi
+            if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
+              echo "Deployment successful"
+              exit 0
+            fi
+          done
+          echo "Timed out waiting for SSM command"
+          exit 1
 
   deploy-chatbot:
-    name: Deploy Python chatbot via CodeDeploy
+    name: Deploy Python chatbot via SSM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Package chatbot
+      - name: Deploy to Python ASG via SSM
         run: |
-          BUNDLE_KEY="python/chatbot-${{ github.sha }}.zip"
-          cd chatbot
-          zip -r /tmp/chatbot.zip . \
-            --exclude "*.env" \
-            --exclude "__pycache__/*" \
-            --exclude "*.pyc" \
-            --exclude ".ruff_cache/*" \
-            --exclude "app/data/faiss_index/*" \
-            --exclude ".DS_Store"
-          echo "BUNDLE_KEY=$BUNDLE_KEY" >> $GITHUB_ENV
-
-      - name: Upload bundle to S3
-        run: |
-          aws s3 cp /tmp/chatbot.zip \
-            s3://${{ env.CODEDEPLOY_BUCKET }}/${{ env.BUNDLE_KEY }}
-
-      - name: Create CodeDeploy deployment
-        run: |
-          DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name ${{ secrets.PYTHON_CODEDEPLOY_APP_NAME }} \
-            --deployment-group-name ${{ secrets.PYTHON_CODEDEPLOY_DG }} \
-            --s3-location bucket=${{ env.CODEDEPLOY_BUCKET }},key=${{ env.BUNDLE_KEY }},bundleType=zip \
-            --description "Deploy ${{ github.sha }}" \
-            --query 'deploymentId' \
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-python" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "cd /opt/mandapmaps/repo",
+              "git pull origin master",
+              "rsync -a --delete chatbot/ /opt/mandapmaps/python/",
+              "pip3 install -r /opt/mandapmaps/python/requirements.txt --quiet",
+              "systemctl restart mandapmaps-chatbot"
+            ]' \
+            --timeout-seconds 300 \
+            --comment "Deploy ${{ github.sha }}" \
+            --query 'Command.CommandId' \
             --output text)
-          echo "Deployment ID: $DEPLOYMENT_ID"
-          aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          for i in $(seq 1 30); do
+            sleep 10
+            STATUSES=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --region "$AWS_REGION" \
+              --query 'CommandInvocations[*].Status' \
+              --output text)
+            echo "Status: $STATUSES"
+            if echo "$STATUSES" | grep -qiE "Failed|Cancelled|TimedOut"; then
+              echo "Deployment failed"
+              exit 1
+            fi
+            if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
+              echo "Deployment successful"
+              exit 0
+            fi
+          done
+          echo "Timed out waiting for SSM command"
+          exit 1

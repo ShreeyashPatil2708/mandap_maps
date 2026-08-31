@@ -4,7 +4,7 @@ variable "name_prefix" {
 }
 
 variable "region" {
-  description = "AWS region -- used in CodeDeploy agent install URL"
+  description = "AWS region"
   type        = string
 }
 
@@ -52,23 +52,8 @@ variable "node_prod_tg_arn" {
   type        = string
 }
 
-variable "node_prod_tg_name" {
-  description = "NLB target group name for Node prod -- used by CodeDeploy"
-  type        = string
-}
-
 variable "node_dev_tg_arn" {
   description = "NLB target group ARN for Node dev (port 3001)"
-  type        = string
-}
-
-variable "node_dev_tg_name" {
-  description = "NLB target group name for Node dev -- used by CodeDeploy"
-  type        = string
-}
-
-variable "codedeploy_role_arn" {
-  description = "CodeDeploy service role ARN"
   type        = string
 }
 

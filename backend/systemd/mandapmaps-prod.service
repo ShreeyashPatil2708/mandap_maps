@@ -9,7 +9,7 @@ User=ec2-user
 WorkingDirectory=/opt/mandapmaps/prod
 Environment=NODE_ENV=production
 Environment=PORT=3000
-Environment=AWS_REGION=ap-south-1
+Environment=AWS_REGION=us-east-1
 Environment=DB_SECRET_ID=mandapmaps-prod/database
 Environment=PGSSL=true
 Environment=REDIS_URL=redis://localhost:6379

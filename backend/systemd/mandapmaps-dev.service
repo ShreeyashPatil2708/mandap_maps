@@ -9,7 +9,7 @@ User=ec2-user
 WorkingDirectory=/opt/mandapmaps/dev
 Environment=NODE_ENV=production
 Environment=PORT=3001
-Environment=AWS_REGION=ap-south-1
+Environment=AWS_REGION=us-east-1
 Environment=DB_SECRET_ID=mandapmaps-prod/database
 # Override PGDATABASE before loadSecrets runs so the dev DB is used
 Environment=PGDATABASE=mandapmaps_dev

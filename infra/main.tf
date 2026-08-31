@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.9"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -105,12 +105,9 @@ module "asg_node" {
   private_app_subnet_ids     = module.vpc.private_app_subnet_ids
   node_sg_id                 = module.security_groups.node_sg_id
   node_instance_profile_name = module.iam.node_ec2_instance_profile_name
-  codedeploy_role_arn        = module.iam.codedeploy_role_arn
 
-  node_prod_tg_arn  = module.nlb.node_prod_tg_arn
-  node_prod_tg_name = module.nlb.node_prod_tg_name
-  node_dev_tg_arn   = module.nlb.node_dev_tg_arn
-  node_dev_tg_name  = module.nlb.node_dev_tg_name
+  node_prod_tg_arn = module.nlb.node_prod_tg_arn
+  node_dev_tg_arn  = module.nlb.node_dev_tg_arn
 }
 
 module "rds" {
@@ -132,10 +129,8 @@ module "asg_python" {
   python_sg_id                 = module.security_groups.python_sg_id
   python_instance_profile_name = module.iam.python_ec2_instance_profile_name
   faiss_bucket_name            = local.faiss_bucket_name
-  codedeploy_role_arn          = module.iam.codedeploy_role_arn
 
-  python_tg_arn  = module.nlb.python_tg_arn
-  python_tg_name = module.nlb.python_tg_name
+  python_tg_arn = module.nlb.python_tg_arn
 }
 
 module "cloudwatch" {

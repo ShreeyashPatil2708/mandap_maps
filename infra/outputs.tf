@@ -63,31 +63,6 @@ output "db_secret_name" {
   value       = module.rds.db_secret_name
 }
 
-output "python_codedeploy_app_name" {
-  description = "CodeDeploy app name for Python -- set as GH Actions secret"
-  value       = module.asg_python.codedeploy_app_name
-}
-
-output "python_codedeploy_dg" {
-  description = "CodeDeploy deployment group name for Python -- set as GH Actions secret"
-  value       = module.asg_python.codedeploy_dg_name
-}
-
-output "node_codedeploy_app_name" {
-  description = "CodeDeploy app name for Node.js -- set as GH Actions secret"
-  value       = module.asg_node.codedeploy_app_name
-}
-
-output "node_codedeploy_prod_dg" {
-  description = "CodeDeploy prod deployment group name -- set as GH Actions secret"
-  value       = module.asg_node.codedeploy_prod_dg_name
-}
-
-output "node_codedeploy_dev_dg" {
-  description = "CodeDeploy dev deployment group name -- set as GH Actions secret"
-  value       = module.asg_node.codedeploy_dev_dg_name
-}
-
 output "api_endpoint" {
   description = "API Gateway invoke URL -- frontend calls this for all /api/* and /ai/* requests"
   value       = module.api_gateway.api_endpoint

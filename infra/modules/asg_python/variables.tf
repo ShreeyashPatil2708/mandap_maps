@@ -4,7 +4,7 @@ variable "name_prefix" {
 }
 
 variable "region" {
-  description = "AWS region -- used in CodeDeploy agent install URL and S3 sync"
+  description = "AWS region -- used in S3 sync for FAISS index"
   type        = string
 }
 
@@ -54,16 +54,6 @@ variable "faiss_bucket_name" {
 
 variable "python_tg_arn" {
   description = "NLB target group ARN for Python FastAPI (port 8000)"
-  type        = string
-}
-
-variable "python_tg_name" {
-  description = "NLB target group name for Python -- used by CodeDeploy"
-  type        = string
-}
-
-variable "codedeploy_role_arn" {
-  description = "CodeDeploy service role ARN"
   type        = string
 }
 
