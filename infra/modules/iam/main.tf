@@ -1,11 +1,6 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-locals {
-  github_repo_owner = split("/", var.github_repo)[0]
-  github_repo_name  = split("/", var.github_repo)[1]
-}
-
 # --- GitHub Actions OIDC ---
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -35,15 +30,12 @@ resource "aws_iam_role" "github_actions" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:aud"        = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:repository" = var.github_repo
+          "token.actions.githubusercontent.com:ref"        = "refs/heads/master"
         }
         StringLike = {
-          # Any branch/ref in this repo only -- support both legacy and ID-based
-          # subject formats from GitHub OIDC tokens.
-          "token.actions.githubusercontent.com:sub" = [
-            "repo:${var.github_repo}:*",
-            "repo:${local.github_repo_owner}@*/${local.github_repo_name}@*:*",
-          ]
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
         }
       }
     }]
