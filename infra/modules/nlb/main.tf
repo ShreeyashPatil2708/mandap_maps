@@ -13,6 +13,12 @@ resource "aws_lb" "main" {
   subnets            = var.private_app_subnet_ids
   security_groups    = [var.nlb_sg_id]
 
+  # The NLB spans both app-subnet AZs, but the ASG often runs a single instance
+  # (off-season min = 1) that lives in just one AZ. NLB cross-zone is OFF by
+  # default, so the node in the empty AZ black-holes requests -> ~10s timeout ->
+  # API Gateway 503. Enabling cross-zone lets every NLB node reach the target.
+  enable_cross_zone_load_balancing = true
+
   enable_deletion_protection = false
 
   tags = var.tags

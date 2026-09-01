@@ -9,5 +9,8 @@ SECRET=$(aws secretsmanager get-secret-value \
 
 export GROQ_API_KEY=$(echo "$SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['groq_api_key'])")
 export POSTGRES_URL=$(echo "$SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['postgres_url'])")
+# Gate /api/ingest. Use .get so a secret that predates this key still boots
+# (the app treats ingest as open then, but the gateway never routes to it).
+export INGEST_API_KEY=$(echo "$SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ingest_api_key',''))")
 
 exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
