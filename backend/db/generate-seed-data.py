@@ -2,11 +2,15 @@
 """Generate backend/db/seed-data.json from the two source spreadsheets.
 
 Reads:
-  data/MandapMaps_Ganpati_Data_2026.xlsx  (main record per Ganpati)
-  data/MandapMaps_Metro_Food_2026.xlsx    (metro + food companion, joined by ID)
+  data/MandapMaps_Ganpati_Final_2026.xlsx    (main record per Ganpati)
+  data/MandapMaps_Metro_Food_Final_2026.xlsx  (metro + food companion, joined by ID)
 
 Writes:
   backend/db/seed-data.json  (one object per Ganpati, matching the seed columns)
+
+The editorial fields did_you_know and data_verified live only in the seed JSON
+(not the spreadsheets); this script preserves them across regenerations by
+merging the previous seed-data.json on name_english.
 
 Requires openpyxl:  pip install openpyxl
 The spreadsheets and the generated JSON are the private dataset and are
@@ -19,19 +23,26 @@ from pathlib import Path
 import openpyxl
 
 ROOT = Path(__file__).resolve().parents[2]
-MAIN_XLSX = ROOT / "data" / "MandapMaps_Ganpati_Data_2026.xlsx"
-COMPANION_XLSX = ROOT / "data" / "MandapMaps_Metro_Food_2026.xlsx"
+MAIN_XLSX = ROOT / "data" / "MandapMaps_Ganpati_Final_2026.xlsx"
+COMPANION_XLSX = ROOT / "data" / "MandapMaps_Metro_Food_Final_2026.xlsx"
 OUT = ROOT / "backend" / "db" / "seed-data.json"
 
 
+PLACEHOLDER_PREFIXES = ("TO ADD", "TO UPDATE", "TO CONFIRM", "TBD", "N/A", "???")
+
+
 def clean(v):
-    """Trim strings; treat blanks and 'TO ADD'/'TO UPDATE' placeholders as None."""
+    """Trim strings; treat blanks and unverified placeholders as None.
+
+    Any cell starting with one of PLACEHOLDER_PREFIXES (e.g. 'TO CONFIRM ...')
+    is an unverified/pending value in the source sheet and must not reach users.
+    """
     if v is None:
         return None
     s = str(v).strip()
     if not s:
         return None
-    if s.upper().startswith(("TO ADD", "TO UPDATE", "TBD", "N/A")):
+    if s.upper().startswith(PLACEHOLDER_PREFIXES):
         return None
     return s
 
@@ -75,10 +86,20 @@ def col(index_map, prefix):
 EM_DASH = "\u2014"  # spreadsheet uses U+2014 as the food-cell field separator
 
 
+def is_no_metro(station):
+    """True for the sheet's 'no nearby metro' sentinels (outer-Pune / pilgrimage
+    pandals), so they are not emitted as bogus stations. Covers '-', em dashes,
+    'No metro yet', 'No metro nearby - auto/cab recommended', etc."""
+    s = station.strip().strip("-").strip(EM_DASH).strip()
+    return not s or s.lower().startswith("no metro")
+
+
 def parse_metro(station, walk):
-    """'Kasba Peth (Purple Line)' + '~5 min walk' -> {name, line, dist}."""
+    """'Kasba Peth (Purple Line)' + '~5 min walk' -> {name, line, dist}.
+
+    Returns None for blank/placeholder cells and for 'no metro' sentinels."""
     station = clean(station)
-    if station is None:
+    if station is None or is_no_metro(station):
         return None
     m = re.match(r"^(.*?)\s*\((.*)\)\s*$", station)
     if m:
@@ -107,7 +128,28 @@ def parse_food(cell):
     return {"name": parts[0], "type": None, "dist": None}
 
 
+def load_editorial(path):
+    """Preserve hand-authored did_you_know / data_verified from a prior seed.
+
+    These fields are not in the spreadsheets, so read them back from the
+    existing seed-data.json (keyed by name_english) before it is overwritten.
+    """
+    if not path.exists():
+        return {}
+    prior = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        r["name_english"]: {
+            "did_you_know": r.get("did_you_know"),
+            "data_verified": bool(r.get("data_verified", False)),
+        }
+        for r in prior
+        if r.get("name_english")
+    }
+
+
 def main():
+    editorial = load_editorial(OUT)
+
     m_hdr, m_rows = rows_of(MAIN_XLSX, "Pune Ganpati 2026")
     c_hdr, c_rows = rows_of(COMPANION_XLSX, "MandapMaps Companion")
 
@@ -128,6 +170,9 @@ def main():
         tags_raw = clean(r[mi["Tags (app filters)"]]) or ""
         tags = [t.strip() for t in tags_raw.split("|") if t.strip()]
 
+        name_english = clean(r[mi["Name (English)"]])
+        edit = editorial.get(name_english, {})
+
         metro, food, gmaps = [], [], None
         if comp is not None:
             for s, w in (("Nearest Metro Station 1 (Line)", "Approx Walk from Metro 1"),
@@ -142,7 +187,7 @@ def main():
             gmaps = clean(comp[ci["Google Maps Link (Pandal / Temple)"]])
 
         records.append({
-            "name_english": clean(r[mi["Name (English)"]]),
+            "name_english": name_english,
             "name_marathi": clean(r[mi["Name (Marathi)"]]),
             "manacha_number": manacha_number,
             "tier": tier,
@@ -166,6 +211,8 @@ def main():
             "metro": metro,
             "food": food,
             "is_manacha": manacha_number is not None,
+            "data_verified": edit.get("data_verified", False),
+            "did_you_know": edit.get("did_you_know"),
         })
 
     OUT.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

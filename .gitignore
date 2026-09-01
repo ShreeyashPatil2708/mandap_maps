@@ -60,6 +60,9 @@ backend/db/seed-data.json
 # the shape so a fresh clone still runs with placeholder data.
 chatbot/seed-data.json
 
+# Local prod-data deploy helper (references account/bucket names; not for the public repo)
+deploy-data.sh
+
 # Python (chatbot FastAPI service)
 venv/
 .venv/

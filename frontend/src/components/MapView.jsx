@@ -2,13 +2,15 @@ import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Pune city centre and a generous greater-Pune bound. The map is locked to this
-// box (and a zoom floor) so only a small, bounded set of OSM tiles ever loads,
-// and users can't drift off to the rest of the world.
+// Pune city centre and a Pune-district bound. The box is wide enough to hold the
+// Ashtavinayak temples and pilgrimage towns (Lenyadri/Ozar to the north, Morgaon/
+// Jejuri to the south-east) as well as the city, but still locked to the district
+// so only a bounded set of OSM tiles ever loads and users can't drift off to the
+// rest of the world. The map still opens centred and zoomed on the city.
 const PUNE_CENTRE = [18.5204, 73.8567];
 const PUNE_BOUNDS = [
-  [18.3, 73.6],
-  [18.75, 74.05],
+  [18.15, 73.35],
+  [19.3, 74.45],
 ];
 
 // A maroon teardrop pin with a gold centre, built as a divIcon so we avoid
@@ -42,8 +44,8 @@ export default function MapView({ ganpatis }) {
     <div className="overflow-hidden rounded-card border border-maroon/[0.08]">
       <MapContainer
         center={PUNE_CENTRE}
-        zoom={13}
-        minZoom={11}
+        zoom={12}
+        minZoom={9}
         maxZoom={18}
         maxBounds={PUNE_BOUNDS}
         maxBoundsViscosity={1}
