@@ -13,6 +13,11 @@ variable "acm_certificate_arn" {
   type        = string
 }
 
+variable "api_gateway_domain" {
+  description = "API Gateway domain (host only, no scheme) used as the /api/* origin"
+  type        = string
+}
+
 variable "frontend_bucket_id" {
   description = "Frontend S3 bucket name"
   type        = string

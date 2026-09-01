@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
-from app.core import memory
 from app.core.limiter import limiter
 from app.core.rag_pipeline import answer_query, stream_answer
 from app.models.schemas import ChatRequest, ChatResponse
@@ -45,14 +44,3 @@ async def chat_stream(request: Request, payload: ChatRequest):
             yield "\n[Chat service is temporarily unavailable.]"
 
     return StreamingResponse(event_generator(), media_type="text/plain")
-
-
-@router.delete("/{session_id}")
-async def clear_session(session_id: str):
-    await memory.clear_history(session_id)
-    return {"status": "cleared", "session_id": session_id}
-
-
-@router.get("/{session_id}/history")
-async def get_session_history(session_id: str):
-    return {"session_id": session_id, "history": await memory.get_history(session_id)}
