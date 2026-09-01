@@ -130,12 +130,12 @@ resource "aws_launch_template" "python" {
 }
 
 resource "aws_autoscaling_group" "python" {
-  name                      = "${var.name_prefix}-asg-python"
-  min_size                  = var.min_size
-  max_size                  = var.max_size
-  desired_capacity          = var.desired_capacity
-  vpc_zone_identifier       = var.private_app_subnet_ids
-  health_check_type = "ELB"
+  name                = "${var.name_prefix}-asg-python"
+  min_size            = var.min_size
+  max_size            = var.max_size
+  desired_capacity    = var.desired_capacity
+  vpc_zone_identifier = var.private_app_subnet_ids
+  health_check_type   = "ELB"
   # Long grace: the instance provisions on boot (dnf update, torch CPU wheel,
   # sentence-transformers, faiss, psycopg2 build), which takes many minutes. A
   # short grace kills the instance before the service starts, causing an endless

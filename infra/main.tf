@@ -163,12 +163,13 @@ module "cloudfront" {
   tags        = local.common_tags
 
   acm_certificate_arn = module.acm.certificate_arn
+  api_gateway_domain  = module.api_gateway.api_domain
 
-  frontend_bucket_id             = module.s3.frontend_bucket_id
-  frontend_bucket_arn            = module.s3.frontend_bucket_arn
+  frontend_bucket_id              = module.s3.frontend_bucket_id
+  frontend_bucket_arn             = module.s3.frontend_bucket_arn
   frontend_bucket_regional_domain = module.s3.frontend_bucket_regional_domain
 
-  media_bucket_id             = module.s3.media_bucket_id
-  media_bucket_arn            = module.s3.media_bucket_arn
+  media_bucket_id              = module.s3.media_bucket_id
+  media_bucket_arn             = module.s3.media_bucket_arn
   media_bucket_regional_domain = module.s3.media_bucket_regional_domain
 }

@@ -10,6 +10,17 @@ data "aws_cloudfront_cache_policy" "caching_optimized" {
   name = "Managed-CachingOptimized"
 }
 
+# API responses must never be cached at the edge, and the origin request must
+# forward the viewer's query string/headers/cookies while letting CloudFront set
+# the Host to the API Gateway domain (AllViewerExceptHostHeader).
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 resource "aws_cloudfront_origin_access_control" "frontend" {
   name                              = "${var.name_prefix}-oac-frontend"
   origin_access_control_origin_type = "s3"
@@ -37,6 +48,20 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
   }
 
+  # API Gateway origin so same-origin /api/* calls from the SPA reach the backend
+  # instead of falling through to the S3 index.html (SPA fallback).
+  origin {
+    domain_name = var.api_gateway_domain
+    origin_id   = "api-gateway"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   default_cache_behavior {
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
@@ -44,6 +69,19 @@ resource "aws_cloudfront_distribution" "frontend" {
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+  }
+
+  # /api/* -> API Gateway (Node data API + Python chatbot at /api/chat). No edge
+  # caching; all HTTP methods allowed so POST/DELETE chat requests pass through.
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    target_origin_id         = "api-gateway"
+    viewer_protocol_policy   = "redirect-to-https"
+    compress                 = true
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
   # SPA routing: 403/404 from S3 → serve index.html so React Router handles the path

@@ -52,15 +52,25 @@ resource "aws_apigatewayv2_integration" "python" {
   connection_id      = aws_apigatewayv2_vpc_link.main.id
 }
 
+# The Python chatbot serves its routes under /api/chat (see chatbot/app/api/chat.py
+# and the Vite dev proxy in frontend/vite.config.js). More specific routes win in
+# HTTP APIs, so /api/chat and /api/chat/{proxy+} go to Python while every other
+# /api/* path falls through to Node.
 resource "aws_apigatewayv2_route" "node" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "ANY /api/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.node.id}"
 }
 
-resource "aws_apigatewayv2_route" "python" {
+resource "aws_apigatewayv2_route" "python_chat" {
   api_id    = aws_apigatewayv2_api.main.id
-  route_key = "ANY /ai/{proxy+}"
+  route_key = "ANY /api/chat"
+  target    = "integrations/${aws_apigatewayv2_integration.python.id}"
+}
+
+resource "aws_apigatewayv2_route" "python_chat_proxy" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "ANY /api/chat/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.python.id}"
 }
 
@@ -72,12 +82,12 @@ resource "aws_apigatewayv2_stage" "default" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api.arn
     format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      httpMethod     = "$context.httpMethod"
-      routeKey       = "$context.routeKey"
-      status         = "$context.status"
-      responseLength = "$context.responseLength"
+      requestId        = "$context.requestId"
+      ip               = "$context.identity.sourceIp"
+      httpMethod       = "$context.httpMethod"
+      routeKey         = "$context.routeKey"
+      status           = "$context.status"
+      responseLength   = "$context.responseLength"
       integrationError = "$context.integrationErrorMessage"
     })
   }

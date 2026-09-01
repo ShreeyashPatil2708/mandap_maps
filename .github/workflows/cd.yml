@@ -29,7 +29,9 @@ jobs:
       - name: Build
         run: npm run build --workspace frontend
         env:
-          VITE_API_BASE_URL: ""
+          # Empty -> the SPA calls /api/* same-origin; CloudFront routes it to
+          # API Gateway. The code reads VITE_API_URL (see frontend/src/services).
+          VITE_API_URL: ""
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

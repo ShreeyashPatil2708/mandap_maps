@@ -121,12 +121,12 @@ resource "aws_launch_template" "node" {
 }
 
 resource "aws_autoscaling_group" "node" {
-  name                      = "${var.name_prefix}-asg-node"
-  min_size                  = var.min_size
-  max_size                  = var.max_size
-  desired_capacity          = var.desired_capacity
-  vpc_zone_identifier       = var.private_app_subnet_ids
-  health_check_type = "ELB"
+  name                = "${var.name_prefix}-asg-node"
+  min_size            = var.min_size
+  max_size            = var.max_size
+  desired_capacity    = var.desired_capacity
+  vpc_zone_identifier = var.private_app_subnet_ids
+  health_check_type   = "ELB"
   # Long grace: the instance provisions on boot (dnf update, Node install,
   # npm ci), which takes several minutes. A short grace kills the instance
   # before the service starts, causing an endless replace loop.
