@@ -40,7 +40,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
   aliases             = [var.domain_name, "www.${var.domain_name}"]
-  price_class         = "PriceClass_All"
+  price_class         = "PriceClass_200"
 
   origin {
     domain_name              = var.frontend_bucket_regional_domain
@@ -118,7 +118,7 @@ resource "aws_cloudfront_distribution" "media" {
   enabled         = true
   is_ipv6_enabled = true
   aliases         = ["media.${var.domain_name}"]
-  price_class     = "PriceClass_All"
+  price_class     = "PriceClass_200"
 
   origin {
     domain_name              = var.media_bucket_regional_domain

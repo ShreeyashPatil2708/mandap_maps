@@ -36,3 +36,15 @@ variable "domain_name" {
   type        = string
   default     = "mandapmaps.in"
 }
+
+variable "monthly_budget_usd" {
+  description = "Monthly AWS budget in USD -- triggers email alerts at 80% actual / 100% forecast"
+  type        = string
+  default     = "120"
+}
+
+variable "budget_alert_email" {
+  description = "Email address that receives AWS Budgets alerts"
+  type        = string
+  default     = "patilshreeyash2708@gmail.com"
+}

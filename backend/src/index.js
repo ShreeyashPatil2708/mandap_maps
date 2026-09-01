@@ -18,6 +18,13 @@ async function createApp() {
 
   const app = express();
 
+  // Behind CloudFront -> API Gateway, so the socket IP is an AWS hop, not the
+  // visitor. Trust two proxy hops so req.ip resolves to the real client from
+  // X-Forwarded-For; without this the rate limiter buckets every visitor under
+  // one shared upstream IP. A fixed count (not `true`) stops a client-supplied
+  // XFF header from spoofing the key.
+  app.set('trust proxy', 2);
+
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(express.json());
@@ -29,8 +36,9 @@ async function createApp() {
     .filter(Boolean);
   app.use(cors({ origin: origins.length ? origins : true }));
 
-  // Rate limit (architecture target: 1000 req/min per IP). API Gateway also
-  // enforces this in prod; this is defence in depth.
+  // Rate limit per client IP (architecture target: 1000 req/min). With
+  // `trust proxy` set above, the default keyGenerator (req.ip) resolves to the
+  // real visitor. API Gateway also throttles at the edge; this is defence in depth.
   app.use(
     rateLimit({
       windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,

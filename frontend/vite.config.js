@@ -23,6 +23,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // No source maps in the prod bundle: they expose readable source on the
+    // public CDN and add transfer/storage. Flip to true locally when debugging.
+    sourcemap: false,
   },
 });

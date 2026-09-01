@@ -79,6 +79,13 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
+  # Edge backstop against abuse/cost spikes, independent of the app-layer limiter.
+  # Applies to every route; burst is the token-bucket ceiling, rate the steady state.
+  default_route_settings {
+    throttling_burst_limit = 200
+    throttling_rate_limit  = 100
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api.arn
     format = jsonencode({
