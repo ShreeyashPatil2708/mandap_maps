@@ -35,6 +35,8 @@ docker compose up -d
 cd backend
 cp .env.example .env        # fill in values if needed; defaults work for local dev
 npm install
+npm run migrate             # apply schema to Postgres (one-time)
+npm run seed                # load pandal data into the DB (one-time, needs seed-data.json)
 npm run dev                 # starts on http://localhost:4000
 ```
 
@@ -94,6 +96,3 @@ The Vite dev server proxies:
 The Ganpati dataset (`seed-data.json`) is private and shared by hand, so it is
 not committed to this repo. The chatbot ships a `seed-data.example.json` you can
 use to test the pipeline without the real dataset.
-test
-test
-2test
