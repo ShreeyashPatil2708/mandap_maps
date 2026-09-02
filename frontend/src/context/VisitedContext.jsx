@@ -19,7 +19,7 @@ export function VisitedProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...visited]));
-    } catch (_e) {
+    } catch {
       // localStorage may be unavailable (private browsing, quota exceeded)
     }
   }, [visited]);
