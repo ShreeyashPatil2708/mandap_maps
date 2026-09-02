@@ -75,6 +75,7 @@ jobs:
               "git config --system --add safe.directory /opt/mandapmaps/repo",
               "cd /opt/mandapmaps/repo",
               "git pull origin master",
+              "rm -rf node_modules",
               "npm ci --omit=dev",
               "systemctl restart mandapmaps-prod"
             ]' \
