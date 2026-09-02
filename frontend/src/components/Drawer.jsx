@@ -1,6 +1,6 @@
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
 // stopped so they don't bubble to the backdrop.
-export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPrivacy, onSupport }) {
+export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSaved, savedCount, onPrivacy, onSupport }) {
   if (!open) return null;
 
   const link =
@@ -33,6 +33,14 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPr
           </div>
           <div className={link} onClick={onRoute}>
             Plan Route
+          </div>
+          <div className={`${link} flex items-center justify-between`} onClick={onSaved}>
+            <span>Saved</span>
+            {savedCount > 0 && (
+              <span className="rounded-badge bg-gold px-2 py-0.5 font-sans text-[10px] font-semibold text-maroon">
+                {savedCount}
+              </span>
+            )}
           </div>
           <div className="mt-auto pt-6">
             <div

@@ -144,6 +144,20 @@ export function AskNavIcon({ color, fill }) {
   );
 }
 
+export function BookmarkIcon({ filled = false, size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+      <path
+        d="M4 2.5h10a.5.5 0 0 1 .5.5v12l-5.5-3-5.5 3V3a.5.5 0 0 1 .5-.5z"
+        fill={filled ? '#C9A84C' : 'none'}
+        stroke={filled ? '#C9A84C' : 'currentColor'}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function RouteNavIcon({ color, fill }) {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">

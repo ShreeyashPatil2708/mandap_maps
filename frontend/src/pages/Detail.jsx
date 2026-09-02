@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { manachaBadge } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
-import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
+import { useSaved } from '../context/SavedContext.jsx';
+import { OmMark, MetroIcon, FoodIcon, ParkingIcon, BookmarkIcon } from '../components/icons.jsx';
 
 const TABS = [
   { key: 'history', label: 'History' },
@@ -77,8 +78,22 @@ function NearbyGroup({ icon, title, children }) {
 export default function Detail({ ganpati, prevPage, onBack }) {
   const [tab, setTab] = useState('history');
   const [toast, setToast] = useState(false);
+  const [saveToast, setSaveToast] = useState(null);
   const { route, addToRoute, removeFromRoute } = useRoute();
+  const { saved, saveGanpati, unsaveGanpati } = useSaved();
   const inRoute = route.includes(ganpati.id);
+  const isSaved = saved.has(ganpati.id);
+
+  const onToggleSave = () => {
+    if (isSaved) {
+      unsaveGanpati(ganpati.id);
+      setSaveToast('Removed from saved');
+    } else {
+      saveGanpati(ganpati.id);
+      setSaveToast('Saved');
+    }
+    setTimeout(() => setSaveToast(null), 2000);
+  };
   const backLabel = prevPage === 'home' ? '← Back to Home' : '← Back to Explore';
   // Closest metro station for the "Getting There" tab (first of the list).
   const metro = ganpati.metro?.[0];
@@ -107,6 +122,14 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           ॐ
         </div>
         <OmMark size={56} textSize={18} opacity={0.4} />
+        <button
+          onClick={onToggleSave}
+          aria-label={isSaved ? 'Remove from saved' : 'Save pandal'}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-cream/15 backdrop-blur-sm transition-all hover:bg-cream/25"
+          style={{ color: isSaved ? '#C9A84C' : 'rgba(237,228,208,0.7)' }}
+        >
+          <BookmarkIcon filled={isSaved} size={18} />
+        </button>
       </div>
 
       {/* Name & info */}
@@ -246,11 +269,20 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         )}
       </div>
 
-      {/* Toast */}
+      {/* Route toast */}
       {toast && (
         <div className="fixed inset-x-0 bottom-[calc(150px_+_env(safe-area-inset-bottom))] z-[60] flex justify-center px-gutter">
           <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
             Added to your route
+          </div>
+        </div>
+      )}
+
+      {/* Save toast */}
+      {saveToast && (
+        <div className="fixed inset-x-0 bottom-[calc(170px_+_env(safe-area-inset-bottom))] z-[60] flex justify-center px-gutter">
+          <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
+            {saveToast}
           </div>
         </div>
       )}
