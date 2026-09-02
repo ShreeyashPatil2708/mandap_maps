@@ -19,7 +19,9 @@ export function VisitedProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...visited]));
-    } catch {}
+    } catch (_e) {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+    }
   }, [visited]);
 
   const markVisited = useCallback(
