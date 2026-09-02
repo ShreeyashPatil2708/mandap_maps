@@ -1,7 +1,8 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
+import { useSaved } from '../context/SavedContext.jsx';
 import { manachaBadge, distanceKm, formatDistance } from '../data/helpers.js';
-import { OmMark, SearchIcon } from '../components/icons.jsx';
+import { OmMark, SearchIcon, BookmarkIcon } from '../components/icons.jsx';
 
 // The map bundles Leaflet, so load it only when the user opens the map view.
 const MapView = lazy(() => import('../components/MapView.jsx'));
@@ -58,7 +59,7 @@ function buildFilters(ganpatis) {
 }
 
 // Grid card for the Explore results. Shows a distance line when Near Me is on.
-function GanpatiCard({ g, dist, onOpen }) {
+function GanpatiCard({ g, dist, onOpen, isSaved, onToggleSave }) {
   return (
     <div
       className="cursor-pointer overflow-hidden rounded-card border border-maroon/[0.06] bg-surface transition-all hover:border-gold/40 hover:shadow-[0_2px_12px_rgba(107,30,46,0.08)]"
@@ -72,10 +73,18 @@ function GanpatiCard({ g, dist, onOpen }) {
           </div>
         )}
         {dist != null && (
-          <div className="absolute right-2 top-2 rounded-badge bg-cream/90 px-1.5 py-0.5 font-sans text-[9px] font-semibold text-maroon">
+          <div className="absolute right-2 bottom-2 rounded-badge bg-cream/90 px-1.5 py-0.5 font-sans text-[9px] font-semibold text-maroon">
             {formatDistance(dist)}
           </div>
         )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSave(); }}
+          aria-label={isSaved ? 'Remove from saved' : 'Save pandal'}
+          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-maroon/40 transition-all hover:bg-maroon/60"
+          style={{ color: isSaved ? '#C9A84C' : 'rgba(237,228,208,0.6)' }}
+        >
+          <BookmarkIcon filled={isSaved} size={13} />
+        </button>
       </div>
       <div className="px-3.5 py-3">
         <div className="mb-0.5 font-serif text-sm leading-[1.3] text-maroon">{g.name}</div>
@@ -119,6 +128,7 @@ function ViewToggle({ view, onView }) {
 
 export default function Explore({ query, onQuery, activeFilter, onFilter, onOpenGanpati }) {
   const { ganpatis } = useGanpatis();
+  const { saved, saveGanpati, unsaveGanpati } = useSaved();
   const [view, setView] = useState('grid');
   const [nearMe, setNearMe] = useState(false);
   const [userPos, setUserPos] = useState(null);
@@ -271,7 +281,14 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
         ) : count > 0 ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-3.5">
             {results.map(({ g, dist }) => (
-              <GanpatiCard key={g.id} g={g} dist={dist} onOpen={() => onOpenGanpati(g.id)} />
+              <GanpatiCard
+                key={g.id}
+                g={g}
+                dist={dist}
+                onOpen={() => onOpenGanpati(g.id)}
+                isSaved={saved.has(g.id)}
+                onToggleSave={() => saved.has(g.id) ? unsaveGanpati(g.id) : saveGanpati(g.id)}
+              />
             ))}
           </div>
         ) : (
