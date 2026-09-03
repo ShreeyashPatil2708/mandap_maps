@@ -1,0 +1,6 @@
+- name: Docker ping demo
+  hosts: demo
+  gather_facts: false
+  tasks:
+    - name: Ping all demo containers
+      ansible.builtin.ping:
