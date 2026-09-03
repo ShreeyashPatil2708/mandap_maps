@@ -1,0 +1,121 @@
+# Docker Compose for local development with all three services containerized
+# This complements the existing docker-compose.yml (which only has Postgres + Redis)
+# Usage: docker compose -f docker-compose.containerized.yml up --build
+
+services:
+  # Frontend: React/Vite built and served by nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    depends_on:
+      - backend
+      - chatbot
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Backend: Node.js/Express API
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - AWS_REGION=us-east-1
+      - DB_SECRET_ID=mandapmaps-prod/database
+      - PGSSL=true
+      - REDIS_URL=redis://redis:6379
+      - CORS_ORIGINS=http://localhost:8080,http://localhost:5173
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX=1000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Chatbot: Python FastAPI RAG service
+  chatbot:
+    build:
+      context: .
+      dockerfile: chatbot/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - LLM_PROVIDER=groq
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=llama-3.3-70b-versatile
+      - POSTGRES_URL=postgresql://ekdanta:ekdanta@postgres:5432/ekdanta_db
+      - REDIS_URL=redis://redis:6379/0
+      - FAISS_INDEX_PATH=/app/faiss_index/index.bin
+      - FAISS_METADATA_PATH=/app/faiss_index/metadata.json
+      - ALLOWED_ORIGINS=http://localhost:8080,http://localhost:5173
+      - INGEST_API_KEY=${INGEST_API_KEY}
+      - AWS_REGION=us-east-1
+      - APP_SECRET_ID=mandapmaps-prod/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - chatbot_faiss:/app/faiss_index
+
+  # PostgreSQL (same as existing docker-compose.yml)
+  postgres:
+    image: postgres:17
+    container_name: mandapmaps-postgres
+    environment:
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+      POSTGRES_DB: ${PGDATABASE:-ekdantadb}
+    ports:
+      - "${PGPORT:-5432}:5432"
+    volumes:
+      - mandapmaps_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis (same as existing docker-compose.yml)
+  redis:
+    image: redis:7
+    container_name: mandapmaps-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mandapmaps_pgdata:
+  chatbot_faiss:
+
+networks:
+  default:
+    name: mandapmaps-containerized
