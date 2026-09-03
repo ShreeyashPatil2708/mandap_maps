@@ -1,0 +1,10 @@
+services:
+  node1:
+    image: python:3.11-slim
+    container_name: ansible_node1
+    command: tail -f /dev/null
+
+  node2:
+    image: python:3.11-slim
+    container_name: ansible_node2
+    command: tail -f /dev/null
