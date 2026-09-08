@@ -123,7 +123,8 @@ data "aws_iam_policy_document" "github_assume" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values   = compact([
-        "repo:${var.github_repo}:ref:refs/heads/master",
+        "repo:${var.github_repo}:*",
+        "repo:${lower(var.github_repo)}:*",
         var.github_oidc_sub,
       ])
     }
