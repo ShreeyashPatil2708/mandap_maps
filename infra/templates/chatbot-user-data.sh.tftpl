@@ -29,6 +29,13 @@ if [ ! -d "$REPO_DIR/.git" ]; then
 fi
 cd "$REPO_DIR/chatbot"
 git config --system --add safe.directory "$REPO_DIR"
+# Install CPU-only PyTorch first. torch is an unpinned transitive dep of
+# sentence-transformers, and pip's default wheel pulls multi-GB CUDA/GPU libs
+# (nvidia-cudnn, cuda-toolkit, ...) that overflow the disk and are useless on a
+# CPU instance. Installing the CPU build up front makes the rest resolve to it.
+python3.11 -m pip install --no-cache-dir torch \
+  --index-url https://download.pytorch.org/whl/cpu \
+  --extra-index-url https://pypi.org/simple
 python3.11 -m pip install --no-cache-dir -r requirements.txt
 
 # --- Private data: seed-data.json + prebuilt FAISS index from S3 ---
@@ -38,11 +45,27 @@ sudo -u "$APP_USER" aws s3 cp "s3://$DATA_BUCKET/chatbot/seed-data.json" "$REPO_
 sudo -u "$APP_USER" aws s3 sync "s3://$DATA_BUCKET/chatbot/faiss_index/" "$REPO_DIR/chatbot/app/data/faiss_index/" --region "$REGION" || true
 chown -R "$APP_USER:$APP_USER" "$REPO_DIR/chatbot"
 
+# Shared HuggingFace cache under the repo. systemd ProtectHome=true hides
+# /home from the service, so the embedding-model cache must live in a
+# ReadWritePath (/opt/mandapmaps/repo) the running service can actually read.
+HF_CACHE="$REPO_DIR/chatbot/.hf-cache"
+install -d -o "$APP_USER" -g "$APP_USER" "$HF_CACHE"
+
+# Self-heal: if no prebuilt index was hydrated from S3, build it from
+# seed-data.json. Embeddings run locally (sentence-transformers), so this needs
+# no API key and lets every fresh Spot instance stand up its own knowledge base.
+# Uses the shared HF cache so the model is fetched once here, not at first query.
+if [ ! -f "$REPO_DIR/chatbot/app/data/faiss_index/index.bin" ]; then
+  sudo -u "$APP_USER" env HF_HOME="$HF_CACHE" python3.11 ingest_seed_data.py
+fi
+
 # --- systemd environment ---
 cat > /etc/mandapmaps/chatbot.env <<EOF
 ENV=production
 AWS_REGION=$REGION
 LLM_PROVIDER=groq
+GROQ_MODEL=openai/gpt-oss-120b
+HF_HOME=$HF_CACHE
 DB_SECRET_ID=${db_secret_id}
 APP_SECRET_ID=${app_secret_id}
 REDIS_URL=redis://localhost:6379/0
