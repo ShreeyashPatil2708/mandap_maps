@@ -6,26 +6,16 @@ fields (lat/lng, addresses, tags) rather than an LLM-generated answer.
 Reads through app.data.loader, so it shares one dataset (seed-data.json)
 and one field mapping with the RAG ingester.
 """
-import math
-
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.config import get_settings
+from app.core.geo import haversine_km as _haversine_km
 from app.core.limiter import limiter
 from app.data.loader import get_mandals
 
 settings = get_settings()
 
 router = APIRouter(prefix="/api/mandals", tags=["mandals"])
-
-
-def _haversine_km(lat1, lng1, lat2, lng2) -> float:
-    R = 6371.0  # Earth radius in km
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lng2 - lng1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
-    return 2 * R * math.asin(math.sqrt(a))
 
 
 @router.get("")

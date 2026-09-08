@@ -11,8 +11,7 @@ import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
 import Privacy from './pages/Privacy.jsx';
-import Saved from './pages/Saved.jsx';
-import { useSaved } from './context/SavedContext.jsx';
+import { useLocationSharing } from './hooks/useLocationSharing.js';
 
 // Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
 // deep-linkable pandal URLs without pulling in a full router.
@@ -27,9 +26,9 @@ function readGanpatiParam() {
 // here so every screen stays in sync. Ganpati data is loaded once from the
 // API via GanpatisProvider and read through useGanpatis().
 export default function App() {
+  useLocationSharing();
   const { ganpatis, loading, error } = useGanpatis();
   const { route } = useRoute();
-  const { saved } = useSaved();
   const initialGanpatiId = readGanpatiParam();
   const [page, setPage] = useState(initialGanpatiId ? 'detail' : 'home');
   const [prevPage, setPrevPage] = useState('home');
@@ -56,10 +55,6 @@ export default function App() {
   };
   const goPrivacy = () => {
     setPage('privacy');
-    setShowMenu(false);
-  };
-  const goSaved = () => {
-    setPage('saved');
     setShowMenu(false);
   };
   const openGanpati = (id) => {
@@ -156,10 +151,6 @@ export default function App() {
 
       {!loading && !error && page === 'privacy' && <Privacy onBack={goHome} />}
 
-      {!loading && !error && page === 'saved' && (
-        <Saved onOpenGanpati={openGanpati} onExplore={goExplore} />
-      )}
-
       <BottomNav
         page={page}
         routeLen={route.length}
@@ -176,8 +167,6 @@ export default function App() {
         onHome={goHome}
         onExplore={goExplore}
         onRoute={goRoute}
-        onSaved={goSaved}
-        savedCount={saved.size}
         onPrivacy={goPrivacy}
         onSupport={() => {
           setShowModal(true);
@@ -190,7 +179,11 @@ export default function App() {
       {showAsk && (
         <AskSheet
           onClose={() => setShowAsk(false)}
-          ganpatiId={page === 'detail' ? selectedId : null}
+          ganpatis={ganpatis}
+          onOpenGanpati={(id) => {
+            openGanpati(id);
+            setShowAsk(false);
+          }}
         />
       )}
     </div>

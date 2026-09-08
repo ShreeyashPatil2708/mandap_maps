@@ -57,6 +57,7 @@ def _entity_registry() -> list[dict]:
             continue
         entities.append(
             {
+                "id": rec.get("id"),
                 "doc_id": slugify(name_en),
                 "name_en": name_en,
                 "name_mr": (rec.get("name_marathi") or "").strip(),

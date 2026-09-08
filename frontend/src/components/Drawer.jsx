@@ -1,10 +1,19 @@
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
 // stopped so they don't bubble to the backdrop.
-export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSaved, savedCount, onPrivacy, onSupport }) {
+export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPrivacy, onSupport }) {
   if (!open) return null;
 
   const link =
     'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
+
+  // Inside Drawer.jsx, add a labeled toggle:
+  const [sharing, setSharing] = useState(localStorage.getItem('mandapmaps.shareLocation') === 'true');
+
+  const toggleSharing = () => {
+    const next = !sharing;
+    setSharing(next);
+    localStorage.setItem('mandapmaps.shareLocation', String(next));
+  };
 
   return (
     <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
@@ -34,14 +43,6 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSa
           <div className={link} onClick={onRoute}>
             Plan Route
           </div>
-          <div className={`${link} flex items-center justify-between`} onClick={onSaved}>
-            <span>Saved</span>
-            {savedCount > 0 && (
-              <span className="rounded-badge bg-gold px-2 py-0.5 font-sans text-[10px] font-semibold text-maroon">
-                {savedCount}
-              </span>
-            )}
-          </div>
           <div className="mt-auto pt-6">
             <div
               className="cursor-pointer rounded-[10px] bg-maroon px-[18px] py-3.5 text-center"
@@ -58,6 +59,11 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onSa
             >
               Privacy
             </div>
+            // In the JSX:
+              <label className="flex items-center justify-between px-gutter py-3">
+                <span className="font-sans text-sm text-maroon">Help detect crowds (share live location)</span>
+                <input type="checkbox" checked={sharing} onChange={toggleSharing} />
+              </label>
           </div>
         </div>
       </div>

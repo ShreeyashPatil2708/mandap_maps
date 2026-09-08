@@ -133,3 +133,12 @@ export async function updateGanpati(id, patch) {
   if (rows.length === 0) return null;
   return getGanpatiById(id);
 }
+
+/** Find a Ganpati's numeric id by its exact English name (unique in the DB). */
+export async function getIdByName(nameEnglish) {
+  const { rows } = await query(
+    `SELECT id FROM ganpatis WHERE name_english = $1`,
+    [nameEnglish]
+  );
+  return rows[0]?.id ?? null;
+}

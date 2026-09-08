@@ -107,9 +107,11 @@ def _to_public(rec: dict) -> dict:
         "year": rec.get("year_established"),
         "category": rec.get("category"),
         "why_significant": rec.get("significance_short") or rec.get("idol_description"),
+        "idol_description": rec.get("idol_description"),
         "address": rec.get("mandir_address"),
         "pandal_address": rec.get("pandal_address"),
         "maps_link": rec.get("google_maps_url"),
+        "photo_url": rec.get("photo_url") or None,
         "lat": _num(rec.get("latitude")),
         "lng": _num(rec.get("longitude")),
         "morning_aarti": rec.get("morning_aarti"),
@@ -117,6 +119,7 @@ def _to_public(rec: dict) -> dict:
         "events": rec.get("special_events"),
         "tags": rec.get("tags") or [],
         "did_you_know": rec.get("did_you_know"),
+        "food": rec.get("food") or [],
     }
 
 
