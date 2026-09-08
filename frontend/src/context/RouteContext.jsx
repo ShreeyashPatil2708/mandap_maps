@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
+import { getSessionId } from '../data/session.js';
 // Shared darshan route state. The list of selected Ganpati IDs lives here so
 // the detail page (Add to Route button) and the route page stay in sync. The
 // list is persisted to localStorage so it survives a page refresh. Wire this to
@@ -28,10 +28,17 @@ export function RouteProvider({ children }) {
     }
   }, [route]);
 
-  const addToRoute = useCallback(
-    (id) => setRoute((prev) => (prev.includes(id) ? prev : [...prev, id])),
-    []
-  );
+  // ...inside RouteProvider, replace addToRoute with:
+const addToRoute = useCallback((id) => {
+  setRoute((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  fetch(`${import.meta.env.VITE_API_URL || ''}/api/ganpatis/${id}/interest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: getSessionId() }),
+  }).catch(() => {
+    /* best-effort — never block the UI on this */
+  });
+}, []);
   const removeFromRoute = useCallback(
     (id) => setRoute((prev) => prev.filter((r) => r !== id)),
     []

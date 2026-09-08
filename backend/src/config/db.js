@@ -12,13 +12,7 @@ function buildConfig() {
   const ssl = process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false;
 
   if (process.env.DATABASE_URL) {
-    // Strip any sslmode= flag from the URL: node-postgres lets a connection
-    // string's sslmode override the explicit `ssl` object, and sslmode=require
-    // forces cert verification that trips SELF_SIGNED_CERT_IN_CHAIN against
-    // RDS's CA chain. Removing it lets `ssl` (rejectUnauthorized:false) govern.
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.delete('sslmode');
-    return { connectionString: url.toString(), ssl };
+    return { connectionString: process.env.DATABASE_URL, ssl };
   }
 
   return {

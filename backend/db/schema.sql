@@ -73,3 +73,41 @@ CREATE TRIGGER ganpatis_set_updated_at
     BEFORE UPDATE ON ganpatis
     FOR EACH ROW
     EXECUTE FUNCTION set_updated_at();
+
+
+-- ─────────────────────────────────────────────────────────────
+-- Crowd reporting
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS crowd_reports (
+    id           SERIAL PRIMARY KEY,
+    ganpati_id   INTEGER     NOT NULL REFERENCES ganpatis(id) ON DELETE CASCADE,
+    level        SMALLINT    NOT NULL,   -- 1 = Low, 2 = Medium, 3 = High
+    reported_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT crowd_reports_level_chk CHECK (level IN (1, 2, 3))
+);
+
+CREATE INDEX IF NOT EXISTS crowd_reports_ganpati_time_idx
+    ON crowd_reports (ganpati_id, reported_at DESC);
+
+CREATE TABLE IF NOT EXISTS route_interest (
+    id           SERIAL PRIMARY KEY,
+    ganpati_id   INTEGER     NOT NULL REFERENCES ganpatis(id) ON DELETE CASCADE,
+    session_id   TEXT        NOT NULL,   -- random id generated client-side, not tied to any account
+    pinged_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS route_interest_ganpati_time_idx
+    ON route_interest (ganpati_id, pinged_at DESC);
+
+
+CREATE TABLE IF NOT EXISTS live_locations (
+    id          SERIAL PRIMARY KEY,
+    session_id  TEXT         NOT NULL,   -- same anonymous id from session.js (Phase 2)
+    latitude    NUMERIC(9,6) NOT NULL,
+    longitude   NUMERIC(9,6) NOT NULL,
+    pinged_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS live_locations_time_idx ON live_locations (pinged_at DESC);
+CREATE INDEX IF NOT EXISTS live_locations_session_idx ON live_locations (session_id, pinged_at DESC);

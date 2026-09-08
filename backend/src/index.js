@@ -7,6 +7,9 @@ import rateLimit from 'express-rate-limit';
 
 import { loadSecrets } from './config/secrets.js';
 import ganpatisRouter from './routes/ganpatis.js';
+import crowdRouter from './routes/crowd.js';   // add this import near the top with the others
+import locationRouter from './routes/location.js';
+import { runCrowdAggregation } from './jobs/crowdAggregator.js';
 
 /**
  * Server bootstrap. Wires up security middleware, CORS, rate limiting,
@@ -17,14 +20,6 @@ async function createApp() {
   await loadSecrets();
 
   const app = express();
-
-  // Behind Cloudflare -> ALB, so the socket IP is an AWS hop, not the visitor.
-  // Both hops append to X-Forwarded-For (client, then Cloudflare edge), so trust
-  // two proxy hops for req.ip to resolve to the real client; without this the
-  // rate limiter buckets every visitor under one shared upstream IP. A fixed
-  // count (not `true`) stops a client-supplied XFF header from spoofing the key,
-  // and the ALB only accepts traffic from Cloudflare anyway.
-  app.set('trust proxy', 2);
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -37,9 +32,8 @@ async function createApp() {
     .filter(Boolean);
   app.use(cors({ origin: origins.length ? origins : true }));
 
-  // Rate limit per client IP (architecture target: 1000 req/min). With
-  // `trust proxy` set above, the default keyGenerator (req.ip) resolves to the
-  // real visitor. Cloudflare also rate-limits at the edge; this is defence in depth.
+  // Rate limit (architecture target: 1000 req/min per IP). API Gateway also
+  // enforces this in prod; this is defence in depth.
   app.use(
     rateLimit({
       windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,
@@ -55,6 +49,11 @@ async function createApp() {
 
   app.use('/api/ganpatis', ganpatisRouter);
 
+  
+////////
+  app.use('/api/ganpatis', crowdRouter);   // handles /api/ganpatis/:id/crowd-report and /:id/crowd
+  app.use('/api/crowd', crowdRouter);      // handles /api/crowd (all levels)
+  app.use('/api/locations', locationRouter);
   // JSON error handler (keeps stack traces out of responses).
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
@@ -80,3 +79,6 @@ createApp()
     console.error('Failed to start server', err);
     process.exit(1);
   });
+  setInterval(() => {
+    runCrowdAggregation().catch((err) => console.error('crowd aggregation failed', err));
+  }, 2 * 60_000); // every 2 minutes
