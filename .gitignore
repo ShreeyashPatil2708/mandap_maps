@@ -46,8 +46,13 @@ coverage/
 *.tfstate
 *.tfstate.backup
 *.tfplan
-# Lambda zip built by archive_file data source -- regenerated on terraform apply
-infra/modules/festival/festival_lambda.zip
+crash.log
+override.tf
+override.tf.json
+# Real variable values hold the origin shared secret and alarm email. Commit
+# only the example (.terraform.lock.hcl is fine to commit for reproducibility).
+*.tfvars
+!*.tfvars.example
 
 # Private dataset (curated content). Kept out of the public repo; lives in
 # RDS/seed source only. Regenerate seed-data.json with backend/db/generate-seed-data.py.
@@ -59,9 +64,6 @@ backend/db/seed-data.json
 # Shared by hand, never committed. The committed seed-data.example.json documents
 # the shape so a fresh clone still runs with placeholder data.
 chatbot/seed-data.json
-
-# Local prod-data deploy helper (references account/bucket names; not for the public repo)
-deploy-data.sh
 
 # Python (chatbot FastAPI service)
 venv/

@@ -1,245 +1,168 @@
 data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
-# --- GitHub Actions OIDC ---
+# ---------------------------------------------------------------------------
+# App fleet instance role (API + chatbot).
+# ---------------------------------------------------------------------------
+data "aws_iam_policy_document" "ec2_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "app" {
+  name               = "${var.name}-app-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  tags               = var.tags
+}
+
+# SSM Session Manager + Run Command (used by deploys and break-glass access).
+resource "aws_iam_role_policy_attachment" "app_ssm" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# CloudWatch agent (custom metrics + log push).
+resource "aws_iam_role_policy_attachment" "app_cw_agent" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# Read only the two app secrets, nothing else in Secrets Manager.
+data "aws_iam_policy_document" "app_secrets" {
+  statement {
+    sid       = "ReadAppSecrets"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = var.secret_arns
+  }
+}
+
+resource "aws_iam_role_policy" "app_secrets" {
+  name   = "${var.name}-app-secrets"
+  role   = aws_iam_role.app.id
+  policy = data.aws_iam_policy_document.app_secrets.json
+}
+
+# Read only the specified buckets (data/FAISS and photos), objects only.
+data "aws_iam_policy_document" "app_s3" {
+  statement {
+    sid       = "ListReadableBuckets"
+    actions   = ["s3:ListBucket"]
+    resources = var.readable_bucket_arns
+  }
+  statement {
+    sid       = "GetReadableObjects"
+    actions   = ["s3:GetObject"]
+    resources = [for arn in var.readable_bucket_arns : "${arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "app_s3" {
+  name   = "${var.name}-app-s3-read"
+  role   = aws_iam_role.app.id
+  policy = data.aws_iam_policy_document.app_s3.json
+}
+
+resource "aws_iam_instance_profile" "app" {
+  name = "${var.name}-app-profile"
+  role = aws_iam_role.app.name
+  tags = var.tags
+}
+
+# ---------------------------------------------------------------------------
+# NAT instance role (SSM only, so it needs no key pair).
+# ---------------------------------------------------------------------------
+resource "aws_iam_role" "nat" {
+  name               = "${var.name}-nat-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "nat_ssm" {
+  role       = aws_iam_role.nat.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "nat" {
+  name = "${var.name}-nat-profile"
+  role = aws_iam_role.nat.name
+  tags = var.tags
+}
+
+# ---------------------------------------------------------------------------
+# GitHub Actions OIDC provider + CD role (no long-lived AWS keys).
+# ---------------------------------------------------------------------------
+data "tls_certificate" "github" {
+  url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
+}
 
 resource "aws_iam_openid_connect_provider" "github" {
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
-
-  # AWS validates the thumbprint internally for known providers; these values
-  # are required by Terraform but not actually checked by AWS for this provider.
-  thumbprint_list = [
-    "6938fd4d98bab03faadb97b34396831e3780aea1",
-    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-  ]
-
-  tags = var.tags
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.github.certificates[0].sha1_fingerprint]
+  tags            = var.tags
 }
 
-resource "aws_iam_role" "github_actions" {
-  name = "${var.name_prefix}-role-github-actions"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Federated = aws_iam_openid_connect_provider.github.arn
-      }
-      Action = "sts:AssumeRoleWithWebIdentity"
-      # This org has GitHub's custom OIDC subject claim enabled, so sub is
-      # ID-based: repo:owner@<owner_id>/repo@<repo_id>:ref:refs/heads/master,
-      # not the default repo:owner/repo:... form. AWS requires the trust to
-      # condition on sub (or job_workflow_ref), so we match that ID-based
-      # subject via var.github_oidc_sub. repository and ref are standard claims
-      # unaffected by the customization and pin the exact repo and branch.
-      Condition = {
-        StringEquals = {
-          "token.actions.githubusercontent.com:aud"        = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:repository" = var.github_repo
-          "token.actions.githubusercontent.com:ref"        = "refs/heads/master"
-        }
-        StringLike = {
-          "token.actions.githubusercontent.com:sub" = var.github_oidc_sub
-        }
-      }
-    }]
-  })
-
-  tags = var.tags
+data "aws_iam_policy_document" "github_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    # Only workflows on the default branch of this repo may assume the role.
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_repo}:ref:refs/heads/master"]
+    }
+  }
 }
 
-resource "aws_iam_role_policy" "github_actions_cd" {
-  name = "cd-permissions"
-  role = aws_iam_role.github_actions.id
+resource "aws_iam_role" "cd" {
+  name               = "${var.name}-github-cd-role"
+  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  tags               = var.tags
+}
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "SSMSendCommand"
-        Effect = "Allow"
-        Action = ["ssm:SendCommand"]
-        Resource = [
-          "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript",
-          "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*",
-        ]
-      },
-      {
-        Sid      = "SSMWaitAndCheck"
-        Effect   = "Allow"
-        Action   = ["ssm:ListCommandInvocations", "ssm:GetCommandInvocation"]
-        Resource = "*"
-      },
-      {
-        Sid    = "FrontendSync"
-        Effect = "Allow"
-        Action = ["s3:PutObject", "s3:DeleteObject", "s3:GetObject", "s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.frontend_bucket_name}",
-          "arn:aws:s3:::${var.frontend_bucket_name}/*",
-        ]
-      },
-      {
-        Sid      = "CloudFrontInvalidation"
-        Effect   = "Allow"
-        Action   = ["cloudfront:CreateInvalidation"]
-        Resource = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*"
-      },
+data "aws_iam_policy_document" "cd" {
+  # Sync the built SPA into the frontend bucket.
+  statement {
+    sid       = "FrontendSync"
+    actions   = ["s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [var.frontend_bucket_arn, "${var.frontend_bucket_arn}/*"]
+  }
+
+  # Invalidate CloudFront after a deploy. CreateInvalidation has no resource
+  # level scoping worth the churn for a single distribution, so it is left at *.
+  statement {
+    sid       = "CloudFrontInvalidate"
+    actions   = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"]
+    resources = ["*"]
+  }
+
+  # Trigger and poll the app deploy via SSM Run Command.
+  statement {
+    sid = "SsmDeploy"
+    actions = [
+      "ssm:SendCommand",
+      "ssm:ListCommandInvocations",
+      "ssm:GetCommandInvocation",
     ]
-  })
+    resources = ["*"]
+  }
 }
 
-# --- Node.js EC2 role ---
-
-resource "aws_iam_role" "node_ec2" {
-  name = "${var.name_prefix}-role-node-ec2"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_iam_instance_profile" "node_ec2" {
-  name = "${var.name_prefix}-profile-node-ec2"
-  role = aws_iam_role.node_ec2.name
-}
-
-# Covers SSM Session Manager, Run Command, and Patch Manager.
-resource "aws_iam_role_policy_attachment" "node_ssm" {
-  role       = aws_iam_role.node_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-# Covers CloudWatch agent log streaming.
-resource "aws_iam_role_policy_attachment" "node_cloudwatch" {
-  role       = aws_iam_role.node_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
-resource "aws_iam_role_policy" "node_custom" {
-  name = "node-ec2-custom"
-  role = aws_iam_role.node_ec2.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "SecretsManagerRead"
-        Effect = "Allow"
-        Action = ["secretsmanager:GetSecretValue"]
-        # Scoped to secrets with this project prefix -- RDS creds, JWT secret.
-        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}/*"
-      },
-      {
-        Sid    = "CodeDeployArtifactsDownload"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.codedeploy_bucket_name}",
-          "arn:aws:s3:::${var.codedeploy_bucket_name}/*",
-        ]
-      },
-    ]
-  })
-}
-
-# --- Python EC2 role ---
-
-resource "aws_iam_role" "python_ec2" {
-  name = "${var.name_prefix}-role-python-ec2"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_iam_instance_profile" "python_ec2" {
-  name = "${var.name_prefix}-profile-python-ec2"
-  role = aws_iam_role.python_ec2.name
-}
-
-resource "aws_iam_role_policy_attachment" "python_ssm" {
-  role       = aws_iam_role.python_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_role_policy_attachment" "python_cloudwatch" {
-  role       = aws_iam_role.python_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
-resource "aws_iam_role_policy" "python_custom" {
-  name = "python-ec2-custom"
-  role = aws_iam_role.python_ec2.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "SecretsManagerRead"
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name_prefix}/*"
-      },
-      {
-        # Read on boot (hydrate index), write after rebuild (push updated index).
-        Sid    = "FAISSIndexReadWrite"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.faiss_bucket_name}",
-          "arn:aws:s3:::${var.faiss_bucket_name}/*",
-        ]
-      },
-      {
-        Sid    = "CodeDeployArtifactsDownload"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.codedeploy_bucket_name}",
-          "arn:aws:s3:::${var.codedeploy_bucket_name}/*",
-        ]
-      },
-    ]
-  })
-}
-
-# --- CodeDeploy service role ---
-
-resource "aws_iam_role" "codedeploy" {
-  name = "${var.name_prefix}-role-codedeploy"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "codedeploy.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = var.tags
-}
-
-# Grants CodeDeploy permission to read EC2 tags, interact with ASGs,
-# publish SNS notifications, and write CloudWatch metrics.
-resource "aws_iam_role_policy_attachment" "codedeploy" {
-  role       = aws_iam_role.codedeploy.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+resource "aws_iam_role_policy" "cd" {
+  name   = "${var.name}-github-cd"
+  role   = aws_iam_role.cd.id
+  policy = data.aws_iam_policy_document.cd.json
 }

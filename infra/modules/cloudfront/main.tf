@@ -1,18 +1,28 @@
-terraform {
-  required_providers {
-    aws = {
-      source = "hashicorp/aws"
-    }
-  }
+# CloudFront fronts the static SPA (S3 via OAC) and also proxies the dynamic
+# /api/* path to the ALB, so a single distribution does all path routing and
+# Cloudflare only has to proxy the apex here. CloudFront sits behind Cloudflare,
+# which terminates TLS for the browser, so the distribution uses its default
+# *.cloudfront.net certificate (no custom domain and no us-east-1 ACM cert).
+
+# Origin Access Control: the modern replacement for OAI. It signs CloudFront's
+# requests to S3 with SigV4 so the bucket can stay fully private.
+resource "aws_cloudfront_origin_access_control" "frontend" {
+  name                              = "${var.name}-frontend-oac"
+  description                       = "OAC for the private frontend bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
-data "aws_cloudfront_cache_policy" "caching_optimized" {
+# Managed cache policy "CachingOptimized" for the immutable, fingerprinted SPA
+# assets. index.html is uploaded with no-cache by the CD pipeline so releases
+# are picked up immediately.
+data "aws_cloudfront_cache_policy" "optimized" {
   name = "Managed-CachingOptimized"
 }
 
-# API responses must never be cached at the edge, and the origin request must
-# forward the viewer's query string/headers/cookies while letting CloudFront set
-# the Host to the API Gateway domain (AllViewerExceptHostHeader).
+# The API is dynamic: disable caching and forward the full viewer request
+# (all methods, headers except Host, query strings, cookies) to the ALB.
 data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
 }
@@ -21,38 +31,44 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
-resource "aws_cloudfront_origin_access_control" "frontend" {
-  name                              = "${var.name_prefix}-oac-frontend"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
+# SPA deep-link routing: rewrite extensionless paths to /index.html so client
+# routes (e.g. /explore) resolve to the SPA entry point. Attached only to the
+# default (S3) behavior, so genuine API status codes on /api/* are never
+# rewritten (a distribution-wide custom_error_response would clobber them).
+resource "aws_cloudfront_function" "spa_router" {
+  name    = "${var.name}-spa-router"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      if (request.uri.indexOf('.') === -1) {
+        request.uri = '/index.html';
+      }
+      return request;
+    }
+  EOT
 }
 
-resource "aws_cloudfront_origin_access_control" "media" {
-  name                              = "${var.name_prefix}-oac-media"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-resource "aws_cloudfront_distribution" "frontend" {
+resource "aws_cloudfront_distribution" "this" {
   enabled             = true
-  is_ipv6_enabled     = true
   default_root_object = "index.html"
-  aliases             = [var.domain_name, "www.${var.domain_name}"]
-  price_class         = "PriceClass_200"
+  comment             = "${var.name} SPA"
+  price_class         = "PriceClass_100" # NA + EU + India edge locations; cheapest tier
 
   origin {
-    domain_name              = var.frontend_bucket_regional_domain
     origin_id                = "frontend-s3"
+    domain_name              = var.frontend_bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
   }
 
-  # API Gateway origin so same-origin /api/* calls from the SPA reach the backend
-  # instead of falling through to the S3 index.html (SPA fallback).
+  # The ALB origin, reached over HTTPS at the public origin hostname (whose ACM
+  # cert matches, so TLS validates). The x-origin-secret header is the origin
+  # lock: the ALB rejects any /api request without it, and only CloudFront adds
+  # it, so a leaked ALB hostname cannot be used to bypass the edge.
   origin {
-    domain_name = var.api_gateway_domain
-    origin_id   = "api-gateway"
+    origin_id   = "api-alb"
+    domain_name = var.alb_origin_domain
 
     custom_origin_config {
       http_port              = 80
@@ -60,79 +76,38 @@ resource "aws_cloudfront_distribution" "frontend" {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+
+    custom_header {
+      name  = "x-origin-secret"
+      value = var.origin_shared_secret
+    }
   }
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "frontend-s3"
     viewer_protocol_policy = "redirect-to-https"
-    compress               = true
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
-  }
-
-  # /api/* -> API Gateway (Node data API + Python chatbot at /api/chat). No edge
-  # caching; all HTTP methods allowed so POST/DELETE chat requests pass through.
-  ordered_cache_behavior {
-    path_pattern             = "/api/*"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods           = ["GET", "HEAD"]
-    target_origin_id         = "api-gateway"
-    viewer_protocol_policy   = "redirect-to-https"
-    compress                 = true
-    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
-  }
-
-  # SPA routing: 403/404 from S3 → serve index.html so React Router handles the path
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
-
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    acm_certificate_arn      = var.acm_certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
-  }
-
-  tags = var.tags
-}
-
-resource "aws_cloudfront_distribution" "media" {
-  enabled         = true
-  is_ipv6_enabled = true
-  aliases         = ["media.${var.domain_name}"]
-  price_class     = "PriceClass_200"
-
-  origin {
-    domain_name              = var.media_bucket_regional_domain
-    origin_id                = "media-s3"
-    origin_access_control_id = aws_cloudfront_origin_access_control.media.id
-  }
-
-  default_cache_behavior {
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "media-s3"
-    viewer_protocol_policy = "redirect-to-https"
+    cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
     compress               = true
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+
+    # SPA deep-link routing, scoped to the S3 behavior only (see the function).
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_router.arn
+    }
+  }
+
+  # Dynamic API path: send /api/* to the ALB, cache nothing, forward everything.
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = "api-alb"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    compress                 = true
   }
 
   restrictions {
@@ -142,57 +117,52 @@ resource "aws_cloudfront_distribution" "media" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.acm_certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
+    cloudfront_default_certificate = true
   }
 
   tags = var.tags
 }
 
-# Bucket policies: only the matching CloudFront distribution can read each bucket
-data "aws_iam_policy_document" "frontend_oac" {
+# The single allowed policy on the frontend bucket: grant only this
+# distribution read access, and deny non-TLS access. Owned here (not in the s3
+# module) because it references the distribution ARN.
+data "aws_iam_policy_document" "frontend" {
   statement {
-    sid    = "AllowCloudFrontOAC"
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["cloudfront.amazonaws.com"]
-    }
+    sid       = "AllowCloudFrontOAC"
+    effect    = "Allow"
     actions   = ["s3:GetObject"]
     resources = ["${var.frontend_bucket_arn}/*"]
-    condition {
-      test     = "StringEquals"
-      variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.frontend.arn]
-    }
-  }
-}
 
-data "aws_iam_policy_document" "media_oac" {
-  statement {
-    sid    = "AllowCloudFrontOAC"
-    effect = "Allow"
     principals {
       type        = "Service"
       identifiers = ["cloudfront.amazonaws.com"]
     }
-    actions   = ["s3:GetObject"]
-    resources = ["${var.media_bucket_arn}/*"]
     condition {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.media.arn]
+      values   = [aws_cloudfront_distribution.this.arn]
+    }
+  }
+
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [var.frontend_bucket_arn, "${var.frontend_bucket_arn}/*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
     }
   }
 }
 
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = var.frontend_bucket_id
-  policy = data.aws_iam_policy_document.frontend_oac.json
-}
-
-resource "aws_s3_bucket_policy" "media" {
-  bucket = var.media_bucket_id
-  policy = data.aws_iam_policy_document.media_oac.json
+  policy = data.aws_iam_policy_document.frontend.json
 }

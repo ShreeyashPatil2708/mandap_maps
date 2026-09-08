@@ -1,0 +1,86 @@
+#!/bin/bash
+# Chatbot fleet bootstrap (Amazon Linux 2023, x86_64).
+# Installs Python 3.11 + the RAG stack, clones the app, hydrates the FAISS
+# index from S3, writes the systemd environment, and starts uvicorn. Spot
+# reclaim just respins a fresh instance through this same path (cold boot of a
+# few minutes is accepted).
+set -euxo pipefail
+
+REGION="${region}"
+REPO_URL="${repo_url}"
+REPO_BRANCH="${repo_branch}"
+APP_USER="mandapmaps"
+APP_ROOT="/opt/mandapmaps"
+REPO_DIR="$APP_ROOT/repo"
+DATA_BUCKET="${data_bucket}"
+
+# --- Packages ---
+dnf update -y
+dnf install -y git python3.11 python3.11-pip amazon-cloudwatch-agent
+
+# --- Service user ---
+id "$APP_USER" &>/dev/null || useradd --system --create-home --shell /usr/sbin/nologin "$APP_USER"
+mkdir -p "$APP_ROOT" /etc/mandapmaps
+chown -R "$APP_USER:$APP_USER" "$APP_ROOT"
+
+# --- App checkout ---
+if [ ! -d "$REPO_DIR/.git" ]; then
+  sudo -u "$APP_USER" git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"
+fi
+cd "$REPO_DIR/chatbot"
+git config --system --add safe.directory "$REPO_DIR"
+python3.11 -m pip install --no-cache-dir -r requirements.txt
+
+# --- Private data: seed-data.json + prebuilt FAISS index from S3 ---
+# The dataset is private (not in git). It is uploaded to the data bucket by
+# hand (aws s3 sync). If absent the loader falls back to the committed example.
+sudo -u "$APP_USER" aws s3 cp "s3://$DATA_BUCKET/chatbot/seed-data.json" "$REPO_DIR/chatbot/seed-data.json" --region "$REGION" || true
+sudo -u "$APP_USER" aws s3 sync "s3://$DATA_BUCKET/chatbot/faiss_index/" "$REPO_DIR/chatbot/app/data/faiss_index/" --region "$REGION" || true
+chown -R "$APP_USER:$APP_USER" "$REPO_DIR/chatbot"
+
+# --- systemd environment ---
+cat > /etc/mandapmaps/chatbot.env <<EOF
+ENV=production
+AWS_REGION=$REGION
+LLM_PROVIDER=groq
+DB_SECRET_ID=${db_secret_id}
+APP_SECRET_ID=${app_secret_id}
+REDIS_URL=redis://localhost:6379/0
+ALLOWED_ORIGINS='${allowed_origins}'
+EOF
+chmod 640 /etc/mandapmaps/chatbot.env
+chown root:"$APP_USER" /etc/mandapmaps/chatbot.env
+
+# On-box Redis for session memory + response cache.
+dnf install -y redis6
+systemctl enable --now redis6
+
+# --- systemd unit (shipped in the repo) ---
+install -m 644 "$REPO_DIR/chatbot/systemd/mandapmaps-chatbot.service" /etc/systemd/system/mandapmaps-chatbot.service
+systemctl daemon-reload
+systemctl enable --now mandapmaps-chatbot
+
+# --- CloudWatch agent ---
+cat > /opt/aws/amazon-cloudwatch-agent/etc/cw-agent.json <<EOF
+{
+  "agent": { "metrics_collection_interval": 60 },
+  "metrics": {
+    "append_dimensions": { "AutoScalingGroupName": "\$${aws:AutoScalingGroupName}", "InstanceId": "\$${aws:InstanceId}" },
+    "metrics_collected": {
+      "mem": { "measurement": ["mem_used_percent"] },
+      "disk": { "measurement": ["used_percent"], "resources": ["/"] }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          { "file_path": "/var/log/messages", "log_group_name": "${log_group}", "log_stream_name": "{instance_id}/system" }
+        ]
+      }
+    }
+  }
+}
+EOF
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/cw-agent.json
