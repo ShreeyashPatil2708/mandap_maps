@@ -117,18 +117,6 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: |
-          # The chatbot fleet runs at desired=0 off-season. With no instances,
-          # an SSM command has no targets and the poll below would hang until it
-          # times out, so skip cleanly when the fleet is scaled to zero.
-          INSTANCES=$(aws autoscaling describe-auto-scaling-groups \
-            --region "$AWS_REGION" \
-            --auto-scaling-group-names mandapmaps-chatbot-asg \
-            --query 'length(AutoScalingGroups[0].Instances)' --output text)
-          if [ "$INSTANCES" = "0" ] || [ "$INSTANCES" = "None" ] || [ -z "$INSTANCES" ]; then
-            echo "Chatbot fleet is scaled to 0; nothing to deploy. Skipping."
-            exit 0
-          fi
-
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
             --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-chatbot-asg" \
@@ -153,11 +141,21 @@ jobs:
             STATUSES=$(aws ssm list-command-invocations \
               --command-id "$COMMAND_ID" --region "$AWS_REGION" \
               --query 'CommandInvocations[*].Status' --output text)
+            # No invocations after the first ~30s means the ASG has no instances
+            # (chatbot fleet scaled to 0 off-season), so there is nothing to
+            # deploy. Skip cleanly instead of hanging until the timeout.
+            if [ -z "$STATUSES" ]; then
+              if [ "$i" -ge 3 ]; then
+                echo "No chatbot instances registered (fleet scaled to 0); nothing to deploy. Skipping."
+                exit 0
+              fi
+              continue
+            fi
             echo "Status: $STATUSES"
             if echo "$STATUSES" | grep -qiE "Failed|Cancelled|TimedOut"; then
               echo "Deployment failed"; exit 1
             fi
-            if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
+            if ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
               echo "Deployment successful"; exit 0
             fi
           done
