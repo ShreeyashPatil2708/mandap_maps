@@ -4,6 +4,8 @@ import urllib.parse
 from collections.abc import AsyncIterator
 
 import httpx
+from starlette.concurrency import run_in_threadpool
+
 from app.core import memory, planner
 from app.core.cache import get_cached_response, set_cached_response
 from app.core.entity_resolver import is_broad_query, resolve_entities
@@ -20,7 +22,6 @@ from app.models.schemas import (
     SourceChunk,
     SuggestedAction,
 )
-from starlette.concurrency import run_in_threadpool
 
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:4000")
 
