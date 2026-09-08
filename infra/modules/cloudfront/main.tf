@@ -56,6 +56,10 @@ resource "aws_cloudfront_distribution" "this" {
   comment             = "${var.name} SPA"
   price_class         = "PriceClass_100" # NA + EU + India edge locations; cheapest tier
 
+  # Alternate domain names so CloudFront accepts the Host that Cloudflare
+  # forwards (mandapmaps.in / www). Requires the matching us-east-1 ACM cert.
+  aliases = var.aliases
+
   origin {
     origin_id                = "frontend-s3"
     domain_name              = var.frontend_bucket_regional_domain_name
@@ -117,7 +121,10 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = var.acm_certificate_arn == "" ? true : false
+    acm_certificate_arn            = var.acm_certificate_arn != "" ? var.acm_certificate_arn : null
+    ssl_support_method             = var.acm_certificate_arn != "" ? "sni-only" : null
+    minimum_protocol_version       = var.acm_certificate_arn != "" ? "TLSv1.2_2021" : null
   }
 
   tags = var.tags

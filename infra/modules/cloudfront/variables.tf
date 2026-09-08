@@ -29,6 +29,18 @@ variable "origin_shared_secret" {
   sensitive   = true
 }
 
+variable "aliases" {
+  description = "Alternate domain names (CNAMEs) the distribution serves. Requires acm_certificate_arn to be set."
+  type        = list(string)
+  default     = []
+}
+
+variable "acm_certificate_arn" {
+  description = "us-east-1 ACM cert ARN covering the aliases. Empty uses the default *.cloudfront.net cert."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags."
   type        = map(string)

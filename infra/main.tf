@@ -127,7 +127,30 @@ module "rds" {
 
 # ---------------------------------------------------------------------------
 # CloudFront (SPA front door) + frontend bucket policy.
+#
+# CloudFront must own the apex/www as alternate domain names with a matching
+# ACM cert (in us-east-1), otherwise it 403s the Host header Cloudflare forwards.
+# The free Cloudflare plan cannot rewrite the Host header, so this cert is the
+# only way to serve the custom domain. DNS-validated: add the CNAMEs from the
+# cdn_acm_validation_records output to Cloudflare (DNS-only); apply pauses on
+# validation until the cert is issued.
 # ---------------------------------------------------------------------------
+resource "aws_acm_certificate" "cdn" {
+  provider                  = aws.us_east_1
+  domain_name               = var.domain_name
+  subject_alternative_names = ["www.${var.domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_acm_certificate_validation" "cdn" {
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.cdn.arn
+}
+
 module "cloudfront" {
   source = "./modules/cloudfront"
 
@@ -137,6 +160,8 @@ module "cloudfront" {
   frontend_bucket_regional_domain_name = module.s3.frontend_bucket_regional_domain_name
   alb_origin_domain                    = "origin.${var.domain_name}"
   origin_shared_secret                 = var.origin_shared_secret
+  aliases                              = [var.domain_name, "www.${var.domain_name}"]
+  acm_certificate_arn                  = aws_acm_certificate_validation.cdn.certificate_arn
   tags                                 = local.common_tags
 }
 
