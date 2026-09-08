@@ -1,12 +1,16 @@
 import { Router } from 'express';
-import { addCrowdReport, getCrowdLevel, getCombinedCrowdLevels } from '../repositories/crowdRepo.js';
+import {
+  addCrowdReport,
+  getCrowdLevel,
+  getCombinedCrowdLevels,
+  pingInterest,
+} from '../repositories/crowdRepo.js';
+import { getIdByName } from '../repositories/ganpatiRepo.js';
 import { getRedis } from '../config/redis.js';
 
 const router = Router();
 const ALL_KEY = 'crowd:all';
 const CROWD_TTL_SECONDS = 90; // short TTL — crowd data must stay fresh, unlike the 24h ganpati cache
-
-import { getIdByName } from '../repositories/ganpatiRepo.js';
 
 // GET /api/ganpatis/by-name/:name/crowd  -> crowd level looked up by exact name
 // Used by the chatbot, which only knows the Ganpati's name, not its numeric id.
@@ -83,10 +87,6 @@ router.get('/', async (_req, res, next) => {
   }
 });
 
-export default router;
-
-import { pingInterest } from '../repositories/crowdRepo.js';
-
 // POST /api/ganpatis/:id/interest  -> anonymous "I have this in my route right now" ping
 router.post('/:id/interest', async (req, res, next) => {
   const id = Number(req.params.id);
@@ -102,3 +102,4 @@ router.post('/:id/interest', async (req, res, next) => {
   }
 });
 
+export default router;
