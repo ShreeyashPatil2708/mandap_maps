@@ -1,12 +1,9 @@
+import { useState } from 'react';
+
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
 // stopped so they don't bubble to the backdrop.
 export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPrivacy, onSupport }) {
-  if (!open) return null;
-
-  const link =
-    'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
-
-  // Inside Drawer.jsx, add a labeled toggle:
+  // Hooks must run on every render, before any early return
   const [sharing, setSharing] = useState(localStorage.getItem('mandapmaps.shareLocation') === 'true');
 
   const toggleSharing = () => {
@@ -14,6 +11,11 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPr
     setSharing(next);
     localStorage.setItem('mandapmaps.shareLocation', String(next));
   };
+
+  if (!open) return null;
+
+  const link =
+    'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
 
   return (
     <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
@@ -59,11 +61,10 @@ export default function Drawer({ open, onClose, onHome, onExplore, onRoute, onPr
             >
               Privacy
             </div>
-            // In the JSX:
-              <label className="flex items-center justify-between px-gutter py-3">
-                <span className="font-sans text-sm text-maroon">Help detect crowds (share live location)</span>
-                <input type="checkbox" checked={sharing} onChange={toggleSharing} />
-              </label>
+            <label className="flex items-center justify-between px-gutter py-3">
+              <span className="font-sans text-sm text-maroon">Help detect crowds (share live location)</span>
+              <input type="checkbox" checked={sharing} onChange={toggleSharing} />
+            </label>
           </div>
         </div>
       </div>

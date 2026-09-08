@@ -1,17 +1,14 @@
 import logging
-import httpx
-import urllib.parse
 import os
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:4000")
+import urllib.parse
 from collections.abc import AsyncIterator
 
-from starlette.concurrency import run_in_threadpool
-
+import httpx
 from app.core import memory, planner
 from app.core.cache import get_cached_response, set_cached_response
 from app.core.entity_resolver import is_broad_query, resolve_entities
 from app.core.hybrid_retriever import get_retriever
-from app.core.intents import is_planner_query, wants_photo, wants_crowd_info
+from app.core.intents import is_planner_query, wants_crowd_info, wants_photo
 from app.core.lang_detect import detect_language
 from app.core.llm import build_prompt, call_llm, stream_llm, translate_to_english
 from app.data.loader import get_mandals
@@ -23,6 +20,9 @@ from app.models.schemas import (
     SourceChunk,
     SuggestedAction,
 )
+from starlette.concurrency import run_in_threadpool
+
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:4000")
 
 logger = logging.getLogger("ekdanta.rag")
 
@@ -76,6 +76,7 @@ async def _resolve_entity_context(session_id: str, query: str, history: list[dic
 
     return None, None, query
 
+
 async def _get_crowd_level(primary_entity: dict | None) -> dict | None:
     """Fetch current crowd information from the Node backend, looked up
     by name — the chatbot's entity registry has no numeric Postgres id,
@@ -106,6 +107,7 @@ async def _get_crowd_level(primary_entity: dict | None) -> dict | None:
     except Exception:
         logger.exception("Failed to fetch crowd information for name=%s", name)
         return None
+
 
 def _build_location_card(primary_entity: dict | None, query: str) -> LocationCard | None:
     """Structured location payload for the map integration. Attached
@@ -199,6 +201,55 @@ async def answer_query(session_id: str, query: str, language: str = "auto") -> C
         session_id, query, history
     )
 
+    # ---------------------------------------------------------
+    # Crowd query — always fetch fresh crowd information.
+    # Do NOT use the normal RAG cache for this.
+    # ---------------------------------------------------------
+    if wants_crowd_info(query):
+        if not primary_entity:
+            answer = "Please mention which Ganpati you want the crowd information for."
+            await memory.append_turn(session_id, query, answer)
+            return ChatResponse(
+                session_id=session_id,
+                answer=answer,
+                sources=[],
+                detected_language=detected_lang,
+                cached=False,
+                location=None,
+                suggested_actions=[],
+            )
+
+        crowd = await _get_crowd_level(primary_entity)
+
+        if not crowd:
+            answer = f"I don't have current crowd information for {primary_entity['name_en']}."
+        else:
+            label = crowd.get("label")
+            level = crowd.get("level")
+            if label and label != "No data yet":
+                answer = (
+                    f"{primary_entity['name_en']} is currently reporting "
+                    f"{label} crowd levels based on recent visitor reports."
+                )
+            elif label:
+                answer = (
+                    f"{primary_entity['name_en']} is currently "
+                    f"reporting crowd level {level} based on recent visitor reports."
+                )
+            else:
+                answer = f"I don't have current crowd information for {primary_entity['name_en']}."
+
+        await memory.append_turn(session_id, query, answer)
+        return ChatResponse(
+            session_id=session_id,
+            answer=answer,
+            sources=[],
+            detected_language=detected_lang,
+            cached=False,
+            location=_build_location_card(primary_entity, query),
+            suggested_actions=_build_suggested_actions(primary_entity),
+        )
+
     # Cross-lingual retrieval fix: the dataset is in English, and the
     # multilingual embedding model retrieves noticeably worse for
     # Devanagari queries than their English equivalent. Translate before
@@ -267,86 +318,6 @@ async def answer_query(session_id: str, query: str, language: str = "auto") -> C
     )
 
 
-async def answer_query(session_id: str, query: str, language: str = "auto") -> ChatResponse:
-    history = await memory.get_history(session_id)
-
-    if is_planner_query(query):
-        entity_doc_ids, _, _ = await _resolve_entity_context(
-            session_id, query, history
-        )
-        response = _build_plan_response(
-            session_id, query, entity_doc_ids
-        )
-        await memory.append_turn(session_id, query, response.answer)
-        return response
-
-    lang_task = run_in_threadpool(detect_language, query) if language == "auto" else None
-
-    detected_lang = await lang_task if lang_task else language
-
-    # ---------------------------------------------------------
-    # Crowd query — always fetch fresh crowd information.
-    # Do NOT use the normal RAG cache for this.
-    # ---------------------------------------------------------
-    if wants_crowd_info(query):
-        entity_doc_ids, primary_entity, _ = await _resolve_entity_context(
-            session_id, query, history
-        )
-
-        if not primary_entity:
-            answer = (
-                "Please mention which Ganpati you want the crowd "
-                "information for."
-            )
-
-            await memory.append_turn(session_id, query, answer)
-
-            return ChatResponse(
-                session_id=session_id,
-                answer=answer,
-                sources=[],
-                detected_language=detected_lang,
-                cached=False,
-                location=None,
-                suggested_actions=[],
-            )
-
-        crowd = await _get_crowd_level(primary_entity)
-
-        if not crowd:
-            answer = (
-                f"I don’t have current crowd information for "
-                f"{primary_entity['name_en']}."
-            )
-        else:
-            level = crowd.get("level")
-            label = crowd.get("label")
-
-            if label:
-                answer = (
-                    f"{primary_entity['name_en']} is currently "
-                    f"reporting {label} crowd levels based on "
-                    f"recent visitor reports."
-                )
-            else:
-                answer = (
-                    f"{primary_entity['name_en']} is currently "
-                    f"reporting crowd level {level} based on "
-                    f"recent visitor reports."
-                )
-
-        await memory.append_turn(session_id, query, answer)
-
-        return ChatResponse(
-            session_id=session_id,
-            answer=answer,
-            sources=[],
-            detected_language=detected_lang,
-            cached=False,
-            location=_build_location_card(primary_entity, query),
-            suggested_actions=_build_suggested_actions(primary_entity),
-        )
-
 async def stream_answer(session_id: str, query: str, language: str = "auto") -> AsyncIterator[str]:
     """Streaming counterpart of answer_query(), used by the /stream endpoint.
     Yields answer text as it's generated instead of waiting for the full
@@ -394,7 +365,7 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
     entity_doc_ids, primary_entity, retrieval_query = await _resolve_entity_context(
         session_id, query, history
     )
-    
+
     # ---------------------------------------------------------
     # Crowd information
     # Always fetch fresh crowd data.
@@ -411,7 +382,7 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
 
         elif not crowd:
             answer = (
-                f"I don’t have current crowd information for "
+                f"I don't have current crowd information for "
                 f"{primary_entity['name_en']}."
             )
 
@@ -425,7 +396,7 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
                 )
             else:
                 answer = (
-                    f"I don’t have current crowd information for "
+                    f"I don't have current crowd information for "
                     f"{primary_entity['name_en']}."
                 )
 
@@ -447,7 +418,7 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
         )
 
         return
-    
+
     if detected_lang in ("mr", "hi"):
         retrieval_query = await translate_to_english(retrieval_query)
 
