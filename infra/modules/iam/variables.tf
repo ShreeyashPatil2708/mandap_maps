@@ -28,6 +28,12 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_oidc_sub" {
+  description = "Optional custom OIDC sub claim pattern when GitHub org/repo uses subject-claim templates."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags."
   type        = map(string)

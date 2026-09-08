@@ -179,7 +179,13 @@ variable "db_allocated_storage" {
 variable "github_repo" {
   description = "owner/repo allowed to assume the CD role via GitHub OIDC."
   type        = string
-  default     = "ShreeyashPatil2708/website"
+  default     = "ShreeyashPatil2708/mandap_maps"
+}
+
+variable "github_oidc_sub" {
+  description = "Optional custom OIDC subject pattern for orgs that override GitHub's default sub claim template."
+  type        = string
+  default     = null
 }
 
 # ---------------------------------------------------------------------------
