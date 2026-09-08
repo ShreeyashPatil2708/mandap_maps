@@ -1,5 +1,5 @@
 [Unit]
-Description=MandapMaps RAG chatbot (FastAPI + FAISS + Groq)
+Description=MandapMaps Node API
 After=network-online.target redis6.service
 Wants=network-online.target
 
@@ -7,11 +7,11 @@ Wants=network-online.target
 Type=simple
 User=mandapmaps
 Group=mandapmaps
-WorkingDirectory=/opt/mandapmaps/repo/chatbot
-EnvironmentFile=/etc/mandapmaps/chatbot.env
-ExecStart=/opt/mandapmaps/repo/chatbot/scripts/run.sh
+WorkingDirectory=/opt/mandapmaps/repo/backend
+EnvironmentFile=/etc/mandapmaps/api.env
+ExecStart=/usr/bin/node src/index.js
 Restart=always
-RestartSec=10
+RestartSec=5
 
 # Hardening
 NoNewPrivileges=true

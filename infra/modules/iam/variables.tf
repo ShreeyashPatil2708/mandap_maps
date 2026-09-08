@@ -1,35 +1,35 @@
-variable "name_prefix" {
-  description = "Prefix applied to all resource names"
+variable "name" {
+  description = "Name prefix for IAM resources."
+  type        = string
+}
+
+variable "region" {
+  description = "Primary AWS region (used to scope SSM permissions)."
+  type        = string
+}
+
+variable "secret_arns" {
+  description = "ARNs of the Secrets Manager secrets the app fleet may read."
+  type        = list(string)
+}
+
+variable "readable_bucket_arns" {
+  description = "ARNs of S3 buckets the app fleet may read (data/FAISS, photos)."
+  type        = list(string)
+}
+
+variable "frontend_bucket_arn" {
+  description = "ARN of the frontend bucket the CD role syncs the SPA into."
   type        = string
 }
 
 variable "github_repo" {
-  description = "GitHub repo in owner/repo format -- scopes OIDC trust to this repo only"
-  type        = string
-}
-
-variable "github_oidc_sub" {
-  description = "StringLike pattern for the OIDC sub claim -- ID-based because this org enabled a custom subject claim template"
-  type        = string
-}
-
-variable "frontend_bucket_name" {
-  description = "Name of the S3 bucket for the React frontend build"
-  type        = string
-}
-
-variable "faiss_bucket_name" {
-  description = "Name of the S3 bucket storing the FAISS index"
-  type        = string
-}
-
-variable "codedeploy_bucket_name" {
-  description = "Name of the S3 bucket for CodeDeploy deployment bundles"
+  description = "owner/repo trusted by the GitHub OIDC CD role."
   type        = string
 }
 
 variable "tags" {
-  description = "Tags applied to all resources"
+  description = "Common tags."
   type        = map(string)
   default     = {}
 }

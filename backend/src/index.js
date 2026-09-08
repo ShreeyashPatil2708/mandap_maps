@@ -18,11 +18,12 @@ async function createApp() {
 
   const app = express();
 
-  // Behind CloudFront -> API Gateway, so the socket IP is an AWS hop, not the
-  // visitor. Trust two proxy hops so req.ip resolves to the real client from
-  // X-Forwarded-For; without this the rate limiter buckets every visitor under
-  // one shared upstream IP. A fixed count (not `true`) stops a client-supplied
-  // XFF header from spoofing the key.
+  // Behind Cloudflare -> ALB, so the socket IP is an AWS hop, not the visitor.
+  // Both hops append to X-Forwarded-For (client, then Cloudflare edge), so trust
+  // two proxy hops for req.ip to resolve to the real client; without this the
+  // rate limiter buckets every visitor under one shared upstream IP. A fixed
+  // count (not `true`) stops a client-supplied XFF header from spoofing the key,
+  // and the ALB only accepts traffic from Cloudflare anyway.
   app.set('trust proxy', 2);
 
   app.disable('x-powered-by');
@@ -38,7 +39,7 @@ async function createApp() {
 
   // Rate limit per client IP (architecture target: 1000 req/min). With
   // `trust proxy` set above, the default keyGenerator (req.ip) resolves to the
-  // real visitor. API Gateway also throttles at the edge; this is defence in depth.
+  // real visitor. Cloudflare also rate-limits at the edge; this is defence in depth.
   app.use(
     rateLimit({
       windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,

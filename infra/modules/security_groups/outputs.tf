@@ -1,19 +1,15 @@
-output "nlb_sg_id" {
-  description = "NLB security group ID"
-  value       = aws_security_group.nlb.id
+output "alb_sg_id" {
+  value = aws_security_group.alb.id
 }
 
-output "node_sg_id" {
-  description = "Node.js EC2 security group ID"
-  value       = aws_security_group.node.id
-}
-
-output "python_sg_id" {
-  description = "Python FastAPI EC2 security group ID"
-  value       = aws_security_group.python.id
+output "app_sg_id" {
+  value = aws_security_group.app.id
 }
 
 output "rds_sg_id" {
-  description = "RDS security group ID"
-  value       = aws_security_group.rds.id
+  value = aws_security_group.rds.id
+}
+
+output "nat_sg_id" {
+  value = aws_security_group.nat.id
 }

@@ -1,55 +1,36 @@
-variable "name_prefix" {
-  description = "Resource name prefix (e.g. mandapmaps-prod)"
-  type        = string
-}
-
-variable "domain_name" {
-  description = "Root domain name (e.g. mandapmaps.in)"
-  type        = string
-}
-
-variable "acm_certificate_arn" {
-  description = "ACM certificate ARN in us-east-1 -- required by CloudFront"
-  type        = string
-}
-
-variable "api_gateway_domain" {
-  description = "API Gateway domain (host only, no scheme) used as the /api/* origin"
+variable "name" {
+  description = "Name prefix."
   type        = string
 }
 
 variable "frontend_bucket_id" {
-  description = "Frontend S3 bucket name"
+  description = "Id of the private frontend bucket CloudFront reads via OAC."
   type        = string
 }
 
 variable "frontend_bucket_arn" {
-  description = "Frontend S3 bucket ARN"
+  description = "ARN of the frontend bucket (for the OAC bucket policy)."
   type        = string
 }
 
-variable "frontend_bucket_regional_domain" {
-  description = "Frontend S3 bucket regional domain name"
+variable "frontend_bucket_regional_domain_name" {
+  description = "Regional domain name of the frontend bucket (the CloudFront origin)."
   type        = string
 }
 
-variable "media_bucket_id" {
-  description = "Media S3 bucket name"
+variable "alb_origin_domain" {
+  description = "Public origin hostname for the ALB (e.g. origin.<domain>), used as the /api/* CloudFront origin. Must have a valid ACM cert matching this name."
   type        = string
 }
 
-variable "media_bucket_arn" {
-  description = "Media S3 bucket ARN"
+variable "origin_shared_secret" {
+  description = "Secret CloudFront injects as the x-origin-secret header so the ALB accepts only requests coming through the edge."
   type        = string
-}
-
-variable "media_bucket_regional_domain" {
-  description = "Media S3 bucket regional domain name"
-  type        = string
+  sensitive   = true
 }
 
 variable "tags" {
-  description = "Tags applied to all resources"
+  description = "Common tags."
   type        = map(string)
   default     = {}
 }

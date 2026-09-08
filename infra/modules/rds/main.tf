@@ -1,98 +1,64 @@
-terraform {
-  required_providers {
-    aws = {
-      source = "hashicorp/aws"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
+resource "aws_db_subnet_group" "this" {
+  name       = "${var.name}-db-subnet-group"
+  subnet_ids = var.data_subnet_ids
+  tags       = merge(var.tags, { Name = "${var.name}-db-subnet-group" })
 }
 
-resource "random_password" "db" {
-  length  = 32
-  special = false
-}
-
-resource "aws_db_subnet_group" "main" {
-  name       = "${var.name_prefix}-db-subnet-group"
-  subnet_ids = var.private_data_subnet_ids
-  tags       = var.tags
-}
-
-resource "aws_db_instance" "main" {
-  identifier        = "${var.name_prefix}-postgres"
-  engine            = "postgres"
-  engine_version    = "16"
-  instance_class    = var.instance_class
-  allocated_storage = 20
-  storage_type      = "gp3"
-  storage_encrypted = true
+resource "aws_db_instance" "this" {
+  identifier     = "${var.name}-db"
+  engine         = "postgres"
+  engine_version = var.engine_version
+  instance_class = var.instance_class
 
   db_name  = var.db_name
   username = var.db_username
-  password = random_password.db.result
+  password = var.db_password
+  port     = 5432
 
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+  allocated_storage = var.allocated_storage
+  # Storage autoscaling disabled to stay within the 20 GB Free plan limit. Set a
+  # higher ceiling (e.g. var.allocated_storage * 2) after upgrading to paid.
+  max_allocated_storage = var.allocated_storage
+  storage_type          = "gp3"
+  storage_encrypted     = true
+
+  db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.rds_sg_id]
+  multi_az               = var.multi_az
+  publicly_accessible    = false
 
-  multi_az            = false
-  publicly_accessible = false
-  deletion_protection = false
-  skip_final_snapshot = true
-  # 7 days of automated backups -> point-in-time recovery. Storage beyond the
-  # DB size is negligible at 20GB; the safety net is worth far more.
-  backup_retention_period = 7
-  backup_window           = "03:00-04:00"
-  maintenance_window      = "Mon:04:00-Mon:05:00"
+  # The AWS Free plan caps automated-backup retention. 1 day keeps point-in-time
+  # recovery on while staying inside the free limit; bump back to 7 after the
+  # account is upgraded to a paid plan.
+  backup_retention_period = 1
+  backup_window           = "18:30-19:00" # off-peak UTC (midnight IST)
+  maintenance_window      = "sun:19:30-sun:20:30"
+  copy_tags_to_snapshot   = true
+
+  # Do not lose the data to a typo. A final snapshot is taken on destroy.
+  deletion_protection       = true
+  skip_final_snapshot       = false
+  final_snapshot_identifier = "${var.name}-db-final"
 
   auto_minor_version_upgrade = true
-
+  # Performance Insights is not covered by the Free plan; re-enable after upgrade.
   performance_insights_enabled = false
 
-  tags = var.tags
+  tags = merge(var.tags, { Name = "${var.name}-db" })
 }
 
-resource "aws_secretsmanager_secret" "db" {
-  name                    = "${var.name_prefix}/database"
-  recovery_window_in_days = 7
-  tags                    = var.tags
-}
-
-resource "aws_secretsmanager_secret_version" "db" {
-  secret_id = aws_secretsmanager_secret.db.id
+# Now that the endpoint exists, write the full database secret so the app fleet
+# can pull connection details at boot.
+resource "aws_secretsmanager_secret_version" "database" {
+  secret_id = var.database_secret_id
   secret_string = jsonencode({
-    PGHOST     = aws_db_instance.main.address
-    PGPORT     = "5432"
-    PGDATABASE = var.db_name
-    PGUSER     = var.db_username
-    PGPASSWORD = random_password.db.result
-    PGSSL      = "true"
+    PGHOST       = aws_db_instance.this.address
+    PGPORT       = tostring(aws_db_instance.this.port)
+    PGDATABASE   = var.db_name
+    PGUSER       = var.db_username
+    PGPASSWORD   = var.db_password
+    PGSSL        = "true"
+    DATABASE_URL = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.this.address}:${aws_db_instance.this.port}/${var.db_name}?sslmode=require"
+    ADMIN_SECRET = var.admin_secret
   })
-}
-
-# App-level secrets: Groq API key, constructed Postgres URL, and the ingest API
-# key for the chatbot. Created once with placeholder values; update via CLI after
-# apply (secret_string is ignored below, so real values are set out-of-band):
-#   aws secretsmanager put-secret-value \
-#     --secret-id mandapmaps-prod/app \
-#     --secret-string '{"groq_api_key":"<real-key>","postgres_url":"postgresql://...","ingest_api_key":"<random>"}'
-resource "aws_secretsmanager_secret" "app" {
-  name                    = "${var.name_prefix}/app"
-  recovery_window_in_days = 7
-  tags                    = var.tags
-}
-
-resource "aws_secretsmanager_secret_version" "app" {
-  secret_id = aws_secretsmanager_secret.app.id
-  secret_string = jsonencode({
-    groq_api_key   = "REPLACE_ME"
-    postgres_url   = "postgresql://${var.db_username}:${random_password.db.result}@${aws_db_instance.main.address}:5432/${var.db_name}"
-    ingest_api_key = "REPLACE_ME"
-  })
-
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
 }

@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1
+  # Match the Terraform stack region (infra/variables.tf).
+  AWS_REGION: ap-south-1
 
 jobs:
   deploy-frontend:
@@ -29,9 +30,9 @@ jobs:
       - name: Build
         run: npm run build --workspace frontend
         env:
-          # Empty -> the SPA calls /api/* same-origin; CloudFront routes it to
-          # API Gateway. The code reads VITE_API_URL (see frontend/src/services).
-          VITE_API_URL: ""
+          # Empty -> the SPA calls /api/* same-origin. Cloudflare routes /api/*
+          # to the ALB and everything else to CloudFront.
+          VITE_API_URL: ''
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -55,7 +56,7 @@ jobs:
             --paths "/*"
 
   deploy-backend:
-    name: Deploy Node.js backend via SSM
+    name: Deploy Node API via SSM
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
@@ -64,47 +65,43 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to Node ASG via SSM
+      - name: Deploy to API ASG via SSM
+        env:
+          SHA: ${{ github.sha }}
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
-            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-node" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-api-asg" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "set -e",
-              "git config --system --add safe.directory /opt/mandapmaps/repo",
-              "cd /opt/mandapmaps/repo",
-              "git pull origin master",
-              "rm -rf node_modules",
-              "npm ci --omit=dev",
-              "systemctl restart mandapmaps-prod"
-            ]' \
+            --parameters "commands=[
+              \"set -e\",
+              \"git config --system --add safe.directory /opt/mandapmaps/repo\",
+              \"cd /opt/mandapmaps/repo\",
+              \"git fetch --depth 1 origin $SHA\",
+              \"git checkout --force $SHA\",
+              \"npm ci --omit=dev\",
+              \"systemctl restart mandapmaps-api\"
+            ]" \
             --timeout-seconds 300 \
-            --comment "Deploy ${{ github.sha }}" \
+            --comment "Deploy $SHA" \
             --query 'Command.CommandId' \
             --output text)
 
           echo "SSM Command ID: $COMMAND_ID"
-
           for i in $(seq 1 30); do
             sleep 10
             STATUSES=$(aws ssm list-command-invocations \
-              --command-id "$COMMAND_ID" \
-              --region "$AWS_REGION" \
-              --query 'CommandInvocations[*].Status' \
-              --output text)
+              --command-id "$COMMAND_ID" --region "$AWS_REGION" \
+              --query 'CommandInvocations[*].Status' --output text)
             echo "Status: $STATUSES"
             if echo "$STATUSES" | grep -qiE "Failed|Cancelled|TimedOut"; then
-              echo "Deployment failed"
-              exit 1
+              echo "Deployment failed"; exit 1
             fi
             if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
-              echo "Deployment successful"
-              exit 0
+              echo "Deployment successful"; exit 0
             fi
           done
-          echo "Timed out waiting for SSM command"
-          exit 1
+          echo "Timed out waiting for SSM command"; exit 1
 
   deploy-chatbot:
     name: Deploy Python chatbot via SSM
@@ -116,44 +113,40 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to Python ASG via SSM
+      - name: Deploy to chatbot ASG via SSM
+        env:
+          SHA: ${{ github.sha }}
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
-            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-prod-asg-python" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-chatbot-asg" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "set -e",
-              "git config --system --add safe.directory /opt/mandapmaps/repo",
-              "cd /opt/mandapmaps/repo",
-              "git pull origin master",
-              "rsync -a --delete chatbot/ /opt/mandapmaps/python/",
-              "pip3 install --retries 10 --timeout 120 -r /opt/mandapmaps/python/requirements.txt --quiet",
-              "systemctl restart mandapmaps-chatbot"
-            ]' \
-            --timeout-seconds 300 \
-            --comment "Deploy ${{ github.sha }}" \
+            --parameters "commands=[
+              \"set -e\",
+              \"git config --system --add safe.directory /opt/mandapmaps/repo\",
+              \"cd /opt/mandapmaps/repo\",
+              \"git fetch --depth 1 origin $SHA\",
+              \"git checkout --force $SHA\",
+              \"python3.11 -m pip install --no-cache-dir -r chatbot/requirements.txt\",
+              \"systemctl restart mandapmaps-chatbot\"
+            ]" \
+            --timeout-seconds 600 \
+            --comment "Deploy $SHA" \
             --query 'Command.CommandId' \
             --output text)
 
           echo "SSM Command ID: $COMMAND_ID"
-
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             sleep 10
             STATUSES=$(aws ssm list-command-invocations \
-              --command-id "$COMMAND_ID" \
-              --region "$AWS_REGION" \
-              --query 'CommandInvocations[*].Status' \
-              --output text)
+              --command-id "$COMMAND_ID" --region "$AWS_REGION" \
+              --query 'CommandInvocations[*].Status' --output text)
             echo "Status: $STATUSES"
             if echo "$STATUSES" | grep -qiE "Failed|Cancelled|TimedOut"; then
-              echo "Deployment failed"
-              exit 1
+              echo "Deployment failed"; exit 1
             fi
             if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed"; then
-              echo "Deployment successful"
-              exit 0
+              echo "Deployment successful"; exit 0
             fi
           done
-          echo "Timed out waiting for SSM command"
-          exit 1
+          echo "Timed out waiting for SSM command"; exit 1

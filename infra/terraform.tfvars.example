@@ -1,20 +1,16 @@
 # Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
 
 # Email that receives CloudWatch alarms and budget alerts.
-alarm_email = "patilshreeyash2708@gmail.com"
+alarm_email = "you@example.com"
 
 # Shared secret Cloudflare must send in the x-origin-secret header on /api
 # requests. Generate a long random value, e.g. `openssl rand -hex 32`, and set
 # the same value in the Cloudflare Transform Rule that adds this header.
-origin_shared_secret = "c62546fb00fa82746ca04977d14b9da2e86c282873dcb415002b4413fbd2e9df"
-
-# Repo the instances clone and CI/CD deploys from. The module defaults point at
-# a non-existent "website" repo; the real repo is mandap_maps.
-github_repo  = "ShreeyashPatil2708/mandap_maps"
-app_repo_url = "https://github.com/ShreeyashPatil2708/mandap_maps.git"
+origin_shared_secret = "REPLACE_WITH_A_LONG_RANDOM_STRING"
 
 # Optional overrides (defaults shown):
 # domain_name            = "mandapmaps.in"
 # region                 = "ap-south-1"
 # db_multi_az            = false
 # monthly_budget_usd     = 60
+# github_repo            = "ShreeyashPatil2708/website"

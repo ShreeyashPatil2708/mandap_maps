@@ -1,201 +1,259 @@
-terraform {
-  required_version = ">= 1.10"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
+# ---------------------------------------------------------------------------
+# AMIs: Amazon Linux 2023. arm64 for the Graviton API fleet, x86_64 for the
+# chatbot fleet (torch / faiss-cpu wheels are simplest on x86).
+# ---------------------------------------------------------------------------
+data "aws_ami" "al2023_arm" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-arm64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
-provider "aws" {
-  region = var.region
-
-  default_tags {
-    tags = local.common_tags
+data "aws_ami" "al2023_x86" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
+# ---------------------------------------------------------------------------
+# Secrets (created early: the RDS module writes the DB secret version, the app
+# fleet reads both at boot, IAM scopes read access to their ARNs).
+# ---------------------------------------------------------------------------
+module "secrets" {
+  source = "./modules/secrets"
 
-  default_tags {
-    tags = local.common_tags
-  }
+  database_secret_name = local.db_secret_name
+  app_secret_name      = local.app_secret_name
+  tags                 = local.common_tags
 }
 
-data "aws_caller_identity" "current" {}
-
-module "vpc" {
-  source      = "./modules/vpc"
-  region      = var.region
-  name_prefix = local.name_prefix
-  vpc_cidr    = var.vpc_cidr
-  tags        = local.common_tags
-}
-
-module "security_groups" {
-  source      = "./modules/security_groups"
-  vpc_id      = module.vpc.vpc_id
-  vpc_cidr    = module.vpc.vpc_cidr_block
-  name_prefix = local.name_prefix
-  tags        = local.common_tags
-}
-
+# ---------------------------------------------------------------------------
+# S3 (frontend, photos, data). Frontend bucket policy is owned by cloudfront.
+# ---------------------------------------------------------------------------
 module "s3" {
-  source                 = "./modules/s3"
-  frontend_bucket_name   = local.frontend_bucket_name
-  media_bucket_name      = local.media_bucket_name
-  faiss_bucket_name      = local.faiss_bucket_name
-  codedeploy_bucket_name = local.codedeploy_bucket_name
-  tags                   = local.common_tags
+  source = "./modules/s3"
+
+  name = local.name
+  tags = local.common_tags
 }
 
-module "acm" {
-  source      = "./modules/acm"
-  domain_name = var.domain_name
-  tags        = local.common_tags
-
-  providers = {
-    aws.us_east_1 = aws.us_east_1
-  }
-}
-
+# ---------------------------------------------------------------------------
+# IAM (instance profiles + GitHub OIDC CD role).
+# ---------------------------------------------------------------------------
 module "iam" {
-  source                 = "./modules/iam"
-  name_prefix            = local.name_prefix
-  github_repo            = var.github_repo
-  github_oidc_sub        = var.github_oidc_sub
-  frontend_bucket_name   = local.frontend_bucket_name
-  faiss_bucket_name      = local.faiss_bucket_name
-  codedeploy_bucket_name = local.codedeploy_bucket_name
-  tags                   = local.common_tags
-}
+  source = "./modules/iam"
 
-module "nlb" {
-  source                 = "./modules/nlb"
-  name_prefix            = local.name_prefix
-  vpc_id                 = module.vpc.vpc_id
-  private_app_subnet_ids = module.vpc.private_app_subnet_ids
-  nlb_sg_id              = module.security_groups.nlb_sg_id
-  tags                   = local.common_tags
-}
-
-module "api_gateway" {
-  source                 = "./modules/api_gateway"
-  name_prefix            = local.name_prefix
-  domain_name            = var.domain_name
-  nlb_sg_id              = module.security_groups.nlb_sg_id
-  private_app_subnet_ids = module.vpc.private_app_subnet_ids
-  node_prod_listener_arn = module.nlb.node_prod_listener_arn
-  python_listener_arn    = module.nlb.python_listener_arn
-  tags                   = local.common_tags
-}
-
-module "asg_node" {
-  source      = "./modules/asg_node"
-  name_prefix = local.name_prefix
+  name        = local.name
   region      = var.region
-  tags        = local.common_tags
+  github_repo = var.github_repo
 
-  private_app_subnet_ids     = module.vpc.private_app_subnet_ids
-  node_sg_id                 = module.security_groups.node_sg_id
-  node_instance_profile_name = module.iam.node_ec2_instance_profile_name
+  secret_arns = [
+    module.secrets.database_secret_arn,
+    module.secrets.app_secret_arn,
+  ]
+  readable_bucket_arns = [
+    module.s3.data_bucket_arn,
+    module.s3.photos_bucket_arn,
+  ]
+  frontend_bucket_arn = module.s3.frontend_bucket_arn
 
-  node_prod_tg_arn = module.nlb.node_prod_tg_arn
-  node_dev_tg_arn  = module.nlb.node_dev_tg_arn
+  tags = local.common_tags
 }
 
+# ---------------------------------------------------------------------------
+# Security groups.
+# ---------------------------------------------------------------------------
+module "security_groups" {
+  source = "./modules/security_groups"
+
+  name                  = local.name
+  vpc_id                = module.vpc.vpc_id
+  vpc_cidr              = module.vpc.vpc_cidr
+  cloudflare_ipv4_cidrs = var.cloudflare_ipv4_cidrs
+  api_port              = local.api_port
+  chatbot_port          = local.chatbot_port
+  tags                  = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# VPC (needs the NAT security group + profile, so it consumes IAM/SG outputs).
+# ---------------------------------------------------------------------------
+module "vpc" {
+  source = "./modules/vpc"
+
+  name                      = local.name
+  vpc_cidr                  = var.vpc_cidr
+  azs                       = local.azs
+  nat_instance_type         = var.nat_instance_type
+  nat_security_group_id     = module.security_groups.nat_sg_id
+  nat_instance_profile_name = module.iam.nat_instance_profile_name
+  ssh_key_name              = var.ssh_key_name
+  tags                      = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# RDS.
+# ---------------------------------------------------------------------------
 module "rds" {
-  source      = "./modules/rds"
-  name_prefix = local.name_prefix
-  tags        = local.common_tags
+  source = "./modules/rds"
 
-  private_data_subnet_ids = module.vpc.private_data_subnet_ids
-  rds_sg_id               = module.security_groups.rds_sg_id
+  name               = local.name
+  data_subnet_ids    = module.vpc.data_subnet_ids
+  rds_sg_id          = module.security_groups.rds_sg_id
+  instance_class     = var.db_instance_class
+  db_name            = var.db_name
+  db_username        = var.db_username
+  db_password        = module.secrets.db_password
+  admin_secret       = module.secrets.admin_secret
+  allocated_storage  = var.db_allocated_storage
+  multi_az           = var.db_multi_az
+  database_secret_id = module.secrets.database_secret_id
+  tags               = local.common_tags
 }
 
-module "asg_python" {
-  source      = "./modules/asg_python"
-  name_prefix = local.name_prefix
-  region      = var.region
-  tags        = local.common_tags
-
-  private_app_subnet_ids       = module.vpc.private_app_subnet_ids
-  python_sg_id                 = module.security_groups.python_sg_id
-  python_instance_profile_name = module.iam.python_ec2_instance_profile_name
-  faiss_bucket_name            = local.faiss_bucket_name
-
-  python_tg_arn = module.nlb.python_tg_arn
-}
-
-module "cloudwatch" {
-  source      = "./modules/cloudwatch"
-  name_prefix = local.name_prefix
-  tags        = local.common_tags
-
-  node_asg_name   = module.asg_node.asg_name
-  python_asg_name = module.asg_python.asg_name
-  rds_instance_id = module.rds.db_instance_identifier
-}
-
-module "festival" {
-  source      = "./modules/festival"
-  name_prefix = local.name_prefix
-  tags        = local.common_tags
-
-  db_instance_identifier  = module.rds.db_instance_identifier
-  db_secret_arn           = module.rds.db_secret_arn
-  db_subnet_group_name    = module.rds.db_subnet_group_name
-  private_data_subnet_ids = module.vpc.private_data_subnet_ids
-  rds_sg_id               = module.security_groups.rds_sg_id
-}
-
+# ---------------------------------------------------------------------------
+# CloudFront (SPA front door) + frontend bucket policy.
+# ---------------------------------------------------------------------------
 module "cloudfront" {
-  source      = "./modules/cloudfront"
-  name_prefix = local.name_prefix
-  domain_name = var.domain_name
-  tags        = local.common_tags
+  source = "./modules/cloudfront"
 
-  acm_certificate_arn = module.acm.certificate_arn
-  api_gateway_domain  = module.api_gateway.api_domain
-
-  frontend_bucket_id              = module.s3.frontend_bucket_id
-  frontend_bucket_arn             = module.s3.frontend_bucket_arn
-  frontend_bucket_regional_domain = module.s3.frontend_bucket_regional_domain
-
-  media_bucket_id              = module.s3.media_bucket_id
-  media_bucket_arn             = module.s3.media_bucket_arn
-  media_bucket_regional_domain = module.s3.media_bucket_regional_domain
+  name                                 = local.name
+  frontend_bucket_id                   = module.s3.frontend_bucket_id
+  frontend_bucket_arn                  = module.s3.frontend_bucket_arn
+  frontend_bucket_regional_domain_name = module.s3.frontend_bucket_regional_domain_name
+  alb_origin_domain                    = "origin.${var.domain_name}"
+  origin_shared_secret                 = var.origin_shared_secret
+  tags                                 = local.common_tags
 }
 
-# Cost guardrail: emails on 80% actual / 100% forecasted spend against a monthly
-# budget. Cheapest insurance against a runaway bill (misconfig, scale, abuse).
-resource "aws_budgets_budget" "monthly" {
-  name         = "${local.name_prefix}-monthly"
-  budget_type  = "COST"
-  limit_amount = var.monthly_budget_usd
-  limit_unit   = "USD"
-  time_unit    = "MONTHLY"
+# ---------------------------------------------------------------------------
+# ALB (origin for /api, behind Cloudflare).
+# ---------------------------------------------------------------------------
+module "alb" {
+  source = "./modules/alb"
 
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.budget_alert_email]
-  }
+  name                 = local.name
+  vpc_id               = module.vpc.vpc_id
+  public_subnet_ids    = module.vpc.public_subnet_ids
+  alb_sg_id            = module.security_groups.alb_sg_id
+  origin_host          = "origin.${var.domain_name}"
+  origin_shared_secret = var.origin_shared_secret
+  api_port             = local.api_port
+  chatbot_port         = local.chatbot_port
+  tags                 = local.common_tags
+}
 
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 100
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "FORECASTED"
-    subscriber_email_addresses = [var.budget_alert_email]
-  }
+# ---------------------------------------------------------------------------
+# Monitoring (log group retention, alarms, dashboard, budget).
+# ---------------------------------------------------------------------------
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  name                  = local.name
+  region                = var.region
+  alarm_email           = var.alarm_email
+  log_group_name        = local.log_group_name
+  alb_arn_suffix        = module.alb.alb_arn_suffix
+  api_tg_arn_suffix     = module.alb.api_tg_arn_suffix
+  chatbot_tg_arn_suffix = module.alb.chatbot_tg_arn_suffix
+  rds_identifier        = module.rds.identifier
+  nat_instance_id       = module.vpc.nat_instance_id
+  api_asg_name          = module.api_fleet.asg_name
+  chatbot_asg_name      = module.chatbot_fleet.asg_name
+  monthly_budget_usd    = var.monthly_budget_usd
+  tags                  = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# API fleet: always-on, on-demand Graviton, target-tracked on ALB requests.
+# ---------------------------------------------------------------------------
+module "api_fleet" {
+  source = "./modules/asg"
+
+  name = "${local.name}-api"
+  role = "api"
+  # Both AMI and every fallback type are arm64 (one launch-template AMI cannot
+  # span architectures). Multiple sizes let the on-demand allocation strategy
+  # fall back when one type is capacity-constrained in an AZ.
+  ami_id = data.aws_ami.al2023_arm.id
+  # Free plan only covers t4g.micro (Graviton free trial). The t4g.small fallback
+  # is blocked, so keep the API pool to the single free-tier type.
+  instance_types        = [var.api_instance_type]
+  capacity_type         = "on-demand"
+  min_size              = var.api_min_size
+  max_size              = var.api_max_size
+  desired_capacity      = var.api_min_size
+  subnet_ids            = module.vpc.app_subnet_ids
+  security_group_id     = module.security_groups.app_sg_id
+  instance_profile_name = module.iam.app_instance_profile_name
+  target_group_arns     = [module.alb.api_target_group_arn]
+  key_name              = var.ssh_key_name
+
+  health_check_grace_period = 300
+  detailed_monitoring       = true
+  alb_request_target        = 300
+  alb_resource_label        = module.alb.api_resource_label
+
+  user_data = templatefile("${path.module}/templates/api-user-data.sh.tftpl", {
+    region       = var.region
+    repo_url     = var.app_repo_url
+    repo_branch  = var.app_repo_branch
+    db_secret_id = local.db_secret_name
+    api_port     = local.api_port
+    cors_origins = local.cors_origins
+    log_group    = local.log_group_name
+  })
+
+  tags = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# Chatbot fleet: all-Spot x86 pool, off-season desired 0.
+# ---------------------------------------------------------------------------
+module "chatbot_fleet" {
+  source = "./modules/asg"
+
+  name                  = "${local.name}-chatbot"
+  role                  = "chatbot"
+  ami_id                = data.aws_ami.al2023_x86.id
+  instance_types        = var.chatbot_instance_types
+  capacity_type         = "spot"
+  min_size              = var.chatbot_min_size
+  max_size              = var.chatbot_max_size
+  desired_capacity      = var.chatbot_min_size
+  subnet_ids            = module.vpc.app_subnet_ids
+  security_group_id     = module.security_groups.app_sg_id
+  instance_profile_name = module.iam.app_instance_profile_name
+  target_group_arns     = [module.alb.chatbot_target_group_arn]
+  key_name              = var.ssh_key_name
+
+  # Model load makes cold boot slow; give it room before health checks bite.
+  health_check_grace_period = 600
+  cpu_target                = 60
+
+  user_data = templatefile("${path.module}/templates/chatbot-user-data.sh.tftpl", {
+    region          = var.region
+    repo_url        = var.app_repo_url
+    repo_branch     = var.app_repo_branch
+    db_secret_id    = local.db_secret_name
+    app_secret_id   = local.app_secret_name
+    data_bucket     = module.s3.data_bucket_id
+    allowed_origins = local.allowed_origins_json
+    log_group       = local.log_group_name
+  })
+
+  tags = local.common_tags
 }
