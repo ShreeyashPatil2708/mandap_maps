@@ -13,4 +13,5 @@ origin_shared_secret = "REPLACE_WITH_A_LONG_RANDOM_STRING"
 # region                 = "ap-south-1"
 # db_multi_az            = false
 # monthly_budget_usd     = 60
-# github_repo            = "ShreeyashPatil2708/website"
+# github_repo            = "ShreeyashPatil2708/mandap_maps"
+# github_oidc_sub        = "repo:ORG/REPO:ref:refs/heads/master" # only if custom OIDC subject templates are enabled

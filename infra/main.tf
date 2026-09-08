@@ -56,9 +56,10 @@ module "s3" {
 module "iam" {
   source = "./modules/iam"
 
-  name        = local.name
-  region      = var.region
-  github_repo = var.github_repo
+  name            = local.name
+  region          = var.region
+  github_repo     = var.github_repo
+  github_oidc_sub = var.github_oidc_sub
 
   secret_arns = [
     module.secrets.database_secret_arn,
