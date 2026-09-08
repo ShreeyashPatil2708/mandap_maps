@@ -6,7 +6,7 @@ alarm_email = "patilshreeyash2708@gmail.com"
 # Shared secret Cloudflare must send in the x-origin-secret header on /api
 # requests. Generate a long random value, e.g. `openssl rand -hex 32`, and set
 # the same value in the Cloudflare Transform Rule that adds this header.
-origin_shared_secret = "c62546fb00fa82746ca04977d14b9da2e86c282873dcb415002b4413fbd2e9df"
+origin_shared_secret = "ff0706a2eaf70f552c6466695b9929a0550ecfd0eee51e5655df8db8a08d73ea"
 
 # Repo the instances clone and CI/CD deploys from. The module defaults point at
 # a non-existent "website" repo; the real repo is mandap_maps.

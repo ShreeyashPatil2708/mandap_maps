@@ -7,6 +7,17 @@ output "cloudfront_domain_name" {
   value       = module.cloudfront.domain_name
 }
 
+output "cdn_acm_validation_records" {
+  description = "Add these DNS-only CNAMEs in Cloudflare to validate the CloudFront apex/www cert. Apply pauses until done."
+  value = [
+    for o in aws_acm_certificate.cdn.domain_validation_options : {
+      name  = o.resource_record_name
+      type  = o.resource_record_type
+      value = o.resource_record_value
+    }
+  ]
+}
+
 output "cloudfront_distribution_id" {
   description = "GitHub Actions secret CLOUDFRONT_DISTRIBUTION_ID."
   value       = module.cloudfront.distribution_id

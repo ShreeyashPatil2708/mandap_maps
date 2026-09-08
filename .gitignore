@@ -44,8 +44,10 @@ coverage/
 # Terraform
 **/.terraform/
 *.tfstate
+*.tfstate.*
 *.tfstate.backup
 *.tfplan
+*.bak
 crash.log
 override.tf
 override.tf.json
