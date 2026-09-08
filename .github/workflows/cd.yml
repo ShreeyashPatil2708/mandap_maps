@@ -117,6 +117,18 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: |
+          # The chatbot fleet runs at desired=0 off-season. With no instances,
+          # an SSM command has no targets and the poll below would hang until it
+          # times out, so skip cleanly when the fleet is scaled to zero.
+          INSTANCES=$(aws autoscaling describe-auto-scaling-groups \
+            --region "$AWS_REGION" \
+            --auto-scaling-group-names mandapmaps-chatbot-asg \
+            --query 'length(AutoScalingGroups[0].Instances)' --output text)
+          if [ "$INSTANCES" = "0" ] || [ "$INSTANCES" = "None" ] || [ -z "$INSTANCES" ]; then
+            echo "Chatbot fleet is scaled to 0; nothing to deploy. Skipping."
+            exit 0
+          fi
+
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
             --targets "Key=tag:aws:autoscaling:groupName,Values=mandapmaps-chatbot-asg" \
