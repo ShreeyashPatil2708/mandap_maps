@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
+from app.core import memory
 from app.core.concurrency import BusyError, acquire_slot
 from app.core.limiter import limiter
 from app.core.rag_pipeline import answer_query, stream_answer
