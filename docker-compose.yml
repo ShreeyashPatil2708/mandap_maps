@@ -4,7 +4,7 @@
 services:
   postgres:
     image: postgres:17
-    container_name: mandapmaps-postgres
+    container_name: new-mandapmaps-postgres
     environment:
       POSTGRES_USER: ${PGUSER:-postgres}
       POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
@@ -21,7 +21,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: mandapmaps-redis
+    container_name: new-mandapmaps-redis
     ports:
       - '6379:6379'
 

@@ -1,71 +1,99 @@
 # MandapMaps
 
-Find Ganpati pandals in Pune, plan your darshan route, and ask the assistant about timings and history.
+A mobile-first companion for Pune's Ganeshotsav festival. Find Ganpati pandals
+near you, plan a darshan route between them, and ask an assistant about timings,
+history, and directions.
 
 ## What's inside
 
-- `frontend/` - React app (Vite)
-- `backend/` - Node/Express API
-- `chatbot/` - Python RAG assistant (FAISS + Groq)
-- `data/` - pandal dataset (private, not committed)
-
-## Prerequisites
-
-- Node >= 20
-- Python >= 3.11
-- Docker
+- `frontend/` - the React app people use on their phone (Vite + React)
+- `backend/` - the Node/Express API that serves the Ganpati data
+- `chatbot/` - a Python FastAPI RAG assistant (FAISS + BM25 + Groq)
+- `data/` - the source dataset (private, shared by hand, not committed)
 
 ## Running locally
 
-The app runs as three processes. Open three terminal tabs.
+You need **Node >= 20**, **Python >= 3.11**, and **Docker** installed.
 
-### 0. Start infrastructure
+The site runs as three separate processes. Open three terminal tabs.
+
+---
+
+### Step 0 -- infrastructure (Docker)
+
+Start Postgres and Redis. This only needs to be done once per machine restart.
 
 ```bash
 docker compose up -d
 ```
 
-### 1. Backend (Terminal 1)
+---
+
+### Step 1 -- backend API (Terminal 1)
 
 ```bash
 cd backend
-cp .env.example .env
+cp .env.example .env        # fill in values if needed; defaults work for local dev
 npm install
-npm run migrate
-npm run seed
-npm run dev
+npm run dev                 # starts on http://localhost:4000
 ```
 
-Runs on `http://localhost:4000`. Run `migrate` and `seed` only once (or when the schema/data changes).
+---
 
-### 2. Chatbot (Terminal 2)
+### Step 2 -- chatbot (Terminal 2)
+
+The chatbot is a Python FastAPI service. The frontend proxies `/api/chat` to it,
+so it must be running or the chat widget won't respond.
 
 ```bash
 cd chatbot
+
+# one-time: create and activate a virtual environment
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate    # on Windows: venv\Scripts\activate
+
+# one-time: install dependencies
 pip install -r requirements.txt
+
+# one-time: copy env file and add your Groq API key
 cp .env.example .env
-# set GROQ_API_KEY in .env (get one at console.groq.com)
+# open .env and set GROQ_API_KEY=<your key from console.groq.com>
+
+# one-time: build the FAISS vector index from seed-data.json
 python ingest_seed_data.py
+
+# start the chatbot server
 uvicorn app.main:app --reload --port 8000
 ```
 
-Runs on `http://localhost:8000`. On subsequent runs, just activate the venv and run `uvicorn`. Re-run `ingest_seed_data.py` only if the dataset changes.
+The chatbot will be available at `http://localhost:8000`. On subsequent runs you
+only need to activate the venv and run the last `uvicorn` command (re-run
+`ingest_seed_data.py` only if the dataset changes).
 
-### 3. Frontend (Terminal 3)
+---
+
+### Step 3 -- frontend (Terminal 3)
 
 ```bash
 cd frontend
-cp .env.example .env
+cp .env.example .env        # defaults are fine for local dev
 npm install
-npm run dev
+npm run dev                 # starts on http://localhost:5173
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173` in your browser.
 
-The Vite dev server proxies `/api` to the backend and `/api/chat` to the chatbot.
+The Vite dev server proxies:
+- `/api/chat` -> chatbot at `http://localhost:8000`
+- `/api` -> backend at `http://localhost:4000`
+
+---
 
 ## Data
 
-`seed-data.json` is private and not committed. Use `seed-data.example.json` to test the chatbot pipeline without the real dataset.
+The Ganpati dataset (`seed-data.json`) is private and shared by hand, so it is
+not committed to this repo. The chatbot ships a `seed-data.example.json` you can
+use to test the pipeline without the real dataset.
+test
+test
+2test

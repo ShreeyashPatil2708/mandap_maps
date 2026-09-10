@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { manachaBadge } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
-import { useSaved } from '../context/SavedContext.jsx';
-import { OmMark, MetroIcon, FoodIcon, ParkingIcon, BookmarkIcon } from '../components/icons.jsx';
+import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
+import { reportCrowd } from '../services/crowd.js';
+import { useCrowd } from '../context/CrowdContext.jsx';
 
 const TABS = [
   { key: 'history', label: 'History' },
@@ -30,6 +31,55 @@ function TimingRow({ title, value }) {
     </div>
   );
 }
+
+//////////
+
+function CrowdReportWidget({ ganpatiId }) {
+  const { crowd, refresh } = useCrowd();
+  const [submitting, setSubmitting] = useState(false);
+  const current = crowd[ganpatiId];
+
+  const submit = async (level) => {
+    setSubmitting(true);
+    try {
+      await reportCrowd(ganpatiId, level);
+      refresh();
+    } catch {
+      // Silently ignore — reporting is best-effort, never block the user.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-card border border-maroon/[0.06] bg-surface p-4">
+      <div className="mb-1 font-sans text-sm font-semibold text-maroon">How busy is it here?</div>
+      {current && (
+        <div className="mb-3 font-sans text-xs text-maroon/50">
+          Current: {current.label} ({current.reportCount} reports in the last 45 min)
+        </div>
+      )}
+      <div className="flex gap-2">
+        {[
+          { level: 1, label: 'Low', color: 'bg-green-100 text-green-800' },
+          { level: 2, label: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
+          { level: 3, label: 'High', color: 'bg-red-100 text-red-800' },
+        ].map((opt) => (
+          <button
+            key={opt.level}
+            disabled={submitting}
+            onClick={() => submit(opt.level)}
+            className={`flex-1 rounded-pill px-3 py-2 font-sans text-sm font-semibold ${opt.color} disabled:opacity-50`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+///////
 
 function NearbyRow({ name, sub, dist }) {
   return (
@@ -78,22 +128,8 @@ function NearbyGroup({ icon, title, children }) {
 export default function Detail({ ganpati, prevPage, onBack }) {
   const [tab, setTab] = useState('history');
   const [toast, setToast] = useState(false);
-  const [saveToast, setSaveToast] = useState(null);
   const { route, addToRoute, removeFromRoute } = useRoute();
-  const { saved, saveGanpati, unsaveGanpati } = useSaved();
   const inRoute = route.includes(ganpati.id);
-  const isSaved = saved.has(ganpati.id);
-
-  const onToggleSave = () => {
-    if (isSaved) {
-      unsaveGanpati(ganpati.id);
-      setSaveToast('Removed from saved');
-    } else {
-      saveGanpati(ganpati.id);
-      setSaveToast('Saved');
-    }
-    setTimeout(() => setSaveToast(null), 2000);
-  };
   const backLabel = prevPage === 'home' ? '← Back to Home' : '← Back to Explore';
   // Closest metro station for the "Getting There" tab (first of the list).
   const metro = ganpati.metro?.[0];
@@ -122,14 +158,6 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           ॐ
         </div>
         <OmMark size={56} textSize={18} opacity={0.4} />
-        <button
-          onClick={onToggleSave}
-          aria-label={isSaved ? 'Remove from saved' : 'Save pandal'}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-cream/15 backdrop-blur-sm transition-all hover:bg-cream/25"
-          style={{ color: isSaved ? '#C9A84C' : 'rgba(237,228,208,0.7)' }}
-        >
-          <BookmarkIcon filled={isSaved} size={18} />
-        </button>
       </div>
 
       {/* Name & info */}
@@ -164,6 +192,15 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           </div>
         )}
       </div>
+
+    
+
+       {/* Crowd Report */}
+      <div className="mx-gutter-lg mt-5">
+        <CrowdReportWidget ganpatiId={ganpati.id} />
+      </div>
+
+      
 
       {/* Did You Know */}
       {ganpati.didYouKnow && (
@@ -269,20 +306,11 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         )}
       </div>
 
-      {/* Route toast */}
+      {/* Toast */}
       {toast && (
         <div className="fixed inset-x-0 bottom-[calc(150px_+_env(safe-area-inset-bottom))] z-[60] flex justify-center px-gutter">
           <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
             Added to your route
-          </div>
-        </div>
-      )}
-
-      {/* Save toast */}
-      {saveToast && (
-        <div className="fixed inset-x-0 bottom-[calc(170px_+_env(safe-area-inset-bottom))] z-[60] flex justify-center px-gutter">
-          <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
-            {saveToast}
           </div>
         </div>
       )}
