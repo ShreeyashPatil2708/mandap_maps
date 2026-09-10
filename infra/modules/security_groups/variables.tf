@@ -8,11 +8,6 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "VPC CIDR, used to let the NAT instance accept traffic from private subnets."
-  type        = string
-}
-
 variable "cloudflare_ipv4_cidrs" {
   description = "Cloudflare IPv4 ranges allowed to reach the ALB on 80/443."
   type        = list(string)

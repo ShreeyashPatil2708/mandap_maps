@@ -37,7 +37,15 @@ export async function callChatbotAPI(message, ganpatiContext) {
         language: 'auto',
       }),
     });
-    if (!res.ok) throw new Error(`Chat request failed (${res.status})`);
+    if (!res.ok) {
+      // When the assistant is overloaded it returns 503 with a friendly message
+      // in `detail`; show that to the user instead of a generic failure.
+      if (res.status === 503) {
+        const body = await res.json().catch(() => null);
+        if (body?.detail) return body.detail;
+      }
+      throw new Error(`Chat request failed (${res.status})`);
+    }
     const data = await res.json();
     return data.answer || 'Sorry, I could not find an answer to that.';
   } catch {

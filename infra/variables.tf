@@ -34,11 +34,6 @@ variable "az_count" {
   default     = 2
 }
 
-variable "nat_instance_type" {
-  description = "Instance type for the NAT instance (x86). t3.micro is free-tier eligible (750 hrs/mo); t3.nano is cheaper but the Free plan blocks it."
-  type        = string
-  default     = "t3.micro"
-}
 
 # ---------------------------------------------------------------------------
 # Edge / origin protection
@@ -105,9 +100,12 @@ variable "chatbot_instance_types" {
   description = <<-EOT
     Spot instance pool for the chatbot ASG. All must share one CPU architecture
     (x86_64 here) because a single launch template AMI cannot span arm64 + x86.
+    Kept to the cheapest 2 GB types: t3a.small (AMD, usually cheapest) then
+    t3.small. 1 GB types (t3.micro) are too small for torch + the embedding
+    model + FAISS and would OOM.
   EOT
   type        = list(string)
-  default     = ["t3.small", "t3a.small", "t3.medium"]
+  default     = ["t3a.small", "t3.small"]
 }
 
 variable "chatbot_min_size" {

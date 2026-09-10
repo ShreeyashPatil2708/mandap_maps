@@ -8,7 +8,15 @@ resource "aws_launch_template" "this" {
     name = var.instance_profile_name
   }
 
-  vpc_security_group_ids = [var.security_group_id]
+  # Public IP so instances reach the internet directly via the IGW (no NAT box).
+  # Inbound stays closed by the app security group (ALB-only). Security groups
+  # live in the NIC block because a launch template cannot set both a top-level
+  # vpc_security_group_ids and a network_interfaces block.
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [var.security_group_id]
+    delete_on_termination       = true
+  }
 
   user_data = base64encode(var.user_data)
 

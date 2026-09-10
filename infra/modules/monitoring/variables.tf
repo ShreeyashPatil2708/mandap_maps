@@ -33,10 +33,6 @@ variable "rds_identifier" {
   type = string
 }
 
-variable "nat_instance_id" {
-  type = string
-}
-
 variable "api_asg_name" {
   type = string
 }

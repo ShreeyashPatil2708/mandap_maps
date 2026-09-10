@@ -73,26 +73,6 @@ resource "aws_iam_instance_profile" "app" {
 }
 
 # ---------------------------------------------------------------------------
-# NAT instance role (SSM only, so it needs no key pair).
-# ---------------------------------------------------------------------------
-resource "aws_iam_role" "nat" {
-  name               = "${var.name}-nat-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
-  tags               = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "nat_ssm" {
-  role       = aws_iam_role.nat.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "nat" {
-  name = "${var.name}-nat-profile"
-  role = aws_iam_role.nat.name
-  tags = var.tags
-}
-
-# ---------------------------------------------------------------------------
 # GitHub Actions OIDC provider + CD role (no long-lived AWS keys).
 # ---------------------------------------------------------------------------
 data "tls_certificate" "github" {
