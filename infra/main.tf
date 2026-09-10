@@ -82,7 +82,6 @@ module "security_groups" {
 
   name                  = local.name
   vpc_id                = module.vpc.vpc_id
-  vpc_cidr              = module.vpc.vpc_cidr
   cloudflare_ipv4_cidrs = var.cloudflare_ipv4_cidrs
   api_port              = local.api_port
   chatbot_port          = local.chatbot_port
@@ -90,19 +89,15 @@ module "security_groups" {
 }
 
 # ---------------------------------------------------------------------------
-# VPC (needs the NAT security group + profile, so it consumes IAM/SG outputs).
+# VPC. App instances egress directly via the IGW (no NAT instance).
 # ---------------------------------------------------------------------------
 module "vpc" {
   source = "./modules/vpc"
 
-  name                      = local.name
-  vpc_cidr                  = var.vpc_cidr
-  azs                       = local.azs
-  nat_instance_type         = var.nat_instance_type
-  nat_security_group_id     = module.security_groups.nat_sg_id
-  nat_instance_profile_name = module.iam.nat_instance_profile_name
-  ssh_key_name              = var.ssh_key_name
-  tags                      = local.common_tags
+  name     = local.name
+  vpc_cidr = var.vpc_cidr
+  azs      = local.azs
+  tags     = local.common_tags
 }
 
 # ---------------------------------------------------------------------------
@@ -196,7 +191,6 @@ module "monitoring" {
   api_tg_arn_suffix     = module.alb.api_tg_arn_suffix
   chatbot_tg_arn_suffix = module.alb.chatbot_tg_arn_suffix
   rds_identifier        = module.rds.identifier
-  nat_instance_id       = module.vpc.nat_instance_id
   api_asg_name          = module.api_fleet.asg_name
   chatbot_asg_name      = module.chatbot_fleet.asg_name
   monthly_budget_usd    = var.monthly_budget_usd

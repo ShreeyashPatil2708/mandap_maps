@@ -77,10 +77,15 @@ jobs:
               \"set -e\",
               \"git config --system --add safe.directory /opt/mandapmaps/repo\",
               \"cd /opt/mandapmaps/repo\",
+              \"PREV_SHA=\$(git rev-parse HEAD)\",
               \"git fetch --depth 1 origin $SHA\",
               \"git checkout --force $SHA\",
               \"npm ci --omit=dev\",
-              \"systemctl restart mandapmaps-api\"
+              \"systemctl restart mandapmaps-api\",
+              \"PORT=\$(grep -E '^PORT=' /etc/mandapmaps/api.env | cut -d= -f2)\",
+              \"ok=0; for i in \$(seq 1 20); do sleep 3; if curl -fsS http://localhost:\$PORT/ready >/dev/null 2>&1; then ok=1; break; fi; done\",
+              \"if [ \$ok -ne 1 ]; then echo readiness failed - rolling back to \$PREV_SHA; git checkout --force \$PREV_SHA; npm ci --omit=dev; systemctl restart mandapmaps-api; exit 1; fi\",
+              \"echo readiness-ok at $SHA\"
             ]" \
             --timeout-seconds 300 \
             --comment "Deploy $SHA" \

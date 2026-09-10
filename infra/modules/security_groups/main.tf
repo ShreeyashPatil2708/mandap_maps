@@ -78,11 +78,11 @@ resource "aws_vpc_security_group_ingress_rule" "app_chatbot_from_alb" {
 }
 
 # Egress open so instances can reach RDS, Secrets Manager, Groq, package
-# mirrors and git over the NAT instance. Locking egress further would break
-# SSM and dependency installs for little gain at this scale.
+# mirrors and git directly via the Internet Gateway. Locking egress further
+# would break SSM and dependency installs for little gain at this scale.
 resource "aws_vpc_security_group_egress_rule" "app_all" {
   security_group_id = aws_security_group.app.id
-  description       = "All egress (via NAT instance / S3 endpoint)"
+  description       = "All egress (via Internet Gateway / S3 endpoint)"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
@@ -105,29 +105,4 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_app" {
   from_port                    = 5432
   to_port                      = 5432
   referenced_security_group_id = aws_security_group.app.id
-}
-
-# ---------------------------------------------------------------------------
-# NAT instance: forwards outbound traffic from the private subnets.
-# ---------------------------------------------------------------------------
-resource "aws_security_group" "nat" {
-  name        = "${var.name}-nat-sg"
-  description = "NAT instance for private subnet egress"
-  vpc_id      = var.vpc_id
-
-  tags = merge(var.tags, { Name = "${var.name}-nat-sg" })
-}
-
-resource "aws_vpc_security_group_ingress_rule" "nat_from_vpc" {
-  security_group_id = aws_security_group.nat.id
-  description       = "Egress traffic from private subnets"
-  ip_protocol       = "-1"
-  cidr_ipv4         = var.vpc_cidr
-}
-
-resource "aws_vpc_security_group_egress_rule" "nat_all" {
-  security_group_id = aws_security_group.nat.id
-  description       = "NAT to internet"
-  ip_protocol       = "-1"
-  cidr_ipv4         = "0.0.0.0/0"
 }

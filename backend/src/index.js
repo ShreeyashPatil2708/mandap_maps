@@ -6,10 +6,42 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import { loadSecrets } from './config/secrets.js';
+import { query } from './config/db.js';
 import ganpatisRouter from './routes/ganpatis.js';
 import crowdRouter from './routes/crowd.js';   // add this import near the top with the others
 import locationRouter from './routes/location.js';
 import { runCrowdAggregation } from './jobs/crowdAggregator.js';
+
+/**
+ * Cheap connectivity probe used at startup and by the /ready endpoint. Runs a
+ * trivial query so a bad DB config surfaces as a real signal instead of hiding
+ * until the first API request.
+ */
+async function pingDb() {
+  await query('SELECT 1');
+}
+
+/**
+ * Bounded startup probe. Logs the DB connectivity result but never crashes the
+ * process: a transient blip at boot should not put the service into a restart
+ * loop. Readiness (/ready) and the CD health gate are the real guardrails.
+ */
+async function probeDbAtStartup(retries = 3, delayMs = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      await pingDb();
+      // eslint-disable-next-line no-console
+      console.log('DB connectivity OK');
+      return;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(`DB probe ${attempt}/${retries} failed:`, err.code || err.message);
+      if (attempt < retries) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.error('DB not reachable at startup; serving anyway (/ready will report not-ready).');
+}
 
 /**
  * Server bootstrap. Wires up security middleware, CORS, rate limiting,
@@ -18,6 +50,9 @@ import { runCrowdAggregation } from './jobs/crowdAggregator.js';
 async function createApp() {
   // Pull DB/Redis creds from Secrets Manager in prod (no-op locally).
   await loadSecrets();
+
+  // Log DB reachability once creds are loaded (non-fatal, see probeDbAtStartup).
+  await probeDbAtStartup();
 
   const app = express();
 
@@ -43,8 +78,21 @@ async function createApp() {
     })
   );
 
+  // Liveness: the process is up. Used by the ALB and ASG health checks, so it
+  // must NOT touch the DB (an RDS blip should not cause instance cycling).
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'mandapmaps-api', time: new Date().toISOString() });
+  });
+
+  // Readiness: the DB is actually reachable. The CD deploy gate polls this after
+  // restarting the service and rolls back if it never goes green.
+  app.get('/ready', async (_req, res) => {
+    try {
+      await pingDb();
+      res.json({ status: 'ready' });
+    } catch (err) {
+      res.status(503).json({ status: 'not-ready', error: err.code || 'db-unreachable' });
+    }
   });
 
   app.use('/api/ganpatis', ganpatisRouter);

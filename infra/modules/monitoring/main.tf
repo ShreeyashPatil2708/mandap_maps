@@ -80,21 +80,6 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   tags                = var.tags
 }
 
-resource "aws_cloudwatch_metric_alarm" "nat_status" {
-  alarm_name          = "${var.name}-nat-status-check"
-  namespace           = "AWS/EC2"
-  metric_name         = "StatusCheckFailed"
-  statistic           = "Maximum"
-  comparison_operator = "GreaterThanThreshold"
-  threshold           = 0
-  period              = 60
-  evaluation_periods  = 3
-  treat_missing_data  = "breaching"
-  dimensions          = { InstanceId = var.nat_instance_id }
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-  tags                = var.tags
-}
-
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
