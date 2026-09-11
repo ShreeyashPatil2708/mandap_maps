@@ -75,6 +75,20 @@ variable "origin_shared_secret" {
   sensitive   = true
 }
 
+variable "edge_auth_secret" {
+  description = <<-EOT
+    Optional edge guard. When set, CloudFront rejects (403) any request that
+    lacks the x-mm-edge-auth header with this value, which a Cloudflare
+    Transform Rule adds. That closes the direct *.cloudfront.net path, so the
+    API's proxy-hop count (and therefore the client IP used for rate limits)
+    can't be spoofed. Leave empty (default) to keep the guard off; enable it
+    only AFTER the Cloudflare rule is live (see README "Edge guard").
+  EOT
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 # ---------------------------------------------------------------------------
 # Application fleets
 # ---------------------------------------------------------------------------

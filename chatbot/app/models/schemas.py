@@ -7,7 +7,7 @@ class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=128, description="Unique chat session / device id")
     query: str = Field(..., min_length=1, max_length=2000)
     language: Literal["en", "mr", "hi", "auto"] = "auto"
-    # Optional — only sent when the user has granted location permission in
+    # Optional: only sent when the user has granted location permission in
     # the app. Used once to build a plan/answer distance questions, never
     # stored or logged (see rag_pipeline.py / planner.py).
     lat: float | None = Field(default=None, ge=-90, le=90)
@@ -36,10 +36,14 @@ class LocationCard(BaseModel):
 class SuggestedAction(BaseModel):
     """A contextual follow-up chip shown under an answer, e.g. 'Aarti
     Timings' / 'Directions' / 'Plan Darshan'. `query` is the canned
-    natural-language question sent to the chatbot when tapped."""
+    natural-language question the chip prefills into the chat input when
+    tapped. `nav`, when set, marks the chip as an in-app navigation action
+    instead (e.g. nav='explore' opens the Explore page) rather than a
+    question, and `query` is left empty."""
     label: str
     emoji: str
     query: str
+    nav: str | None = None
 
 
 class PlanStop(BaseModel):

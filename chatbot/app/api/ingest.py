@@ -26,7 +26,7 @@ async def ingest_document(request: Request, doc: IngestDocument):
         raise HTTPException(status_code=500, detail="Ingestion failed.")
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_ingest_key)])
 async def ingest_stats():
     store = get_vector_store()
     chunks = store.all_chunks()

@@ -132,11 +132,31 @@ data "aws_iam_policy_document" "cd" {
     resources = ["*"]
   }
 
-  # Trigger and poll the app deploy via SSM Run Command.
+  # Trigger the app deploy via SSM Run Command, scoped two ways: only the
+  # AWS-RunShellScript document, and only on this project's instances (the ASG
+  # launch templates tag every instance with Project). A leaked CD token can't
+  # run other documents or reach any other instance in the account.
   statement {
-    sid = "SsmDeploy"
+    sid       = "SsmDeployDocument"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ssm:${var.region}::document/AWS-RunShellScript"]
+  }
+
+  statement {
+    sid       = "SsmDeployInstances"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:instance/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "ssm:resourceTag/Project"
+      values   = [lookup(var.tags, "Project", var.name)]
+    }
+  }
+
+  # Poll the deploy. These read-only calls have no useful resource scoping.
+  statement {
+    sid = "SsmDeployStatus"
     actions = [
-      "ssm:SendCommand",
       "ssm:ListCommandInvocations",
       "ssm:GetCommandInvocation",
     ]

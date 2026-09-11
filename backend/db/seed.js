@@ -85,7 +85,6 @@ async function seed() {
     client.release();
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Seeded ${records.length} ganpatis.`);
 
   // The API caches ganpati reads in Redis for 24h, so without this the site
@@ -106,17 +105,14 @@ async function clearGanpatiCache() {
       keys.push(...batch);
     } while (cursor !== '0');
     if (keys.length) await redis.del(...keys);
-    // eslint-disable-next-line no-console
     console.log(`Cleared ${keys.length} cache key(s).`);
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn('Cache clear skipped (Redis unavailable):', err.message);
   }
 }
 
 seed()
   .catch((err) => {
-    // eslint-disable-next-line no-console
     console.error('Seed failed:', err);
     process.exitCode = 1;
   })

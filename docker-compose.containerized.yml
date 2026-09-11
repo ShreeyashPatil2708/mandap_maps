@@ -8,10 +8,10 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    # nginx serves the SPA and proxies /api to the backend and chatbot, so the
+    # app is same-origin exactly like production (see frontend/nginx.conf).
     ports:
       - "8080:80"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8080
     depends_on:
       - backend
       - chatbot
@@ -28,12 +28,17 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "3000:3000"
+    # Local containers talk to the compose Postgres directly: no Secrets
+    # Manager (DB_SECRET_ID unset) and no TLS.
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - AWS_REGION=us-east-1
-      - DB_SECRET_ID=mandapmaps-prod/database
-      - PGSSL=true
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGUSER=${PGUSER:-postgres}
+      - PGPASSWORD=${PGPASSWORD:-postgres}
+      - PGDATABASE=${PGDATABASE:-ekdantadb}
+      - PGSSL=false
       - REDIS_URL=redis://redis:6379
       - CORS_ORIGINS=http://localhost:8080,http://localhost:5173
       - RATE_LIMIT_WINDOW_MS=60000
@@ -60,15 +65,14 @@ services:
       - ENV=development
       - LLM_PROVIDER=groq
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - GROQ_MODEL=llama-3.3-70b-versatile
-      - POSTGRES_URL=postgresql://ekdanta:ekdanta@postgres:5432/ekdanta_db
+      - GROQ_MODEL=openai/gpt-oss-120b
+      - POSTGRES_URL=postgresql://${PGUSER:-postgres}:${PGPASSWORD:-postgres}@postgres:5432/${PGDATABASE:-ekdantadb}
       - REDIS_URL=redis://redis:6379/0
+      - BACKEND_URL=http://backend:3000
       - FAISS_INDEX_PATH=/app/faiss_index/index.bin
       - FAISS_METADATA_PATH=/app/faiss_index/metadata.json
-      - ALLOWED_ORIGINS=http://localhost:8080,http://localhost:5173
-      - INGEST_API_KEY=${INGEST_API_KEY}
-      - AWS_REGION=us-east-1
-      - APP_SECRET_ID=mandapmaps-prod/app
+      - ALLOWED_ORIGINS=["http://localhost:8080","http://localhost:5173"]
+      - INGEST_API_KEY=${INGEST_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

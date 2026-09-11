@@ -88,13 +88,32 @@ step.
 1. `origin.<domain>` -> `alb_dns_name` output, **DNS-only (grey cloud)**.
 2. Apex / SPA record proxied (orange cloud) to the `cloudfront_domain_name`
    output.
-3. Route `/api/*` to the ALB origin. Use a Cloudflare Origin Rule (or a
-   dedicated `api.<domain>` proxied hostname whose origin is `origin.<domain>`)
-   so `/api/*` reaches the ALB while everything else reaches CloudFront.
-4. Add a Transform Rule that sets request header `x-origin-secret` to the same
-   value as `origin_shared_secret` on requests to the ALB origin.
-5. SSL/TLS mode **Full** (or **Full (strict)**, since the origin cert is a
-   public ACM cert for `origin.<domain>`).
+3. No Cloudflare path routing is needed: CloudFront itself sends `/api/*` to
+   the ALB and injects the `x-origin-secret` header (the free Cloudflare plan
+   can't rewrite Host/SNI, so Cloudflare proxies everything to CloudFront).
+4. SSL/TLS mode **Full** (or **Full (strict)**).
+5. Optional but recommended: the edge guard below.
+
+### Edge guard (optional, off by default)
+
+CloudFront also answers on its own `*.cloudfront.net` domain. A request sent
+there skips Cloudflare, so it has one proxy hop fewer, and the client can
+forge the X-Forwarded-For entry the API uses as the visitor IP for rate
+limits. The edge guard closes that path with a secret header only Cloudflare
+adds. **Order matters**: if CloudFront demands the header before Cloudflare
+sends it, every visitor gets a 403.
+
+1. Generate a long random value, e.g. `openssl rand -hex 32`.
+2. Cloudflare dashboard -> Rules -> Transform Rules -> **Modify Request
+   Header** -> create rule: when *Hostname* is `<domain>` or `www.<domain>`,
+   **Set static** header `x-mm-edge-auth` = the value. Deploy it. (Harmless on
+   its own: nothing checks the header yet.)
+3. Set `edge_auth_secret` in `terraform.tfvars` to the same value, then
+   `terraform plan` / `apply`. CloudFront now returns 403 for requests without
+   it and strips the header before forwarding.
+4. Check: `https://<domain>/` loads; `https://<cloudfront_domain_name>/` is 403.
+5. Rollback: set `edge_auth_secret = ""` and apply (the guard detaches), then
+   remove the Cloudflare rule if you want.
 
 ### GitHub Actions secrets
 

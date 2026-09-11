@@ -27,3 +27,42 @@ export function formatDistance(km) {
   if (km == null) return '';
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
+
+/**
+ * Google Maps directions URL (no API key needed) through `stops`, in order;
+ * the last stop is the destination. Each point prefers exact coordinates and
+ * falls back to the address, then the name.
+ *
+ * By default no origin is set, so Maps starts from the user's current location
+ * and every stop but the last becomes a waypoint. With `originFromFirst`, the
+ * first stop is sent as an explicit origin instead (the chat's darshan plan
+ * does this: its first stop is the plan's start point).
+ */
+export function directionsUrl(stops, { originFromFirst = false, travelmode } = {}) {
+  const point = (s) => (s.lat != null && s.lng != null ? `${s.lat},${s.lng}` : s.address ?? s.name);
+  const destination = encodeURIComponent(point(stops[stops.length - 1]));
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+  if (travelmode) url += `&travelmode=${travelmode}`;
+  const useOrigin = originFromFirst && stops.length > 1;
+  if (useOrigin) url += `&origin=${encodeURIComponent(point(stops[0]))}`;
+  const waypoints = stops
+    .slice(useOrigin ? 1 : 0, -1)
+    .map((s) => encodeURIComponent(point(s)))
+    .join('|');
+  if (waypoints) url += `&waypoints=${waypoints}`;
+  return url;
+}
+
+/**
+ * Returns `url` only if it is an absolute http(s) URL, else null. Guards links
+ * and images built from API data against javascript: / data: URLs.
+ */
+export function safeHttpUrl(url) {
+  if (typeof url !== 'string') return null;
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'https:' || protocol === 'http:' ? url : null;
+  } catch {
+    return null;
+  }
+}

@@ -82,7 +82,7 @@ class VectorStore:
         mandals (see hybrid_retriever.py). FAISS's flat index has no
         native metadata filtering, so for the filtered case we
         reconstruct just the allowed vectors and brute-force the cosine
-        scores with numpy — fine at this corpus size (a few hundred
+        scores with numpy, fine at this corpus size (a few hundred
         chunks total, and only a handful per mandal)."""
         if self.index.ntotal == 0:
             return []

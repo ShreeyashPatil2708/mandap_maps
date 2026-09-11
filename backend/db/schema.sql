@@ -100,6 +100,10 @@ CREATE TABLE IF NOT EXISTS route_interest (
 CREATE INDEX IF NOT EXISTS route_interest_ganpati_time_idx
     ON route_interest (ganpati_id, pinged_at DESC);
 
+-- Supports the aggregator's purge of expired interest rows (by time only).
+CREATE INDEX IF NOT EXISTS route_interest_time_idx
+    ON route_interest (pinged_at);
+
 
 CREATE TABLE IF NOT EXISTS live_locations (
     id          SERIAL PRIMARY KEY,
@@ -111,3 +115,44 @@ CREATE TABLE IF NOT EXISTS live_locations (
 
 CREATE INDEX IF NOT EXISTS live_locations_time_idx ON live_locations (pinged_at DESC);
 CREATE INDEX IF NOT EXISTS live_locations_session_idx ON live_locations (session_id, pinged_at DESC);
+
+
+-- ─────────────────────────────────────────────────────────────
+-- Background job coordination
+-- ─────────────────────────────────────────────────────────────
+-- Every API instance runs the same timers; a job atomically claims its run
+-- window here so only one instance does the work per window.
+CREATE TABLE IF NOT EXISTS job_runs (
+    name      TEXT        PRIMARY KEY,
+    last_run  TIMESTAMPTZ NOT NULL
+);
+
+
+-- ─────────────────────────────────────────────────────────────
+-- Live crowd estimate from opted-in location sharing
+-- ─────────────────────────────────────────────────────────────
+-- One current row per mandal, replaced by the crowd aggregator every run.
+-- Kept apart from crowd_reports (people's taps) so the automated signal can
+-- never outnumber real reports; it is only shown when nobody has tapped.
+CREATE TABLE IF NOT EXISTS crowd_estimates (
+    ganpati_id  INTEGER     PRIMARY KEY REFERENCES ganpatis(id) ON DELETE CASCADE,
+    level       SMALLINT    NOT NULL,   -- 1 = Low, 2 = Medium, 3 = High
+    nearby      INTEGER     NOT NULL,   -- distinct sharing devices within range
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT crowd_estimates_level_chk CHECK (level IN (1, 2, 3))
+);
+
+
+-- ─────────────────────────────────────────────────────────────
+-- Shared cooldowns and rate limits
+-- ─────────────────────────────────────────────────────────────
+-- Counters shared by every API instance (Redis is per box, so its keys are
+-- not). A row is a counter for `key` that expires at reset_at.
+CREATE TABLE IF NOT EXISTS rate_counters (
+    key       TEXT        PRIMARY KEY,
+    count     INTEGER     NOT NULL,
+    reset_at  TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS rate_counters_reset_idx ON rate_counters (reset_at);

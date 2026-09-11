@@ -13,12 +13,20 @@ ExecStart=/usr/bin/node src/index.js
 Restart=always
 RestartSec=5
 
-# Hardening
+# Hardening. The API never writes to disk, so ProtectSystem=strict with no
+# ReadWritePaths leaves the code tree read-only to the running process.
+# (Applies to instances booted after this change; the unit is installed by
+# the instance user-data.)
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/mandapmaps/repo
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=multi-user.target

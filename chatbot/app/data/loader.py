@@ -137,7 +137,7 @@ GENERAL_PATH = os.path.join(_ROOT, "general-knowledge.json")
 def get_general_knowledge() -> list[dict]:
     """Non-mandal-specific festival/Ganpati facts (see general-knowledge.json).
     Kept separate from seed-data.json so it never pollutes /api/mandals, the
-    map UI, or entity resolution — these docs have no doc_id in get_mandals()."""
+    map UI, or entity resolution, these docs have no doc_id in get_mandals()."""
     if not os.path.exists(GENERAL_PATH):
         return []
     with open(GENERAL_PATH, "r", encoding="utf-8") as f:

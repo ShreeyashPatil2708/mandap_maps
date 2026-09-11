@@ -155,6 +155,7 @@ module "cloudfront" {
   frontend_bucket_regional_domain_name = module.s3.frontend_bucket_regional_domain_name
   alb_origin_domain                    = "origin.${var.domain_name}"
   origin_shared_secret                 = var.origin_shared_secret
+  edge_auth_secret                     = var.edge_auth_secret
   aliases                              = [var.domain_name, "www.${var.domain_name}"]
   acm_certificate_arn                  = aws_acm_certificate_validation.cdn.certificate_arn
   tags                                 = local.common_tags
@@ -272,6 +273,7 @@ module "chatbot_fleet" {
     app_secret_id   = local.app_secret_name
     data_bucket     = module.s3.data_bucket_id
     allowed_origins = local.allowed_origins_json
+    backend_url     = "https://${var.domain_name}"
     log_group       = local.log_group_name
   })
 

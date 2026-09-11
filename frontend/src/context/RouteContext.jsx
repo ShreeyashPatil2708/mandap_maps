@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getSessionId } from '../data/session.js';
+
 // Shared darshan route state. The list of selected Ganpati IDs lives here so
 // the detail page (Add to Route button) and the route page stay in sync. The
 // list is persisted to localStorage so it survives a page refresh. Wire this to
@@ -19,6 +20,9 @@ function loadRoute() {
 
 export function RouteProvider({ children }) {
   const [route, setRoute] = useState(loadRoute);
+  // Latest route for callbacks, so addToRoute can stay stable.
+  const routeRef = useRef(route);
+  routeRef.current = route;
 
   useEffect(() => {
     try {
@@ -28,17 +32,20 @@ export function RouteProvider({ children }) {
     }
   }, [route]);
 
-  // ...inside RouteProvider, replace addToRoute with:
-const addToRoute = useCallback((id) => {
-  setRoute((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  fetch(`${import.meta.env.VITE_API_URL || ''}/api/ganpatis/${id}/interest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId: getSessionId() }),
-  }).catch(() => {
-    /* best-effort — never block the UI on this */
-  });
-}, []);
+  // Adds a stop and sends an anonymous "interested" ping for crowd estimates,
+  // only when the stop is new (re-adding an existing stop is a no-op).
+  const addToRoute = useCallback((id) => {
+    if (routeRef.current.includes(id)) return;
+    routeRef.current = [...routeRef.current, id];
+    setRoute((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/ganpatis/${id}/interest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: getSessionId() }),
+    }).catch(() => {
+      /* best-effort: never block the UI on this */
+    });
+  }, []);
   const removeFromRoute = useCallback(
     (id) => setRoute((prev) => prev.filter((r) => r !== id)),
     []

@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta) — powered by FAISS + BM25 + Groq/Ollama.",
+    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta), powered by FAISS + BM25 + Groq/Ollama.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -37,12 +37,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# The SPA calls /api/chat same-origin in production; CORS only matters for
+# local dev. No cookies or auth headers are used, so credentials stay off.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 app.include_router(chat.router)
