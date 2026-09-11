@@ -141,13 +141,14 @@ function LoadingIntro() {
 
 // First-visit landing screen. Shown once (App.jsx gates it behind
 // localStorage) before Home. onTeam navigates to the About/Team page.
-export default function Splash({ onEnter, onTeam }) {
-  const [loading, setLoading] = useState(true);
+export default function Splash({ onEnter, onTeam, skipIntro = false }) {
+  const [loading, setLoading] = useState(!skipIntro);
 
   useEffect(() => {
+    if (!loading) return undefined;
     const t = setTimeout(() => setLoading(false), 1800);
     return () => clearTimeout(t);
-  }, []);
+  }, [loading]);
 
   return (
     <div className="fixed inset-0 z-[400] flex flex-col items-center justify-between overflow-hidden bg-maroon px-gutter-lg py-14 text-center">

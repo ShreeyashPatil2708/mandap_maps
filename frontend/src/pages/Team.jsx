@@ -1,7 +1,5 @@
 import { LogoMark, OmMark } from '../components/icons.jsx';
-
-// UPI id read the same way SupportModal does, so both stay in sync.
-const UPI_ID = import.meta.env.VITE_UPI_ID || 'yourname@upi';
+import { UPI_ID } from '../data/upi.js';
 
 const TEAM = [
   { name: 'Shreeyash Balaji Patil'},
@@ -38,7 +36,7 @@ export default function Team({ onBack }) {
           <div className="mt-1 font-devanagari text-sm text-gold/80">मंडप मॅप्स टीम</div>
           <p className="mx-auto mt-4 max-w-[320px] font-sans text-sm leading-relaxed text-light/70">
           Built as a final-year project to make navigating Pune&apos;s Ganeshotsav
-          easier — finding pandals, planning routes, and celebrating the
+          easier: finding pandals, planning routes, and celebrating the
           history behind each Ganpati.
           </p>
         </div>

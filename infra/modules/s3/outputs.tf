@@ -18,6 +18,10 @@ output "photos_bucket_arn" {
   value = aws_s3_bucket.this["photos"].arn
 }
 
+output "photos_bucket_regional_domain_name" {
+  value = aws_s3_bucket.this["photos"].bucket_regional_domain_name
+}
+
 output "data_bucket_id" {
   value = aws_s3_bucket.this["data"].id
 }

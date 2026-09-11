@@ -18,6 +18,21 @@ variable "frontend_bucket_regional_domain_name" {
   type        = string
 }
 
+variable "photos_bucket_id" {
+  description = "Id of the private photos bucket CloudFront reads via OAC at /photos/*."
+  type        = string
+}
+
+variable "photos_bucket_arn" {
+  description = "ARN of the photos bucket (for the OAC bucket policy)."
+  type        = string
+}
+
+variable "photos_bucket_regional_domain_name" {
+  description = "Regional domain name of the photos bucket (the /photos/* CloudFront origin)."
+  type        = string
+}
+
 variable "alb_origin_domain" {
   description = "Public origin hostname for the ALB (e.g. origin.<domain>), used as the /api/* CloudFront origin. Must have a valid ACM cert matching this name."
   type        = string

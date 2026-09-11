@@ -153,12 +153,24 @@ module "cloudfront" {
   frontend_bucket_id                   = module.s3.frontend_bucket_id
   frontend_bucket_arn                  = module.s3.frontend_bucket_arn
   frontend_bucket_regional_domain_name = module.s3.frontend_bucket_regional_domain_name
+  photos_bucket_id                     = module.s3.photos_bucket_id
+  photos_bucket_arn                    = module.s3.photos_bucket_arn
+  photos_bucket_regional_domain_name   = module.s3.photos_bucket_regional_domain_name
   alb_origin_domain                    = "origin.${var.domain_name}"
   origin_shared_secret                 = var.origin_shared_secret
   edge_auth_secret                     = var.edge_auth_secret
   aliases                              = [var.domain_name, "www.${var.domain_name}"]
   acm_certificate_arn                  = aws_acm_certificate_validation.cdn.certificate_arn
   tags                                 = local.common_tags
+}
+
+# The photos bucket's single policy moved from the s3 module (TLS deny only) to
+# the cloudfront module (OAC read + TLS deny). Recording the move makes the
+# apply an in-place policy update instead of a delete + create on the same
+# bucket, which could race and leave the bucket with no policy.
+moved {
+  from = module.s3.aws_s3_bucket_policy.tls_only["photos"]
+  to   = module.cloudfront.aws_s3_bucket_policy.photos
 }
 
 # ---------------------------------------------------------------------------

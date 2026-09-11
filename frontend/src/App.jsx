@@ -14,7 +14,12 @@ import Privacy from './pages/Privacy.jsx';
 import Splash from './pages/Splash.jsx';
 import Team from './pages/Team.jsx';
 import { useLocationSharing } from './hooks/useLocationSharing.js';
-import { readShareLocation, writeShareLocation } from './data/storage.js';
+import {
+  readShareLocation,
+  writeShareLocation,
+  readSplashSeen,
+  writeSplashSeen,
+} from './data/storage.js';
 // Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
 // deep-linkable pandal URLs without pulling in a full router.
 function readGanpatiParam() {
@@ -43,9 +48,12 @@ export default function App() {
   const initialGanpatiId = readGanpatiParam();
   const [page, setPage] = useState(initialGanpatiId ? 'detail' : 'home');
       const [showSplash, setShowSplash] = useState(
-    !initialGanpatiId && !localStorage.getItem('splashSeen')
+    !initialGanpatiId && !readSplashSeen()
   );
   const [showTeam, setShowTeam] = useState(false);
+  // Team is opened from the Splash, so its Back returns there; the dhol intro
+  // already played once, so skip it on the way back.
+  const [splashIntroDone, setSplashIntroDone] = useState(false);
   const [prevPage, setPrevPage] = useState('home');
   const [selectedId, setSelectedId] = useState(initialGanpatiId);
   // Listing page to return to when the browser back button leaves a detail view.
@@ -132,18 +140,27 @@ export default function App() {
     <div className="relative min-h-screen max-w-full bg-cream">
       {showSplash && (
         <Splash
+          skipIntro={splashIntroDone}
           onEnter={() => {
-            localStorage.setItem('splashSeen', 'true');
+            writeSplashSeen();
             setShowSplash(false);
           }}
                    onTeam={() => {
-            localStorage.setItem('splashSeen', 'true');
+            writeSplashSeen();
             setShowSplash(false);
             setShowTeam(true);
           }}
         />
       )}
-      {showTeam && <Team onBack={() => setShowTeam(false)} />}
+      {showTeam && (
+        <Team
+          onBack={() => {
+            setShowTeam(false);
+            setSplashIntroDone(true);
+            setShowSplash(true);
+          }}
+        />
+      )}
 
       <Navbar onHome={goHome} onToggleMenu={() => setShowMenu((v) => !v)} />
 

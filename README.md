@@ -89,6 +89,73 @@ The Vite dev server proxies:
 
 ---
 
+## Photos
+
+Pandal photos live in the private S3 photos bucket and are served by CloudFront
+at `https://mandapmaps.in/photos/...`. To add or replace one:
+
+1. Save it in `data/photos/` (gitignored) named after the pandal's number on the
+   site: `mandapmaps.in/?g=6` -> `6.jpg`. For a photo that isn't yours, add a
+   credit to `data/photos/credits.json`: `{ "6": "Photo: Name, CC BY-SA 4.0" }`.
+2. `npm run photos` resizes it to WebP (metadata stripped), prints an
+   id -> pandal table to check, and regenerates `frontend/src/data/photos.js`.
+3. `npm run photos -- --upload` syncs the WebP files to the bucket (needs AWS
+   credentials for the account).
+4. Commit `frontend/src/data/photos.js` and merge to master; CD deploys it.
+
+Pandals without a photo keep the Om placeholder.
+
+---
+
+## Splash and Team pages
+
+The splash screen (`frontend/src/pages/Splash.jsx`) shows once per browser
+session: it plays on a fresh visit or new tab, but not on a refresh in the same
+tab. Shareable pandal links (`?g=6`) skip it and open the pandal directly. To
+see it again while testing, open the site in a private/incognito window or
+close and reopen the tab.
+
+"Team MandapMaps" on the splash opens the Team page
+(`frontend/src/pages/Team.jsx`); its Back button returns to the splash.
+
+---
+
+## Support Us (UPI)
+
+The UPI QR and id appear on the Home page, the Support popup, and the Team page.
+
+- The UPI id lives in one place: `frontend/src/data/upi.js`. `VITE_UPI_ID`
+  overrides it at build time, but CD does not set it, so the value in that file
+  is what goes live.
+- The QR image is `frontend/public/images/upi-qr.png`. If you change the UPI id,
+  replace the QR too so both point at the same account.
+
+---
+
+## Deploying
+
+Merge to `master` and GitHub Actions takes over: CI (lint + build) runs first,
+then CD deploys the frontend to S3 + CloudFront and the API and chatbot to their
+EC2 instances via SSM. There is no manual step. `index.html` is never cached, so
+a new deploy is live as soon as CD finishes.
+
+---
+
+## Writing style
+
+No em-dashes anywhere in the codebase or on the site; use a comma, colon, or a
+new sentence. Chatbot answers are covered too: the system prompt
+(`chatbot/app/core/llm.py`) tells the model not to use them, and the chat UI
+(`frontend/src/components/AskSheet.jsx`) swaps any that slip through for commas.
+
+---
+
+## Contact
+
+Privacy or data questions: connect@mandapmaps.in
+
+---
+
 ## Data
 
 The Ganpati dataset (`seed-data.json`) is private and shared by hand, so it is

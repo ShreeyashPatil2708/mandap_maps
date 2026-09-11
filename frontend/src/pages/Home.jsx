@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge } from '../data/helpers.js';
 import { OmMark } from '../components/icons.jsx';
+import PandalPhoto from '../components/PandalPhoto.jsx';
 import Circuits from '../components/Circuits.jsx';
-
-const UPI_ID = import.meta.env.VITE_UPI_ID || 'yourname@upi';
+import { UPI_ID } from '../data/upi.js';
 
 const FACTS = [
   "Dagdusheth's idol has 8 kg of gold, donated by devotees over 130 years.",
@@ -23,6 +23,7 @@ function Manache5Card({ g, onOpen }) {
     >
       <div className="relative flex h-[105px] items-center justify-center bg-maroon">
         <OmMark size={40} textSize={18} opacity={0.6} />
+        <PandalPhoto g={g} sizes="170px" />
         <div className="absolute left-2 top-2 rounded-badge bg-gold px-[9px] py-[3px] font-sans text-[10px] font-semibold text-maroon">
           {manachaBadge(g.manacha)}
         </div>
@@ -43,8 +44,9 @@ function VisitRow({ g, onOpen }) {
       className="flex cursor-pointer items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3 hover:border-gold/40"
       onClick={onOpen}
     >
-      <div className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-maroon">
+      <div className="relative flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-lg bg-maroon">
         <OmMark size={28} textSize={13} opacity={0.5} />
+        <PandalPhoto g={g} sizes="44px" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-serif text-[15px] leading-[1.3] text-maroon">{g.name}</div>
@@ -222,11 +224,13 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
               love your support.
             </div>
           </div>
-          <div className="flex flex-col items-center gap-2 bg-light/[0.06] p-gutter">
+          <div className="flex flex-col items-center gap-3 bg-light/[0.06] p-gutter">
+            <div className="flex h-[170px] w-[170px] items-center justify-center overflow-hidden rounded-panel border-2 border-gold/30 bg-light">
+              <img src="/images/upi-qr.png" alt="UPI QR code" className="h-full w-full object-contain p-2" />
+            </div>
             <div className="rounded-md bg-gold/10 px-3.5 py-[5px] font-sans text-[13px] font-medium tracking-[0.5px] text-gold">
               {UPI_ID}
             </div>
-            <div className="font-sans text-[11px] text-light/45">UPI QR coming soon</div>
           </div>
         </div>
       </div>

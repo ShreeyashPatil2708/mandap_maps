@@ -55,12 +55,12 @@ resource "aws_s3_bucket_versioning" "data" {
   }
 }
 
-# Deny non-TLS access. The frontend bucket is intentionally excluded here: its
-# single allowed bucket policy is owned by the cloudfront module, which folds
-# both the OAC read grant and the same TLS deny into one document (a bucket can
-# only carry one policy).
+# Deny non-TLS access. The frontend and photos buckets are intentionally
+# excluded here: both are served by CloudFront, so their single allowed bucket
+# policy is owned by the cloudfront module, which folds the OAC read grant and
+# the same TLS deny into one document (a bucket can only carry one policy).
 resource "aws_s3_bucket_policy" "tls_only" {
-  for_each = { for k, v in aws_s3_bucket.this : k => v if k != "frontend" }
+  for_each = { for k, v in aws_s3_bucket.this : k => v if !contains(["frontend", "photos"], k) }
 
   bucket = each.value.id
   policy = jsonencode({
