@@ -9,10 +9,28 @@ let pool;
  * otherwise falls back to discrete PG* vars. RDS in prod requires TLS.
  */
 function buildConfig() {
-  const ssl = process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false;
+  // TLS on in prod (RDS), off locally. rejectUnauthorized:false keeps the
+  // connection encrypted but skips CA verification, since RDS presents an
+  // Amazon-CA cert that isn't in the system trust store.
+  const ssl =
+    process.env.PGSSL === 'true' || process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false;
 
   if (process.env.DATABASE_URL) {
-    return { connectionString: process.env.DATABASE_URL, ssl };
+    // Strip sslmode/ssl from the URL: pg-connection-string (pg >= 8.22) treats
+    // sslmode=require as verify-full, which rejects the RDS cert
+    // (SELF_SIGNED_CERT_IN_CHAIN). TLS is governed by the ssl option above instead.
+    let connectionString = process.env.DATABASE_URL;
+    try {
+      const url = new URL(connectionString);
+      url.searchParams.delete('sslmode');
+      url.searchParams.delete('ssl');
+      connectionString = url.toString();
+    } catch {
+      // Not a parseable URL (e.g. a bare DSN) — leave it as-is.
+    }
+    return { connectionString, ssl };
   }
 
   return {
