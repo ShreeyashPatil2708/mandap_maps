@@ -23,7 +23,6 @@ from app.models.schemas import (
     SuggestedAction,
 )
 
-
 ###### API CHANGED #####
 
 BACKEND_URL = os.environ.get("BACKEND_URL", "https://mandapmaps.in/api")
