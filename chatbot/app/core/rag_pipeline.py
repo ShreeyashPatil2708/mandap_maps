@@ -110,6 +110,35 @@ async def _get_crowd_level(primary_entity: dict | None) -> dict | None:
         return None
 
 
+async def _get_all_crowd_levels() -> list[dict]:
+    """Fetch crowd levels for every mandal, for comparison-style questions
+    like 'which mandal has less crowd', and to feed the Darshan Planner's
+    crowd-aware ordering (see planner.build_plan)."""
+    url = f"{BACKEND_URL}/api/crowd/by-name"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url)
+        if response.status_code != 200:
+            return []
+        return response.json()
+    except Exception:
+        logger.exception("Failed to fetch all crowd levels")
+        return []
+
+
+def _build_crowd_comparison_answer(levels: list[dict]) -> str:
+    if not levels:
+        return "I don't have enough current crowd data to compare mandals right now."
+    ranked = sorted(levels, key=lambda x: x["level"])
+    least = [m["name"] for m in ranked if m["level"] == ranked[0]["level"]]
+    most = [m["name"] for m in ranked if m["level"] == ranked[-1]["level"]]
+    return (
+        f"Based on current reports, {', '.join(least)} "
+        f"{'has' if len(least) == 1 else 'have'} the least crowd, and "
+        f"{', '.join(most)} {'has' if len(most) == 1 else 'have'} the most."
+    )
+
+
 def _build_location_card(primary_entity: dict | None, query: str) -> LocationCard | None:
     """Structured location payload for the map integration. Attached
     whenever a single mandal is confidently resolved and has coordinates,
@@ -148,8 +177,12 @@ def _build_suggested_actions(primary_entity: dict | None) -> list[SuggestedActio
     ]
 
 
-def _build_plan_response(session_id: str, query: str, entity_doc_ids: list[str] | None) -> ChatResponse:
-    plan = planner.build_plan(query, entity_doc_ids)
+async def _build_plan_response(
+    session_id: str, query: str, entity_doc_ids: list[str] | None,
+    lat: float | None = None, lng: float | None = None,
+) -> ChatResponse:
+    crowd_by_name = await _get_all_crowd_levels()
+    plan = planner.build_plan(query, entity_doc_ids, lat, lng, crowd_by_name)
     answer_text = planner.format_plan_text(plan)
     return ChatResponse(
         session_id=session_id,
@@ -170,7 +203,10 @@ def _build_plan_response(session_id: str, query: str, entity_doc_ids: list[str] 
     )
 
 
-async def answer_query(session_id: str, query: str, language: str = "auto") -> ChatResponse:
+async def answer_query(
+    session_id: str, query: str, language: str = "auto",
+    lat: float | None = None, lng: float | None = None,
+) -> ChatResponse:
     history = await memory.get_history(session_id)
 
     # Darshan Planner short-circuits the whole RAG/LLM path: the itinerary
@@ -179,7 +215,7 @@ async def answer_query(session_id: str, query: str, language: str = "auto") -> C
     # out (no risk of an invented stop or wrong distance).
     if is_planner_query(query):
         entity_doc_ids, _, _ = await _resolve_entity_context(session_id, query, history)
-        response = _build_plan_response(session_id, query, entity_doc_ids)
+        response = await _build_plan_response(session_id, query, entity_doc_ids, lat, lng)
         await memory.append_turn(session_id, query, response.answer)
         return response
 
@@ -208,7 +244,8 @@ async def answer_query(session_id: str, query: str, language: str = "auto") -> C
     # ---------------------------------------------------------
     if wants_crowd_info(query):
         if not primary_entity:
-            answer = "Please mention which Ganpati you want the crowd information for."
+            levels = await _get_all_crowd_levels()
+            answer = _build_crowd_comparison_answer(levels)
             await memory.append_turn(session_id, query, answer)
             return ChatResponse(
                 session_id=session_id,
@@ -319,7 +356,10 @@ async def answer_query(session_id: str, query: str, language: str = "auto") -> C
     )
 
 
-async def stream_answer(session_id: str, query: str, language: str = "auto") -> AsyncIterator[str]:
+async def stream_answer(
+    session_id: str, query: str, language: str = "auto",
+    lat: float | None = None, lng: float | None = None,
+) -> AsyncIterator[str]:
     """Streaming counterpart of answer_query(), used by the /stream endpoint.
     Yields answer text as it's generated instead of waiting for the full
     response, then yields one final chunk carrying structured metadata
@@ -337,7 +377,7 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
 
     if is_planner_query(query):
         entity_doc_ids, _, _ = await _resolve_entity_context(session_id, query, history)
-        response = _build_plan_response(session_id, query, entity_doc_ids)
+        response = await _build_plan_response(session_id, query, entity_doc_ids, lat, lng)
         await memory.append_turn(session_id, query, response.answer)
         yield response.answer
         yield _STREAM_META_MARKER + json.dumps(
@@ -373,33 +413,31 @@ async def stream_answer(session_id: str, query: str, language: str = "auto") -> 
     # Do not use the normal RAG/cache path.
     # ---------------------------------------------------------
     if wants_crowd_info(query):
-        crowd = await _get_crowd_level(primary_entity)
-
         if not primary_entity:
-            answer = (
-                "Please mention which Ganpati you want the crowd "
-                "information for."
-            )
-
-        elif not crowd:
-            answer = (
-                f"I don't have current crowd information for "
-                f"{primary_entity['name_en']}."
-            )
+            levels = await _get_all_crowd_levels()
+            answer = _build_crowd_comparison_answer(levels)
 
         else:
-            label = crowd.get("label")
+            crowd = await _get_crowd_level(primary_entity)
 
-            if label and label != "No data yet":
-                answer = (
-                    f"{primary_entity['name_en']} is currently reporting "
-                    f"{label} crowd levels based on recent visitor reports."
-                )
-            else:
+            if not crowd:
                 answer = (
                     f"I don't have current crowd information for "
                     f"{primary_entity['name_en']}."
                 )
+            else:
+                label = crowd.get("label")
+
+                if label and label != "No data yet":
+                    answer = (
+                        f"{primary_entity['name_en']} is currently reporting "
+                        f"{label} crowd levels based on recent visitor reports."
+                    )
+                else:
+                    answer = (
+                        f"I don't have current crowd information for "
+                        f"{primary_entity['name_en']}."
+                    )
 
         await memory.append_turn(session_id, query, answer)
 

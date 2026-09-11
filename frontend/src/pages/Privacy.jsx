@@ -29,6 +29,13 @@ export default function Privacy({ onBack }) {
               pandals. It is used for that request and not tied to any profile.
             </li>
             <li>
+              If you turn on &quot;Help detect crowds&quot; in the menu, your device sends your
+              location roughly once a minute so we can estimate how busy a mandal is right
+              now. We only store how many people are near a mandal, never your name or a
+              path of everywhere you have been — old location points are deleted automatically
+              after 30 minutes. You can turn this off anytime from the same menu.
+            </li>
+            <li>
               A random id saved in your browser so the chat can remember the last few messages
               in a conversation.
             </li>

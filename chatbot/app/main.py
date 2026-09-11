@@ -1,7 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
 
-import anyio.to_thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -21,13 +20,6 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     # Startup: establish the async Redis connection once (see core/memory.py).
     await memory.init_redis()
-    # Cap the shared worker threadpool so run_in_threadpool (embeddings + FAISS
-    # in rag_pipeline) can never spin up the Starlette default of 40 concurrent
-    # heavy inferences and OOM the 2 GB box. A little headroom above the chat
-    # gate leaves room for light off-thread work (e.g. language detection).
-    anyio.to_thread.current_default_thread_limiter().total_tokens = (
-        settings.MAX_CONCURRENT_CHATS + 2
-    )
     yield
     # Shutdown: close the shared httpx client's pooled connections cleanly
     # (see core/llm.py get_http_client()).
@@ -36,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta), powered by FAISS + BM25 + Groq/Ollama.",
+    description="Hybrid RAG chatbot for Pune Ganeshotsav (Ekdanta) — powered by FAISS + BM25 + Groq/Ollama.",
     version="1.0.0",
     lifespan=lifespan,
 )
