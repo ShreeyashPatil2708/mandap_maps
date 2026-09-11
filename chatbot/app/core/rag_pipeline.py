@@ -25,7 +25,7 @@ from app.models.schemas import (
 
 ###### API CHANGED #####
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "https://mandapmaps.in/api")
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://mandapmaps.in")
 
 logger = logging.getLogger("ekdanta.rag")
 
