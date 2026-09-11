@@ -9,14 +9,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Core palette
         maroon: {
-          DEFAULT: '#6B1E2E', // primary brand / navbar / hero background
-          dark: '#5A1826', // hover state for maroon buttons
+          DEFAULT: '#6B1E2E',
+          dark: '#5A1826',
         },
-        gold: {
-          DEFAULT: '#C9A84C', // accent / badges / CTAs / links
-          dark: '#B8973F', // hover state for gold buttons
+               gold: {
+          DEFAULT: '#C9A84C',
+          dark: '#B8973F',
         },
         cream: '#EDE4D0', // page background
         surface: '#F9F2E5', // card / panel background
@@ -31,27 +30,22 @@ export default {
         },
       },
       fontFamily: {
-        // Headings & numerals
         serif: ['"DM Serif Display"', 'serif'],
-        // Body / UI
         sans: ['Outfit', 'sans-serif'],
-        // Marathi (Devanagari) text
         devanagari: ['"Noto Serif Devanagari"', 'serif'],
-        // Occasional display headings
         display: ['"Playfair Display"', 'serif'],
       },
       borderRadius: {
-        badge: '4px', // gold accent badges
-        card: '12px', // list / grid cards
-        panel: '14px', // larger content panels (support card, hero image)
-        sheet: '20px', // bottom-sheet modal
-        pill: '50px', // pill buttons & filter chips
+        badge: '4px',
+        card: '12px',
+        panel: '14px',
+        sheet: '20px',
+        pill: '50px',
       },
       spacing: {
-        // Common layout rhythm used across screens
-        gutter: '20px', // default screen horizontal padding
-        'gutter-lg': '24px', // wider padding on hero / detail
-        'nav-safe': '90px', // bottom padding to clear the fixed tab bar
+        gutter: '20px',
+        'gutter-lg': '24px',
+        'nav-safe': '90px',
       },
       keyframes: {
         fadeIn: {
@@ -65,6 +59,35 @@ export default {
         slideInRight: {
           from: { transform: 'translateX(100%)', opacity: '0' },
           to: { transform: 'translateX(0)', opacity: '1' },
+        },
+        kenBurns: {
+          from: { transform: 'scale(1.05)' },
+          to: { transform: 'scale(1.15)' },
+        },
+        glowPulse: {
+          '0%, 100%': { opacity: '0.5', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.08)' },
+        },
+        ringPulse: {
+          '0%': { transform: 'scale(0.9)', opacity: '0.8' },
+          '100%': { transform: 'scale(1.6)', opacity: '0' },
+        },
+        breathe: {
+          '0%, 100%': { boxShadow: '0 8px 24px rgba(201,168,76,0.35)' },
+          '50%': { boxShadow: '0 8px 34px rgba(201,168,76,0.65)' },
+        },
+        dholSway: {
+          '0%, 100%': { transform: 'rotate(-8deg)' },
+          '50%': { transform: 'rotate(8deg)' },
+        },
+        crackerBurst: {
+          '0%, 85%': { opacity: '0', transform: 'scale(0.3)' },
+          '90%': { opacity: '1', transform: 'scale(1.1)' },
+          '100%': { opacity: '0', transform: 'scale(1.4)' },
+        },
+        spinSlow: {
+          from: { transform: 'translate(-50%, -50%) rotate(0deg)' },
+          to: { transform: 'translate(-50%, -50%) rotate(360deg)' },
         },
       },
       animation: {
