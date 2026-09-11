@@ -23,12 +23,8 @@ export default function SupportModal({ open, onClose }) {
         </div>
         <div className="mx-auto mb-6 h-1 w-10 rounded-[2px] bg-maroon/10" />
         <div className="text-center">
-          <div className="mx-auto flex h-[180px] w-[180px] items-center justify-center rounded-panel border-2 border-gold/30 bg-surface">
-            <div className="font-sans text-xs text-maroon/30">
-              UPI QR Code
-              <br />
-              Placeholder
-            </div>
+          <div className="mx-auto flex h-[180px] w-[180px] items-center justify-center overflow-hidden rounded-panel border-2 border-gold/30 bg-surface">
+            <img src="/images/upi-qr.png" alt="UPI QR code" className="h-full w-full object-contain p-2" />
           </div>
           <div className="mt-4 inline-block rounded-lg bg-maroon/5 px-4 py-1.5 font-sans text-[13px] font-medium tracking-[0.5px] text-maroon">
             {UPI_ID}

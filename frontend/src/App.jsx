@@ -11,6 +11,8 @@ import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
 import Privacy from './pages/Privacy.jsx';
+import Splash from './pages/Splash.jsx';
+import Team from './pages/Team.jsx';
 
 // Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
 // deep-linkable pandal URLs without pulling in a full router.
@@ -29,6 +31,10 @@ export default function App() {
   const { route } = useRoute();
   const initialGanpatiId = readGanpatiParam();
   const [page, setPage] = useState(initialGanpatiId ? 'detail' : 'home');
+      const [showSplash, setShowSplash] = useState(
+    !initialGanpatiId && !localStorage.getItem('splashSeen')
+  );
+  const [showTeam, setShowTeam] = useState(false);
   const [prevPage, setPrevPage] = useState('home');
   const [selectedId, setSelectedId] = useState(initialGanpatiId);
   // Listing page to return to when the browser back button leaves a detail view.
@@ -69,8 +75,11 @@ export default function App() {
   // Show the Support popup whenever the home page becomes active (first load,
   // refresh, or navigating back to Home). Closing it keeps it closed until the
   // user leaves and returns to Home.
-  useEffect(() => {
-    if (page === 'home') setShowModal(true);
+      useEffect(() => {
+    if (page === 'home' && !localStorage.getItem('supportShown')) {
+      setShowModal(true);
+      localStorage.setItem('supportShown', 'true');
+    }
   }, [page]);
 
   // Keep the URL (?g=id) in sync with the detail view so pandals are shareable
@@ -102,8 +111,23 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  return (
+    return (
     <div className="relative min-h-screen max-w-full bg-cream">
+      {showSplash && (
+        <Splash
+          onEnter={() => {
+            localStorage.setItem('splashSeen', 'true');
+            setShowSplash(false);
+          }}
+                   onTeam={() => {
+            localStorage.setItem('splashSeen', 'true');
+            setShowSplash(false);
+            setShowTeam(true);
+          }}
+        />
+      )}
+      {showTeam && <Team onBack={() => setShowTeam(false)} />}
+
       <Navbar onHome={goHome} onToggleMenu={() => setShowMenu((v) => !v)} />
 
       {loading && (
