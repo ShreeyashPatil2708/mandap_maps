@@ -26,7 +26,9 @@ _LOCATION_MARKERS = [
 
 _CROWD_MARKERS = [
     "how busy", "how crowded", "is it crowded", "crowd at", "wait time",
-    "queue at", "line at", "gर्दी", "गर्दी",
+    "queue at", "line at", "गर्दी",
+    "crowded", "crowd", "less crowd", "least crowd", "most crowd",
+    "avoid crowd", "busy right now", "crowd level", "crowd status",
 ]
 
 def wants_crowd_info(text: str) -> bool:

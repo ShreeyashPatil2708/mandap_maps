@@ -127,3 +127,33 @@ def _to_public(rec: dict) -> dict:
 def get_mandals() -> list[dict]:
     """Structured mandal records for the /api/mandals endpoint."""
     return [_to_public(r) for r in load_records()]
+
+######
+
+GENERAL_PATH = os.path.join(_ROOT, "general-knowledge.json")
+
+
+@lru_cache
+def get_general_knowledge() -> list[dict]:
+    """Non-mandal-specific festival/Ganpati facts (see general-knowledge.json).
+    Kept separate from seed-data.json so it never pollutes /api/mandals, the
+    map UI, or entity resolution — these docs have no doc_id in get_mandals()."""
+    if not os.path.exists(GENERAL_PATH):
+        return []
+    with open(GENERAL_PATH, "r", encoding="utf-8") as f:
+        general = json.load(f)
+
+    # Auto-generate the "5 Manache Ganpati" list from real mandal data instead
+    # of hand-typing it, so it can never drift out of sync with seed-data.json.
+    manache = sorted(
+        (m for m in get_mandals() if m.get("is_manacha")),
+        key=lambda m: m.get("manacha", 99),
+    )
+    if manache:
+        listing = "; ".join(f"{m['manacha']}. {m['name_en']} ({m['area']})" for m in manache)
+        general.append({
+            "id": "manache-ganpati-list",
+            "title": "The 5 Manache Ganpati of Pune",
+            "text": f"The Manache Ganpati are Pune's five most ceremonially significant mandals, ranked in this order: {listing}.",
+        })
+    return general

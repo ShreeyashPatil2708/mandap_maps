@@ -41,21 +41,6 @@ coverage/
 .cache/
 .turbo/
 
-# Terraform
-**/.terraform/
-*.tfstate
-*.tfstate.*
-*.tfstate.backup
-*.tfplan
-*.bak
-crash.log
-override.tf
-override.tf.json
-# Real variable values hold the origin shared secret and alarm email. Commit
-# only the example (.terraform.lock.hcl is fine to commit for reproducibility).
-*.tfvars
-!*.tfvars.example
-
 # Private dataset (curated content). Kept out of the public repo; lives in
 # RDS/seed source only. Regenerate seed-data.json with backend/db/generate-seed-data.py.
 # NOTE: leading slash anchors this to the top-level data/ folder only, so app

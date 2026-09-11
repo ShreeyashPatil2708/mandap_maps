@@ -24,6 +24,30 @@ function getSessionId() {
 }
 
 /**
+ * Returns { lat, lng } if the user has already opted in to location sharing
+ * (the same "Help detect crowds" toggle used by useLocationSharing.js) AND
+ * the browser already has a recent cached fix — or null otherwise.
+ *
+ * This deliberately does NOT trigger a fresh GPS request or a permission
+ * prompt of its own: maximumAge is set very high (accept an old cached fix)
+ * and timeout is set very low (give up almost immediately if nothing is
+ * cached), so asking the chatbot a question never waits on — or asks for —
+ * location the user hasn't already agreed to share.
+ */
+function getLastKnownPosition() {
+  const enabled = localStorage.getItem('mandapmaps.shareLocation') === 'true';
+  if (!enabled || !navigator.geolocation) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null), // no cached fix, denied, or unavailable — just proceed without it
+      { maximumAge: 10 * 60_000, timeout: 200 }
+    );
+  });
+}
+
+/**
  * Stream a user message to the chatbot, calling back with incremental text
  * as it arrives and finally with structured metadata once the answer is
  * complete. Falls back gracefully (single onText call, no metadata) if the
@@ -37,6 +61,7 @@ function getSessionId() {
  */
 export async function streamChatbotMessage(message, onText, onMeta) {
   try {
+    const position = await getLastKnownPosition();
     const res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,6 +69,7 @@ export async function streamChatbotMessage(message, onText, onMeta) {
         session_id: getSessionId(),
         query: message,
         language: 'auto',
+        ...(position && { lat: position.lat, lng: position.lng }),
       }),
     });
     if (!res.ok || !res.body) throw new Error(`Chat request failed (${res.status})`);
@@ -90,6 +116,7 @@ export async function streamChatbotMessage(message, onText, onMeta) {
  */
 export async function callChatbotAPI(message) {
   try {
+    const position = await getLastKnownPosition();
     const res = await fetch(`${API_BASE}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -97,17 +124,10 @@ export async function callChatbotAPI(message) {
         session_id: getSessionId(),
         query: message,
         language: 'auto',
+        ...(position && { lat: position.lat, lng: position.lng }),
       }),
     });
-    if (!res.ok) {
-      // When the assistant is overloaded it returns 503 with a friendly message
-      // in `detail`; show that to the user instead of a generic failure.
-      if (res.status === 503) {
-        const body = await res.json().catch(() => null);
-        if (body?.detail) return body.detail;
-      }
-      throw new Error(`Chat request failed (${res.status})`);
-    }
+    if (!res.ok) throw new Error(`Chat request failed (${res.status})`);
     const data = await res.json();
     return data.answer || 'Sorry, I could not find an answer to that.';
   } catch {

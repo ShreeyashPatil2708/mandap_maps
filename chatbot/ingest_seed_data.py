@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.core.vector_store import get_vector_store
-from app.data.loader import load_records, slugify, to_text
+from app.data.loader import get_general_knowledge, load_records, slugify, to_text
 
 
 def main(path: str | None = None):
@@ -33,8 +33,12 @@ def main(path: str | None = None):
         total_chunks += n
         print(f"Ingested '{name}' -> {n} chunks")
 
-    print(f"\nDone. {len(records)} mandals ingested, {total_chunks} total chunks in index.")
+    for doc in get_general_knowledge():
+        n = store.add_document(doc["id"], doc["title"], doc["text"], "General Knowledge")
+        total_chunks += n
+        print(f"Ingested general fact '{doc['title']}' -> {n} chunks")
 
+    print(f"\nDone. {len(records)} mandals + {len(get_general_knowledge())} general facts ingested, {total_chunks} total chunks in index.")
 
 if __name__ == "__main__":
     main(sys.argv[1] if len(sys.argv) > 1 else None)

@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { getAllGanpatis } from './ganpatiRepo.js';
 
 // Only reports from the last WINDOW_MINUTES count — older ones are considered
 // stale and ignored, so the crowd level always reflects "right now".
@@ -28,11 +29,30 @@ export async function getCrowdLevel(ganpatiId) {
     [ganpatiId]
   );
   const row = rows[0];
-  if (!row || row.report_count === 0) return null;
+
+  // Self-reports win when present (they're a direct human observation).
+  if (row && row.report_count > 0) {
+    return {
+      level: row.avg_level,
+      label: LEVEL_LABELS[row.avg_level],
+      reportCount: row.report_count,
+    };
+  }
+
+  // No self-reports yet — fall back to route interest (people adding this
+  // mandal to their route right now), same rule getCombinedCrowdLevels() uses.
+  const interestedCount = await getInterestCount(ganpatiId);
+  let level = null;
+  if (interestedCount >= 15) level = 3;
+  else if (interestedCount >= 6) level = 2;
+  else if (interestedCount > 0) level = 1;
+
+  if (!level) return null;
   return {
-    level: row.avg_level,
-    label: LEVEL_LABELS[row.avg_level],
-    reportCount: row.report_count,
+    level,
+    label: LEVEL_LABELS[level],
+    reportCount: 0,
+    interestedCount,
   };
 }
 
@@ -81,6 +101,15 @@ export async function getCombinedCrowdLevels() {
   return combined;
 }
 
+/** Same as getCombinedCrowdLevels(), but keyed by name instead of id —
+ * for the chatbot, which only knows mandal names. */
+export async function getCombinedCrowdLevelsByName() {
+  const [combined, ganpatis] = await Promise.all([getCombinedCrowdLevels(), getAllGanpatis()]);
+  return ganpatis
+    .map((g) => ({ name: g.name, ...(combined[g.id] || { level: null, label: 'No data yet' }) }))
+    .filter((g) => g.level !== null);
+}
+
 //////
 
 const INTEREST_WINDOW_MINUTES = 60;
@@ -104,4 +133,16 @@ export async function getInterestCounts() {
   const map = {};
   for (const row of rows) map[row.ganpati_id] = row.interested_count;
   return map;
+}
+
+/** Distinct sessions interested in ONE Ganpati in the last hour. */
+export async function getInterestCount(ganpatiId) {
+  const { rows } = await query(
+    `SELECT COUNT(DISTINCT session_id)::int AS interested_count
+     FROM route_interest
+     WHERE ganpati_id = $1
+       AND pinged_at > NOW() - INTERVAL '${INTEREST_WINDOW_MINUTES} minutes'`,
+    [ganpatiId]
+  );
+  return rows[0]?.interested_count || 0;
 }

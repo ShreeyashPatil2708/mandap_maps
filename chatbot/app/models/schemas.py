@@ -7,7 +7,11 @@ class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=128, description="Unique chat session / device id")
     query: str = Field(..., min_length=1, max_length=2000)
     language: Literal["en", "mr", "hi", "auto"] = "auto"
-
+    # Optional — only sent when the user has granted location permission in
+    # the app. Used once to build a plan/answer distance questions, never
+    # stored or logged (see rag_pipeline.py / planner.py).
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
 
 class SourceChunk(BaseModel):
     text: str
@@ -45,6 +49,7 @@ class PlanStop(BaseModel):
     lat: float | None
     lng: float | None
     leg_km: float | None
+    crowd_label: str = "No data yet"
 
 
 class DarshanPlan(BaseModel):

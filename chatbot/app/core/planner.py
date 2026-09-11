@@ -48,6 +48,7 @@ MINUTES_PER_STOP = 25  # darshan + queue time at each mandal, mirrors the
                         # same 25-min/stop assumption used in the frontend's
                         # manual Route planner (frontend/src/pages/Route.jsx)
                         # so the two estimates stay consistent with each other.
+_AVOID_CROWD_MARKERS = ["avoid crowd", "less crowd", "low crowd", "not crowded", "avoid busy"]
 
 
 @dataclass
@@ -59,9 +60,16 @@ class PlanStop:
     lng: float | None
     leg_km: float | None       # distance from the previous stop
     leg_minutes: float | None  # walking time for that leg
+    crowd_label: str = "No data yet"
+    
+def _wants_to_avoid_crowds(query: str) -> bool:
+    q = query.lower()
+    return any(m in q for m in _AVOID_CROWD_MARKERS)
 
 
-def _resolve_start(query: str) -> tuple[str, float, float]:
+def _resolve_start(query: str, lat: float | None = None, lng: float | None = None) -> tuple[str, float, float]:
+    if lat is not None and lng is not None:
+        return "Your current location", lat, lng
     raw = extract_start_location(query)
     if not raw:
         return _DEFAULT_START_NAME, *_DEFAULT_START
@@ -127,15 +135,32 @@ def _nearest_food_stop(mandals: list[dict]) -> dict | None:
     return None
 
 
-def build_plan(query: str, entity_doc_ids: list[str] | None) -> dict:
+def build_plan(
+    query: str, entity_doc_ids: list[str] | None,
+    lat: float | None = None, lng: float | None = None,
+    crowd_by_name: list[dict] | None = None,
+) -> dict:
     """Builds a full Darshan Plan: start point, ordered stops, total
     estimated duration, and a nearby food suggestion. Returns a dict
     that's both directly JSON-serializable (for the frontend map/route
     integration) and used to render the formatted chat text below."""
-    start_name, start_lat, start_lng = _resolve_start(query)
+    start_name, start_lat, start_lng = _resolve_start(query, lat, lng)
     mandals = _target_mandals(entity_doc_ids, query)
-    stops = _order_by_nearest_neighbour(start_lat, start_lng, mandals)
 
+    # If the user asked to avoid crowds, drop High-crowd mandals from the
+    # candidate list before ordering — but only when that still leaves at
+    # least one stop, so we never return an empty plan.
+    crowd_lookup = {c["name"]: c for c in (crowd_by_name or [])}
+    if _wants_to_avoid_crowds(query):
+        filtered = [m for m in mandals if crowd_lookup.get(m["name_en"], {}).get("level") != 3]
+        if filtered:
+            mandals = filtered
+
+    stops = _order_by_nearest_neighbour(start_lat, start_lng, mandals)
+    for s in stops:
+        crowd = crowd_lookup.get(s.name)
+        s.crowd_label = crowd["label"] if crowd else "No data yet"
+        
     travel_minutes = sum(s.leg_minutes for s in stops)
     darshan_minutes = len(stops) * MINUTES_PER_STOP
     total_minutes = travel_minutes + darshan_minutes
@@ -155,6 +180,7 @@ def build_plan(query: str, entity_doc_ids: list[str] | None) -> dict:
                 "lat": s.lat,
                 "lng": s.lng,
                 "leg_km": s.leg_km,
+                "crowd_label": s.crowd_label,
             }
             for s in stops
         ],
@@ -178,7 +204,7 @@ def format_plan_text(plan: dict) -> str:
     numerals = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, stop in enumerate(plan["stops"]):
         marker = numerals[i] if i < len(numerals) else f"{i + 1}."
-        lines.append(f"{marker} {stop['name']}")
+        lines.append(f"{marker} {stop['name']} ({stop['crowd_label']} crowd)")
         if i < len(plan["stops"]) - 1:
             lines.append("   ↓")
     lines.append("")

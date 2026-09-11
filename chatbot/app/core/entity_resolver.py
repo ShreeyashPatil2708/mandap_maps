@@ -40,6 +40,14 @@ _BROAD_QUERY_MARKERS = [
     "all mandal", "which mandal", "which ganpati", "list of", "every mandal",
     "top mandal", "best mandal", "nearby mandal", "other mandal",
     "different mandal", "compare", "vs ", " versus ",
+    # General Ganpati/festival knowledge (not about one specific mandal) —
+    # without these, a question like "why is ganpati celebrated?" incorrectly
+    # gets stuck to whatever mandal was last discussed in the session.
+    "story of ganpati", "story of ganesha", "why is ganpati", "why ganpati",
+    "celebrated", "festival", "ganeshotsav", "manache ganpati",
+    "manacha ganpati", "5 manache", "worshipped first", "public ganeshotsav",
+    "who started", "interesting facts about ganpati", "facts about ganesha",
+    "history of ganeshotsav",
 ]
 
 _FUZZY_THRESHOLD = 82.0

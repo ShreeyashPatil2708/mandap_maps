@@ -71,19 +71,6 @@ class Settings(BaseSettings):
     MAX_QUERY_CHARS: int = 2000
     MAX_INGEST_CHARS: int = 50000
 
-    # ---- Concurrency guard ----
-    # The chatbot runs on a single small (2 GB) Spot box. Each in-flight query
-    # loads the embedding model + FAISS in a worker thread, so unbounded
-    # concurrency would OOM the box. Cap how many heavy pipelines run at once;
-    # requests past the cap wait briefly, then get a friendly "busy" 503 instead
-    # of crashing the process. Raising this needs a bigger instance (more RAM).
-    MAX_CONCURRENT_CHATS: int = 2
-    BUSY_WAIT_SECONDS: float = 0.5
-    BUSY_MESSAGE: str = (
-        "A lot of people are chatting with the assistant right now. "
-        "Please try again in a few moments."
-    )
-
     class Config:
         env_file = ".env"
 

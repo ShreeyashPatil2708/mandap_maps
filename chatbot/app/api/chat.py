@@ -5,7 +5,6 @@ from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
 from app.core import memory
-from app.core.concurrency import BusyError, acquire_slot
 from app.core.limiter import limiter
 from app.core.rag_pipeline import answer_query, stream_answer
 from app.models.schemas import ChatRequest, ChatResponse
@@ -20,12 +19,7 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 @limiter.limit(settings.CHAT_RATE_LIMIT)
 async def chat(request: Request, payload: ChatRequest):
     try:
-        # Global concurrency gate: shed load with a friendly 503 rather than
-        # letting concurrent inferences pile up and OOM the box (see concurrency).
-        async with acquire_slot():
-            return await answer_query(payload.session_id, payload.query, payload.language)
-    except BusyError:
-        raise HTTPException(status_code=503, detail=settings.BUSY_MESSAGE)
+        return await answer_query(payload.session_id, payload.query, payload.language, payload.lat, payload.lng)
     except Exception:
         # Log the real cause server-side; never leak internals to the client.
         logger.exception("chat pipeline failed for session=%s", payload.session_id)
@@ -50,13 +44,8 @@ async def chat_stream(request: Request, payload: ChatRequest):
     """
     async def event_generator():
         try:
-            # Same concurrency gate as the non-streaming endpoint. Acquire before
-            # streaming so the slot is held for the whole generation.
-            async with acquire_slot():
-                async for token in stream_answer(payload.session_id, payload.query, payload.language):
-                    yield token
-        except BusyError:
-            yield settings.BUSY_MESSAGE
+            async for token in stream_answer(payload.session_id, payload.query, payload.language, payload.lat, payload.lng):
+                yield token
         except Exception:
             logger.exception("streaming chat pipeline failed for session=%s", payload.session_id)
             yield "\n[Chat service is temporarily unavailable.]"
