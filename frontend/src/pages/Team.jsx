@@ -37,9 +37,9 @@ export default function Team({ onBack }) {
           </div>
           <div className="mt-1 font-devanagari text-sm text-gold/80">मंडप मॅप्स टीम</div>
           <p className="mx-auto mt-4 max-w-[320px] font-sans text-sm leading-relaxed text-light/70">
-            Built as a final-year project to make navigating Pune's Ganeshotsav
-            easier — finding pandals, planning routes, and celebrating the
-            history behind each Ganpati.
+          Built as a final-year project to make navigating Pune&apos;s Ganeshotsav
+          easier — finding pandals, planning routes, and celebrating the
+          history behind each Ganpati.
           </p>
         </div>
       </div>

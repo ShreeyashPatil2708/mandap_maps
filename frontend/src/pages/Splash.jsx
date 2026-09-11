@@ -192,10 +192,10 @@ export default function Splash({ onEnter, onTeam }) {
         <p
           className="mx-auto mt-2 max-w-[320px] font-sans text-[15px] leading-relaxed text-light/85 animate-fadeIn"
           style={{ animationDelay: '400ms' }}
-        >
-          A companion for finding Ganpati pandals near you, planning a darshan
+        > A companion for finding Ganpati pandals near you, planning a darshan
           route between them, and learning the history and traditions behind
-          Pune's most beloved Ganpatis.
+          Pune&apos;s most beloved Ganpatis.
+
         </p>
       </div>
 
