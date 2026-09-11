@@ -20,9 +20,10 @@ const WALKING = { travelmode: 'walking' };
 // breaks (the backend sends pointwise, emoji-prefixed lines, see
 // chatbot/app/core/llm.py SYSTEM_PROMPT) and bolds **text**. Deliberately
 // not a full markdown parser; the backend's formatting rules are simple
-// by design, so this only needs to match them.
+// by design, so this only needs to match them. Em-dashes (from the dataset or
+// the model's own style) are swapped for commas so none reach the screen.
 function renderMessageText(text) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\s*—\s*/g, ', ').split('\n');
   return lines.map((line, i) => {
     const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
       part.startsWith('**') && part.endsWith('**') ? (

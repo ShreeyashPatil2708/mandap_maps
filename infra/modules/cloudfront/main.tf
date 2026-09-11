@@ -129,6 +129,15 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
+  # The private photos bucket, read through the same OAC (an OAC is not tied to
+  # one bucket; each bucket's policy decides who may read it). Only /photos/*
+  # reaches this origin, and object keys carry the photos/ prefix to match.
+  origin {
+    origin_id                = "photos-s3"
+    domain_name              = var.photos_bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+  }
+
   default_cache_behavior {
     target_origin_id           = "frontend-s3"
     viewer_protocol_policy     = "redirect-to-https"
@@ -155,6 +164,29 @@ resource "aws_cloudfront_distribution" "this" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     compress                 = true
+
+    # Edge guard, attached only while it is on (see edge_check_js above).
+    dynamic "function_association" {
+      for_each = aws_cloudfront_function.edge_guard
+      content {
+        event_type   = "viewer-request"
+        function_arn = function_association.value.arn
+      }
+    }
+  }
+
+  # Pandal photos: content-hashed WebP files uploaded with an immutable
+  # Cache-Control, so they cache like the SPA assets. WebP is already
+  # compressed, so edge compression is off.
+  ordered_cache_behavior {
+    path_pattern               = "/photos/*"
+    target_origin_id           = "photos-s3"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = false
 
     # Edge guard, attached only while it is on (see edge_check_js above).
     dynamic "function_association" {
@@ -224,4 +256,49 @@ data "aws_iam_policy_document" "frontend" {
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = var.frontend_bucket_id
   policy = data.aws_iam_policy_document.frontend.json
+}
+
+# Same shape for the photos bucket: this distribution may read objects, and
+# non-TLS access is denied. Replaces the TLS-only policy the s3 module used to
+# own for this bucket (see the moved block in the root main.tf). The app fleet's
+# read access comes from its IAM role, which a bucket policy Allow doesn't limit.
+data "aws_iam_policy_document" "photos" {
+  statement {
+    sid       = "AllowCloudFrontOAC"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["${var.photos_bucket_arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.this.arn]
+    }
+  }
+
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [var.photos_bucket_arn, "${var.photos_bucket_arn}/*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "photos" {
+  bucket = var.photos_bucket_id
+  policy = data.aws_iam_policy_document.photos.json
 }

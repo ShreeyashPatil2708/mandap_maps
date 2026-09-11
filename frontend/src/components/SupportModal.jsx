@@ -1,6 +1,6 @@
-// UPI "Support Us" bottom sheet. The UPI id is read from VITE_UPI_ID at build
-// time (see frontend/.env.example), falling back to a placeholder.
-const UPI_ID = import.meta.env.VITE_UPI_ID || 'yourname@upi';
+import { UPI_ID } from '../data/upi.js';
+
+// UPI "Support Us" bottom sheet.
 
 export default function SupportModal({ open, onClose }) {
   if (!open) return null;

@@ -100,8 +100,8 @@ export default function Privacy({ onBack }) {
           <div className={heading}>Contact</div>
           <p>
             Questions about privacy or data? Write to us at{' '}
-            <a href="mailto:hello@mandapmaps.in" className="font-medium text-gold">
-              hello@mandapmaps.in
+            <a href="mailto:connect@mandapmaps.in" className="font-medium text-gold">
+              connect@mandapmaps.in
             </a>
             .
           </p>

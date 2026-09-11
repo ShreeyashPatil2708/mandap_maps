@@ -98,6 +98,7 @@ Formatting:
   scaffolding from the CONTEXT. Rewrite the information in your own words.
 - No markdown tables. A structured answer should still read like it's coming from
   a helpful, warm person, not a database dump.
+- Never use em-dashes. Use a comma, colon, or a new sentence instead.
 """
 
 TRANSLATE_SYSTEM_PROMPT = """You are a translation engine. Translate the user's

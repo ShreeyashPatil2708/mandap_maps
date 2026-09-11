@@ -60,3 +60,23 @@ export function readShareLocation() {
 export function writeShareLocation(enabled) {
   safeSet(SHARE_LOCATION_KEY, String(enabled));
 }
+
+// Splash is shown once per browser session: sessionStorage survives reloads in
+// the same tab but clears when the tab closes, so a fresh visit sees it again.
+const SPLASH_SEEN_KEY = 'mandapmaps.splashSeen';
+
+export function readSplashSeen() {
+  try {
+    return sessionStorage.getItem(SPLASH_SEEN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function writeSplashSeen() {
+  try {
+    sessionStorage.setItem(SPLASH_SEEN_KEY, 'true');
+  } catch {
+    // Best-effort: worst case the splash shows again next load.
+  }
+}

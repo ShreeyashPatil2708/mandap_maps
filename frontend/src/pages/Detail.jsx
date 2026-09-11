@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { manachaBadge, directionsUrl } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
 import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
+import PandalPhoto from '../components/PandalPhoto.jsx';
 import { reportCrowd } from '../services/crowd.js';
 import { useCrowd } from '../context/CrowdContext.jsx';
 
@@ -174,12 +175,13 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         </div>
       </div>
 
-      {/* Image placeholder */}
+      {/* Photo, over the Om placeholder (which shows when there is none) */}
       <div className="relative mx-gutter flex h-[220px] items-center justify-center overflow-hidden rounded-panel bg-maroon">
         <div className="pointer-events-none absolute -right-2.5 -top-2.5 font-devanagari text-[140px] font-bold leading-none text-gold/[0.06]">
           ॐ
         </div>
         <OmMark size={56} textSize={18} opacity={0.4} />
+        <PandalPhoto g={ganpati} sizes="(max-width: 480px) 100vw, 480px" priority showCredit />
       </div>
 
       {/* Name & info */}

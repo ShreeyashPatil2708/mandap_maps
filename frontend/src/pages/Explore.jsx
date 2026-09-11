@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge, distanceKm, formatDistance } from '../data/helpers.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
+import PandalPhoto from '../components/PandalPhoto.jsx';
 
 // The map bundles Leaflet, so load it only when the user opens the map view.
 const MapView = lazy(() => import('../components/MapView.jsx'));
@@ -66,6 +67,7 @@ function GanpatiCard({ g, dist, onOpen }) {
     >
       <div className="relative flex h-[90px] items-center justify-center bg-maroon">
         <OmMark size={32} textSize={18} opacity={0.5} />
+        <PandalPhoto g={g} sizes="(max-width: 480px) 50vw, 240px" />
         {g.manacha && (
           <div className="absolute left-2 top-2 whitespace-nowrap rounded-badge bg-gold px-2 py-0.5 font-sans text-[9px] font-semibold text-maroon">
             {manachaBadge(g.manacha)}
