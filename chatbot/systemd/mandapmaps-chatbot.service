@@ -1,0 +1,32 @@
+[Unit]
+Description=MandapMaps RAG chatbot (FastAPI + FAISS + Groq)
+After=network-online.target redis6.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mandapmaps
+Group=mandapmaps
+WorkingDirectory=/opt/mandapmaps/repo/chatbot
+EnvironmentFile=/etc/mandapmaps/chatbot.env
+ExecStart=/opt/mandapmaps/repo/chatbot/scripts/run.sh
+Restart=always
+RestartSec=10
+
+# Hardening. Writes are limited to the chatbot tree (FAISS index, HF model
+# cache). Applies to instances booted after this change; the unit is installed
+# by the instance user-data.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+ReadWritePaths=/opt/mandapmaps/repo/chatbot
+
+[Install]
+WantedBy=multi-user.target

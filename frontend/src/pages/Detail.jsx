@@ -1,22 +1,18 @@
-import { useState } from 'react';
-import { manachaBadge } from '../data/helpers.js';
+import { useEffect, useRef, useState } from 'react';
+import { manachaBadge, directionsUrl } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
 import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
+import { reportCrowd } from '../services/crowd.js';
+import { useCrowd } from '../context/CrowdContext.jsx';
 
+// Practical info (metro / ticket / food / directions) lives in an always-visible
+// section above the tabs. Tabs hold the secondary reference info; Timings is the
+// default and History sits last, since directions and crowds matter more to a
+// visitor mid-festival than backstory.
 const TABS = [
-  { key: 'history', label: 'History' },
   { key: 'timings', label: 'Timings' },
-  { key: 'getting', label: 'Getting There' },
-  { key: 'nearby', label: 'Nearby' },
+  { key: 'history', label: 'History' },
 ];
-
-// Directions to the pandal with no origin set, so Google Maps starts from the
-// user's current location. Prefers exact coordinates, falls back to the address
-// string for records without lat/lng.
-function directionsUrl(g) {
-  const dest = g.lat != null && g.lng != null ? `${g.lat},${g.lng}` : g.address;
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
-}
 
 function TimingRow({ title, value }) {
   return (
@@ -26,6 +22,80 @@ function TimingRow({ title, value }) {
         <div className="font-sans text-sm font-semibold text-maroon">{title}</div>
         <div className="mt-0.5 font-sans text-[13px] text-maroon/50">{value}</div>
       </div>
+    </div>
+  );
+}
+
+// Where the current level comes from, for the line under the heading.
+function crowdBasis(current) {
+  if (current.source === 'location') return 'estimated from live locations';
+  if (current.source === 'interest') return 'estimated from planned routes';
+  const n = current.reportCount || 0;
+  return `${n} ${n === 1 ? 'report' : 'reports'} in the last 45 min`;
+}
+
+const REPORT_STATUS = {
+  ok: 'Thanks, your report was counted.',
+  cooldown: 'You reported this mandal recently. You can report again in a few minutes.',
+  failed: "Couldn't send your report. Please check your connection and try again.",
+};
+
+function CrowdReportWidget({ ganpatiId }) {
+  const { crowd, setLevel } = useCrowd();
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState(null);
+  const current = crowd[ganpatiId];
+
+  const submit = async (level) => {
+    setSubmitting(true);
+    setStatus(null);
+    try {
+      // The reply carries the mandal's fresh level, so the widget updates
+      // immediately instead of waiting for the next poll.
+      const { crowd: fresh } = await reportCrowd(ganpatiId, level);
+      setLevel(ganpatiId, fresh);
+      setStatus(REPORT_STATUS.ok);
+    } catch (err) {
+      setStatus(err.status === 429 ? REPORT_STATUS.cooldown : REPORT_STATUS.failed);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-card border border-maroon/[0.06] bg-surface p-4">
+      <div className="mb-1 font-sans text-sm font-semibold text-maroon">How busy is it here?</div>
+      {current && (
+        <div className="mb-3 font-sans text-xs text-maroon/50">
+          Current: {current.label} ({crowdBasis(current)})
+        </div>
+      )}
+      <div className="flex gap-2">
+        {[
+          { level: 1, label: 'Low', tint: 'bg-crowd-low/12 text-crowd-low', on: 'bg-crowd-low text-light' },
+          { level: 2, label: 'Medium', tint: 'bg-crowd-med/12 text-crowd-med', on: 'bg-crowd-med text-light' },
+          { level: 3, label: 'High', tint: 'bg-crowd-high/12 text-crowd-high', on: 'bg-crowd-high text-light' },
+        ].map((opt) => {
+          const isCurrent = current?.level === opt.level;
+          return (
+            <button
+              key={opt.level}
+              disabled={submitting}
+              onClick={() => submit(opt.level)}
+              className={`flex-1 rounded-pill px-3 py-2 font-sans text-sm font-semibold transition-colors disabled:opacity-50 ${
+                isCurrent ? opt.on : opt.tint
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      {status && (
+        <div className="mt-3 font-sans text-xs text-maroon/50" role="status">
+          {status}
+        </div>
+      )}
     </div>
   );
 }
@@ -49,7 +119,7 @@ function MetroWhatsApp() {
     <>
       <div
         className="w-full cursor-pointer rounded-card border-[1.5px] border-maroon/15 p-4 text-center font-sans text-[15px] font-semibold text-maroon hover:border-maroon"
-        onClick={() => window.open('https://wa.me/919420101990?text=Hi', '_blank')}
+        onClick={() => window.open('https://wa.me/919420101990?text=Hi', '_blank', 'noopener')}
       >
         Book Metro Ticket via WhatsApp
       </div>
@@ -75,18 +145,21 @@ function NearbyGroup({ icon, title, children }) {
 }
 
 export default function Detail({ ganpati, prevPage, onBack }) {
-  const [tab, setTab] = useState('history');
+  const [tab, setTab] = useState('timings');
   const [toast, setToast] = useState(false);
+  const toastTimer = useRef(null);
   const { route, addToRoute, removeFromRoute } = useRoute();
   const inRoute = route.includes(ganpati.id);
   const backLabel = prevPage === 'home' ? '← Back to Home' : '← Back to Explore';
-  // Closest metro station for the "Getting There" tab (first of the list).
-  const metro = ganpati.metro?.[0];
+
+  // Don't fire a pending toast timeout after the page has been left.
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const onAdd = () => {
     addToRoute(ganpati.id);
     setToast(true);
-    setTimeout(() => setToast(false), 2000);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(false), 2000);
   };
 
   return (
@@ -142,6 +215,54 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         )}
       </div>
 
+    
+
+       {/* Crowd Report */}
+      <div className="mx-gutter-lg mt-5">
+        {/* Keyed by mandal so the status line resets when switching pandals. */}
+        <CrowdReportWidget key={ganpati.id} ganpatiId={ganpati.id} />
+      </div>
+
+      
+
+      {/* Plan your visit: the practical, act-on-it-now info (directions, metro,
+          ticket, food, parking) kept always-visible above the reference tabs. */}
+      <div className="mx-gutter-lg mt-5 flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <a
+            href={directionsUrl([ganpati])}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-[15px] font-semibold text-maroon no-underline hover:bg-gold-dark"
+          >
+            Open in Google Maps
+          </a>
+          <div className="font-sans text-sm leading-[1.6] text-maroon/60">{ganpati.address}</div>
+          <div className="font-sans text-xs font-medium text-gold">
+            Pandal location updated for 2026 season
+          </div>
+        </div>
+
+        <NearbyGroup icon={<MetroIcon />} title="Nearest Metro">
+          {ganpati.metro.map((m) => (
+            <NearbyRow key={m.name} name={m.name} sub={m.line} dist={m.dist} />
+          ))}
+          <MetroWhatsApp />
+        </NearbyGroup>
+
+        <NearbyGroup icon={<FoodIcon />} title="Food Nearby">
+          {ganpati.food.map((f) => (
+            <NearbyRow key={f.name} name={f.name} sub={f.type} dist={f.dist} />
+          ))}
+        </NearbyGroup>
+
+        <NearbyGroup icon={<ParkingIcon />} title="Parking">
+          <div className="rounded-[10px] bg-surface px-3.5 py-3 font-sans text-sm leading-[1.6] text-maroon/60">
+            {ganpati.parking || 'Parking guidance for this pandal is coming soon.'}
+          </div>
+        </NearbyGroup>
+      </div>
+
       {/* Did You Know */}
       {ganpati.didYouKnow && (
         <div className="mx-gutter-lg mt-5 rounded-card border border-gold/25 bg-surface px-4 py-4">
@@ -154,7 +275,7 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs: secondary reference info */}
       <div className="mx-gutter-lg mt-5 flex border-b-2 border-maroon/[0.08]">
         {TABS.map((t) => {
           const active = tab === t.key;
@@ -176,12 +297,6 @@ export default function Detail({ ganpati, prevPage, onBack }) {
 
       {/* Tab content */}
       <div className="px-gutter-lg py-5">
-        {tab === 'history' && (
-          <div className="font-sans text-[15px] leading-[1.8] text-maroon/75">
-            {ganpati.history}
-          </div>
-        )}
-
         {tab === 'timings' && (
           <div className="flex flex-col">
             <TimingRow title="Morning Aarti" value={ganpati.morningAarti} />
@@ -190,58 +305,9 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           </div>
         )}
 
-        {tab === 'getting' && (
-          <div className="flex flex-col gap-4">
-            <a
-              href={directionsUrl(ganpati)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-[15px] font-semibold text-maroon no-underline hover:bg-gold-dark"
-            >
-              Open in Google Maps
-            </a>
-            <div className="font-sans text-sm leading-[1.6] text-maroon/60">{ganpati.address}</div>
-            <div className="font-sans text-xs font-medium text-gold">
-              Pandal location updated for 2026 season
-            </div>
-
-            {metro && (
-              <div className="flex items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5">
-                <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-maroon">
-                  <MetroIcon />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-sans text-sm font-semibold text-maroon">{metro.name}</div>
-                  <div className="mt-0.5 font-sans text-xs text-maroon/50">{metro.line}</div>
-                </div>
-                <div className="whitespace-nowrap font-sans text-xs font-semibold text-gold">
-                  {metro.dist}
-                </div>
-              </div>
-            )}
-
-            <MetroWhatsApp />
-          </div>
-        )}
-
-        {tab === 'nearby' && (
-          <div className="flex flex-col gap-5">
-            <NearbyGroup icon={<MetroIcon />} title="Nearest Metro">
-              {ganpati.metro.map((m) => (
-                <NearbyRow key={m.name} name={m.name} sub={m.line} dist={m.dist} />
-              ))}
-              <MetroWhatsApp />
-            </NearbyGroup>
-            <NearbyGroup icon={<FoodIcon />} title="Food Nearby">
-              {ganpati.food.map((f) => (
-                <NearbyRow key={f.name} name={f.name} sub={f.type} dist={f.dist} />
-              ))}
-            </NearbyGroup>
-            <NearbyGroup icon={<ParkingIcon />} title="Parking">
-              <div className="rounded-[10px] bg-surface px-3.5 py-3 font-sans text-sm leading-[1.6] text-maroon/60">
-                {ganpati.parking || 'Parking guidance for this pandal is coming soon.'}
-              </div>
-            </NearbyGroup>
+        {tab === 'history' && (
+          <div className="font-sans text-[15px] leading-[1.8] text-maroon/75">
+            {ganpati.history}
           </div>
         )}
       </div>

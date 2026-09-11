@@ -1,22 +1,7 @@
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
-
-// Build a Google Maps directions URL from the ordered stops. The origin is left
-// unset so Maps starts from the user's current location; the stops become
-// waypoints in order and the last one is the destination. Each point prefers
-// exact coordinates and falls back to the address for records without lat/lng.
-// No Maps API key is needed for this URL scheme.
-function directionsUrl(stops) {
-  const point = (g) => (g.lat != null && g.lng != null ? `${g.lat},${g.lng}` : g.address);
-  const destination = encodeURIComponent(point(stops[stops.length - 1]));
-  const waypoints = stops
-    .slice(0, -1)
-    .map((g) => encodeURIComponent(point(g)))
-    .join('|');
-  let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-  if (waypoints) url += `&waypoints=${waypoints}`;
-  return url;
-}
+import { useCrowd } from '../context/CrowdContext.jsx';
+import { directionsUrl } from '../data/helpers.js';
 
 function ChevronUp() {
   return (
@@ -37,6 +22,7 @@ function ChevronDown() {
 export default function Route({ onExplore }) {
   const { ganpatis } = useGanpatis();
   const { route, removeFromRoute, clearRoute, reorderRoute } = useRoute();
+  const { crowd } = useCrowd();
   const items = route.map((id) => ganpatis.find((g) => g.id === id)).filter(Boolean);
   const count = items.length;
   const single = count === 1;
@@ -83,9 +69,18 @@ export default function Route({ onExplore }) {
               >
                 <div className="w-7 flex-none text-center font-serif text-xl text-gold">{i + 1}</div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-serif text-[15px] text-maroon">{g.name}</div>
-                  <div className="font-sans text-xs text-maroon/40">{g.area}</div>
+                <div className="font-serif text-[15px] text-maroon">
+                  {g.name}
+
+                  {crowd[g.id]?.level === 3 && (
+                    <span className="ml-2 rounded-pill bg-crowd-high/12 px-2 py-0.5 font-sans text-[11px] font-semibold text-crowd-high">
+                      Busy now, consider reordering
+                    </span>
+                  )}
                 </div>
+
+                <div className="font-sans text-xs text-maroon/40">{g.area}</div>
+              </div>
                 <div className="flex flex-none flex-col items-center text-maroon/35">
                   <div
                     className={`flex h-6 w-8 items-center justify-center rounded ${

@@ -1,16 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { RouteProvider } from './context/RouteContext.jsx';
 import { GanpatisProvider } from './context/GanpatisContext.jsx';
+import { CrowdProvider } from './context/CrowdContext.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GanpatisProvider>
-      <RouteProvider>
-        <App />
-      </RouteProvider>
-    </GanpatisProvider>
+    <ErrorBoundary>
+      <GanpatisProvider>
+        <RouteProvider>
+          <CrowdProvider>
+            <App />
+          </CrowdProvider>
+        </RouteProvider>
+      </GanpatisProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

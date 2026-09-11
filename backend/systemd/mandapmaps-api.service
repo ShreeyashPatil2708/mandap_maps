@@ -1,0 +1,32 @@
+[Unit]
+Description=MandapMaps Node API
+After=network-online.target redis6.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mandapmaps
+Group=mandapmaps
+WorkingDirectory=/opt/mandapmaps/repo/backend
+EnvironmentFile=/etc/mandapmaps/api.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+
+# Hardening. The API never writes to disk, so ProtectSystem=strict with no
+# ReadWritePaths leaves the code tree read-only to the running process.
+# (Applies to instances booted after this change; the unit is installed by
+# the instance user-data.)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

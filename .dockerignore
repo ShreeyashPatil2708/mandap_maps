@@ -1,0 +1,77 @@
+# Docker ignore patterns for optimized build context
+# Root level
+.git
+.github
+*.md
+*.sh
+claude.md
+
+# Node
+node_modules
+npm-debug.log*
+.pnpm-debug.log*
+.yarn-debug.log*
+.yarn-error.log*
+
+# Build outputs
+dist
+build
+frontend/dist
+*.tsbuildinfo
+
+# Environment files (except examples)
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# IDE/Editor
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Terraform
+infra/**/.terraform
+infra/**/*.tfstate
+infra/**/*.tfstate.backup
+infra/**/*.tfplan
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+.venv/
+venv/
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Chatbot specific
+chatbot/app/data/faiss_index/
+chatbot/seed-data.json
+
+# Private data (not committed)
+/data/
+backend/db/seed-data.json
+
+# Test/coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+.turbo/
+
+# Docker
+docker-compose.override.yml

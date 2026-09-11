@@ -1,0 +1,82 @@
+#!/bin/bash
+# API fleet bootstrap (Amazon Linux 2023, arm64).
+# Installs Node, an on-box Redis cache, clones the app, writes the systemd unit
+# environment, and starts the service. Deploys after this happen via SSM
+# (git pull to a pinned SHA + systemctl restart), see .github/workflows/cd.yml.
+set -euxo pipefail
+
+REGION="${region}"
+REPO_URL="${repo_url}"
+REPO_BRANCH="${repo_branch}"
+APP_USER="mandapmaps"
+APP_ROOT="/opt/mandapmaps"
+REPO_DIR="$APP_ROOT/repo"
+
+# --- Packages ---
+dnf update -y
+dnf install -y git redis6 amazon-cloudwatch-agent
+# Node 20 (NodeSource has arm64 builds; AL2023's default nodejs is older).
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+dnf install -y nodejs
+
+# --- Service user ---
+id "$APP_USER" &>/dev/null || useradd --system --create-home --shell /usr/sbin/nologin "$APP_USER"
+mkdir -p "$APP_ROOT" /etc/mandapmaps
+chown -R "$APP_USER:$APP_USER" "$APP_ROOT"
+
+# --- On-box Redis (cache-first, localhost only) ---
+systemctl enable --now redis6
+
+# --- App checkout ---
+if [ ! -d "$REPO_DIR/.git" ]; then
+  sudo -u "$APP_USER" git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"
+fi
+cd "$REPO_DIR"
+git config --system --add safe.directory "$REPO_DIR"
+# This is an npm workspaces monorepo with a single root lockfile, so install
+# from the repo root (deps hoist to the root node_modules the backend resolves).
+sudo -u "$APP_USER" npm ci --omit=dev
+
+# --- systemd environment ---
+cat > /etc/mandapmaps/api.env <<EOF
+NODE_ENV=production
+PORT=${api_port}
+AWS_REGION=$REGION
+DB_SECRET_ID=${db_secret_id}
+REDIS_URL=redis://localhost:6379
+GANPATI_CACHE_TTL=86400
+CORS_ORIGINS=${cors_origins}
+RATE_LIMIT_MAX=1000
+EOF
+chmod 640 /etc/mandapmaps/api.env
+chown root:"$APP_USER" /etc/mandapmaps/api.env
+
+# --- systemd unit (shipped in the repo) ---
+install -m 644 "$REPO_DIR/backend/systemd/mandapmaps-api.service" /etc/systemd/system/mandapmaps-api.service
+systemctl daemon-reload
+systemctl enable --now mandapmaps-api
+
+# --- CloudWatch agent (memory + disk + app logs) ---
+cat > /opt/aws/amazon-cloudwatch-agent/etc/cw-agent.json <<EOF
+{
+  "agent": { "metrics_collection_interval": 60 },
+  "metrics": {
+    "append_dimensions": { "AutoScalingGroupName": "\$${aws:AutoScalingGroupName}", "InstanceId": "\$${aws:InstanceId}" },
+    "metrics_collected": {
+      "mem": { "measurement": ["mem_used_percent"] },
+      "disk": { "measurement": ["used_percent"], "resources": ["/"] }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          { "file_path": "/var/log/messages", "log_group_name": "${log_group}", "log_stream_name": "{instance_id}/system" }
+        ]
+      }
+    }
+  }
+}
+EOF
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/cw-agent.json

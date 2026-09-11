@@ -13,13 +13,21 @@ export default {
           DEFAULT: '#6B1E2E',
           dark: '#5A1826',
         },
-        gold: {
+               gold: {
           DEFAULT: '#C9A84C',
           dark: '#B8973F',
         },
-        cream: '#EDE4D0',
-        surface: '#F9F2E5',
-        light: '#FAF6F0',
+        cream: '#EDE4D0', // page background
+        surface: '#F9F2E5', // card / panel background
+        light: '#FAF6F0', // text/icons on maroon backgrounds
+        // Crowd traffic-light, tuned to sit on the cream/surface palette. Shared
+        // by the crowd report buttons, the route "busy" badge, and the map pins
+        // (MapView.jsx CROWD_COLORS mirrors these exact hexes).
+        crowd: {
+          low: '#3E8E5A', // Low  / not busy
+          med: '#C99A2E', // Medium
+          high: '#B23A3A', // High / busy
+        },
       },
       fontFamily: {
         serif: ['"DM Serif Display"', 'serif'],

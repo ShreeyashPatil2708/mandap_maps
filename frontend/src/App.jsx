@@ -13,7 +13,8 @@ import Route from './pages/Route.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Splash from './pages/Splash.jsx';
 import Team from './pages/Team.jsx';
-
+import { useLocationSharing } from './hooks/useLocationSharing.js';
+import { readShareLocation, writeShareLocation } from './data/storage.js';
 // Read a valid Ganpati id from the ?g= query param, or null. Powers shareable,
 // deep-linkable pandal URLs without pulling in a full router.
 function readGanpatiParam() {
@@ -27,6 +28,16 @@ function readGanpatiParam() {
 // here so every screen stays in sync. Ganpati data is loaded once from the
 // API via GanpatisProvider and read through useGanpatis().
 export default function App() {
+  // "Help detect crowds" opt-in. Lives here (not in the Drawer) so the pinger
+  // starts and stops the moment the toggle changes.
+  const [shareLocation, setShareLocation] = useState(readShareLocation);
+  useLocationSharing(shareLocation);
+  const toggleShareLocation = () => {
+    const next = !shareLocation;
+    setShareLocation(next);
+    writeShareLocation(next);
+  };
+
   const { ganpatis, loading, error } = useGanpatis();
   const { route } = useRoute();
   const initialGanpatiId = readGanpatiParam();
@@ -70,7 +81,13 @@ export default function App() {
   };
   const goBack = () => setPage(prevPage || 'explore');
 
-  const detailGanpati = ganpatis.find((g) => g.id === selectedId) || ganpatis[0];
+  const detailGanpati = ganpatis.find((g) => g.id === selectedId);
+
+  // A deep link or history entry for an id that doesn't exist lands on Explore
+  // instead of silently showing an unrelated pandal.
+  useEffect(() => {
+    if (!loading && !error && page === 'detail' && !detailGanpati) setPage('explore');
+  }, [loading, error, page, detailGanpati]);
 
   // Show the Support popup whenever the home page becomes active (first load,
   // refresh, or navigating back to Home). Closing it keeps it closed until the
@@ -190,6 +207,8 @@ export default function App() {
         onExplore={goExplore}
         onRoute={goRoute}
         onPrivacy={goPrivacy}
+        sharing={shareLocation}
+        onToggleSharing={toggleShareLocation}
         onSupport={() => {
           setShowModal(true);
           setShowMenu(false);
@@ -201,7 +220,15 @@ export default function App() {
       {showAsk && (
         <AskSheet
           onClose={() => setShowAsk(false)}
-          ganpatiId={page === 'detail' ? selectedId : null}
+          ganpatis={ganpatis}
+          onOpenGanpati={(id) => {
+            openGanpati(id);
+            setShowAsk(false);
+          }}
+          onExplore={() => {
+            goExplore();
+            setShowAsk(false);
+          }}
         />
       )}
     </div>

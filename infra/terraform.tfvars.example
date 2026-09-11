@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
+
+# Email that receives CloudWatch alarms and budget alerts.
+alarm_email = "you@example.com"
+
+# Shared secret CloudFront adds as the x-origin-secret header on /api requests;
+# the ALB rejects requests without it. Generate a long random value, e.g.
+# `openssl rand -hex 32`.
+origin_shared_secret = "REPLACE_WITH_A_LONG_RANDOM_STRING"
+
+# Optional edge guard (see README "Edge guard"). Set ONLY after the Cloudflare
+# Transform Rule that adds x-mm-edge-auth with this value is live.
+# edge_auth_secret = ""
+
+# Optional overrides (defaults shown):
+# domain_name            = "mandapmaps.in"
+# region                 = "ap-south-1"
+# db_multi_az            = false
+# monthly_budget_usd     = 60
+# github_repo            = "ShreeyashPatil2708/mandap_maps"
+# github_oidc_sub        = "repo:ORG/REPO:ref:refs/heads/master" # only if custom OIDC subject templates are enabled

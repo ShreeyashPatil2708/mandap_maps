@@ -57,8 +57,21 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+.ruff_cache/
 # Chatbot build artifact - rebuild with: cd chatbot && python ingest_seed_data.py
 chatbot/app/data/faiss_index/
+
+# Terraform (infra/). Never commit: .terraform/ is a local plugin cache, and
+# state/tfvars can contain plaintext secrets. The provider lock file
+# (.terraform.lock.hcl) IS meant to be committed, so it is not ignored here.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+crash.log
+crash.*.log
 
 claude.md
 
