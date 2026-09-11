@@ -52,6 +52,11 @@ backend/db/seed-data.json
 # the shape so a fresh clone still runs with placeholder data.
 chatbot/seed-data.json
 
+# Pandal photos are served from the S3 photos bucket (npm run photos), never
+# from the repo. Only the UPI QR lives in frontend/public/images.
+frontend/public/images/*
+!frontend/public/images/upi-qr.png
+
 # Python (chatbot FastAPI service)
 venv/
 .venv/
