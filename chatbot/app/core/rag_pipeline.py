@@ -1,18 +1,23 @@
 import logging
-import os
 import urllib.parse
 from collections.abc import AsyncIterator
 
-import httpx
 from starlette.concurrency import run_in_threadpool
 
+from app.config import get_settings
 from app.core import memory, planner
 from app.core.cache import get_cached_response, set_cached_response
 from app.core.entity_resolver import is_broad_query, resolve_entities
 from app.core.hybrid_retriever import get_retriever
 from app.core.intents import is_planner_query, wants_crowd_info, wants_photo
 from app.core.lang_detect import detect_language
-from app.core.llm import build_prompt, call_llm, stream_llm, translate_to_english
+from app.core.llm import (
+    build_prompt,
+    call_llm,
+    get_http_client,
+    stream_llm,
+    translate_to_english,
+)
 from app.data.loader import get_mandals
 from app.models.schemas import (
     ChatResponse,
@@ -23,14 +28,12 @@ from app.models.schemas import (
     SuggestedAction,
 )
 
-###### API CHANGED #####
-
-BACKEND_URL = os.environ.get("BACKEND_URL", "https://mandapmaps.in")
+settings = get_settings()
 
 logger = logging.getLogger("ekdanta.rag")
 
 # Deterministic (non-LLM) fallback messages. Kept out of the LLM entirely so
-# they can never hallucinate a wrong mandal name or a made-up suggestion —
+# they can never hallucinate a wrong mandal name or a made-up suggestion,
 # see transcript issues #15 (unhelpful generic fallback) and #16 (not
 # distinguishing "data doesn't exist" from "retrieval failed to find it").
 _FALLBACK_KNOWN_ENTITY = (
@@ -48,7 +51,7 @@ _STREAM_META_MARKER = "\u0000META\u0000"  # see api/chat.py for the frontend-sid
 
 
 async def _resolve_entity_context(session_id: str, query: str, history: list[dict]):
-    """Figures out which mandal(s), if any, this query is about — either
+    """Figures out which mandal(s), if any, this query is about, either
     named directly in the query, or carried forward from the last turn
     when the query looks like a follow-up (no mandal named, and not a
     deliberately broad/cross-mandal question). Returns
@@ -82,7 +85,7 @@ async def _resolve_entity_context(session_id: str, query: str, history: list[dic
 
 async def _get_crowd_level(primary_entity: dict | None) -> dict | None:
     """Fetch current crowd information from the Node backend, looked up
-    by name — the chatbot's entity registry has no numeric Postgres id,
+    by name, the chatbot's entity registry has no numeric Postgres id,
     only doc_id/name_en/name_mr (see entity_resolver.py)."""
     if not primary_entity:
         return None
@@ -92,11 +95,10 @@ async def _get_crowd_level(primary_entity: dict | None) -> dict | None:
         logger.warning("No name_en found on entity: %s", primary_entity)
         return None
 
-    url = f"{BACKEND_URL}/api/ganpatis/by-name/{urllib.parse.quote(name)}/crowd"
+    url = f"{settings.BACKEND_URL}/api/ganpatis/by-name/{urllib.parse.quote(name, safe='')}/crowd"
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(url)
+        response = await get_http_client().get(url, timeout=settings.BACKEND_TIMEOUT)
 
         if response.status_code == 404:
             logger.warning("No matching Ganpati in backend DB for name=%s", name)
@@ -116,10 +118,9 @@ async def _get_all_crowd_levels() -> list[dict]:
     """Fetch crowd levels for every mandal, for comparison-style questions
     like 'which mandal has less crowd', and to feed the Darshan Planner's
     crowd-aware ordering (see planner.build_plan)."""
-    url = f"{BACKEND_URL}/api/crowd/by-name"
+    url = f"{settings.BACKEND_URL}/api/crowd/by-name"
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(url)
+        response = await get_http_client().get(url, timeout=settings.BACKEND_TIMEOUT)
         if response.status_code != 200:
             return []
         return response.json()
@@ -141,11 +142,25 @@ def _build_crowd_comparison_answer(levels: list[dict]) -> str:
     )
 
 
+def _build_crowd_answer(name: str, crowd: dict | None) -> str:
+    """One-line answer for "how crowded is X" from the Node API's crowd level.
+    Only claims visitor reports when the level actually comes from people's
+    taps; otherwise it's the live location / planned-route estimate."""
+    if not crowd or not crowd.get("level"):
+        return f"I don't have current crowd information for {name}."
+    basis = (
+        "recent visitor reports"
+        if crowd.get("source") in ("reports", None)
+        else "live crowd signals"
+    )
+    return f"{name} is currently showing {crowd['label']} crowd levels, based on {basis}."
+
+
 def _build_location_card(primary_entity: dict | None, query: str) -> LocationCard | None:
     """Structured location payload for the map integration. Attached
     whenever a single mandal is confidently resolved and has coordinates,
     so 'View on Map' / 'Get Directions' are always available under an
-    answer about a specific mandal — not just when the user explicitly
+    answer about a specific mandal, not just when the user explicitly
     says 'show me' (see intents.wants_location_card, used below only to
     decide whether to also attach the idol photo)."""
     if not primary_entity:
@@ -201,7 +216,7 @@ async def _build_plan_response(
             estimated_minutes_high=plan["estimated_minutes_high"],
             fits_budget=plan["fits_budget"],
         ),
-        suggested_actions=[SuggestedAction(label="Explore Mandals", emoji="🕉️", query="Which mandal has the oldest idol?")],
+        suggested_actions=[SuggestedAction(label="Explore Mandals", emoji="🕉️", query="", nav="explore")],
     )
 
 
@@ -228,7 +243,7 @@ async def answer_query(
     if not history:
         cached = await get_cached_response(query)
         if cached:
-            logger.info("cache hit for query=%r", query)
+            logger.info("cache hit (query_len=%d)", len(query))
             await memory.append_turn(session_id, query, cached["answer"])
             detected_lang = await lang_task if lang_task else language
             cached_payload = {**cached, "detected_language": cached.get("detected_language", detected_lang)}
@@ -241,7 +256,7 @@ async def answer_query(
     )
 
     # ---------------------------------------------------------
-    # Crowd query — always fetch fresh crowd information.
+    # Crowd query: always fetch fresh crowd information.
     # Do NOT use the normal RAG cache for this.
     # ---------------------------------------------------------
     if wants_crowd_info(query):
@@ -260,24 +275,7 @@ async def answer_query(
             )
 
         crowd = await _get_crowd_level(primary_entity)
-
-        if not crowd:
-            answer = f"I don't have current crowd information for {primary_entity['name_en']}."
-        else:
-            label = crowd.get("label")
-            level = crowd.get("level")
-            if label and label != "No data yet":
-                answer = (
-                    f"{primary_entity['name_en']} is currently reporting "
-                    f"{label} crowd levels based on recent visitor reports."
-                )
-            elif label:
-                answer = (
-                    f"{primary_entity['name_en']} is currently "
-                    f"reporting crowd level {level} based on recent visitor reports."
-                )
-            else:
-                answer = f"I don't have current crowd information for {primary_entity['name_en']}."
+        answer = _build_crowd_answer(primary_entity["name_en"], crowd)
 
         await memory.append_turn(session_id, query, answer)
         return ChatResponse(
@@ -304,9 +302,11 @@ async def answer_query(
     hits = await run_in_threadpool(
         retriever.retrieve, retrieval_query, top_k=None, entity_doc_ids=entity_doc_ids
     )
+    # User queries are not logged verbatim (they can contain personal details);
+    # length and resolved entity are enough to debug retrieval.
     logger.info(
-        "retrieved %d chunks for query=%r (entity=%s)",
-        len(hits), query, primary_entity["doc_id"] if primary_entity else None,
+        "retrieved %d chunks (query_len=%d, entity=%s)",
+        len(hits), len(query), primary_entity["doc_id"] if primary_entity else None,
     )
 
     location = _build_location_card(primary_entity, query)
@@ -347,7 +347,7 @@ async def answer_query(
         "sources": [s.model_dump() for s in sources],
         "detected_language": detected_lang,
     }
-    # Only cache fresh, entity-resolved single-mandal answers — comparison
+    # Only cache fresh, entity-resolved single-mandal answers, comparison
     # queries or broad/unfiltered results are too context-dependent to reuse
     # safely across different users/sessions.
     if not history and (entity_doc_ids is None or len(entity_doc_ids) == 1):
@@ -365,7 +365,7 @@ async def stream_answer(
     """Streaming counterpart of answer_query(), used by the /stream endpoint.
     Yields answer text as it's generated instead of waiting for the full
     response, then yields one final chunk carrying structured metadata
-    (location card / suggested actions / plan) behind a private marker —
+    (location card / suggested actions / plan) behind a private marker,
     see api/chat.py for how the frontend splits that back out.
 
     Shares the same entity resolution / translation / grounded fallback /
@@ -393,7 +393,7 @@ async def stream_answer(
     if not history:
         cached = await get_cached_response(query)
         if cached:
-            logger.info("cache hit for query=%r (streaming)", query)
+            logger.info("cache hit (streaming, query_len=%d)", len(query))
             await memory.append_turn(session_id, query, cached["answer"])
             yield cached["answer"]
             entity_doc_ids, primary_entity, _ = await _resolve_entity_context(session_id, query, history)
@@ -421,25 +421,7 @@ async def stream_answer(
 
         else:
             crowd = await _get_crowd_level(primary_entity)
-
-            if not crowd:
-                answer = (
-                    f"I don't have current crowd information for "
-                    f"{primary_entity['name_en']}."
-                )
-            else:
-                label = crowd.get("label")
-
-                if label and label != "No data yet":
-                    answer = (
-                        f"{primary_entity['name_en']} is currently reporting "
-                        f"{label} crowd levels based on recent visitor reports."
-                    )
-                else:
-                    answer = (
-                        f"I don't have current crowd information for "
-                        f"{primary_entity['name_en']}."
-                    )
+            answer = _build_crowd_answer(primary_entity["name_en"], crowd)
 
         await memory.append_turn(session_id, query, answer)
 
@@ -467,7 +449,10 @@ async def stream_answer(
     hits = await run_in_threadpool(
         retriever.retrieve, retrieval_query, top_k=None, entity_doc_ids=entity_doc_ids
     )
-    logger.info("retrieved %d chunks for query=%r (streaming)", len(hits), query)
+    logger.info(
+        "retrieved %d chunks (streaming, query_len=%d, entity=%s)",
+        len(hits), len(query), primary_entity["doc_id"] if primary_entity else None,
+    )
 
     location = _build_location_card(primary_entity, query)
     suggested_actions = _build_suggested_actions(primary_entity)

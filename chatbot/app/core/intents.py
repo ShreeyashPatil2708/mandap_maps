@@ -1,8 +1,8 @@
 """
 Cheap, deterministic (non-LLM) intent flags layered on top of entity
 resolution. These decide which *extra* structured pieces the pipeline
-attaches to an answer — a Darshan Planner run, an idol photo, or a
-map/location card — without ever asking the LLM to decide, so the
+attaches to an answer, a Darshan Planner run, an idol photo, or a
+map/location card, without ever asking the LLM to decide, so the
 decision is fast, free, and never hallucinated.
 """
 import re
@@ -54,7 +54,7 @@ def wants_photo(text: str) -> bool:
 
 def wants_location_card(text: str) -> bool:
     """True for queries that are fundamentally 'show me / navigate to X'
-    rather than a factual question about X — these get a map/directions
+    rather than a factual question about X, these get a map/directions
     card attached in addition to the normal grounded answer."""
     if not text:
         return False

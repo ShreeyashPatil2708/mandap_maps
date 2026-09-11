@@ -70,6 +70,9 @@ DB_SECRET_ID=${db_secret_id}
 APP_SECRET_ID=${app_secret_id}
 REDIS_URL=redis://localhost:6379/0
 ALLOWED_ORIGINS='${allowed_origins}'
+# Node API for live crowd levels, via the public site: the API is on its own
+# fleet and the ALB only admits CloudFront traffic (see chatbot/scripts/run.sh).
+BACKEND_URL=${backend_url}
 EOF
 chmod 640 /etc/mandapmaps/chatbot.env
 chown root:"$APP_USER" /etc/mandapmaps/chatbot.env

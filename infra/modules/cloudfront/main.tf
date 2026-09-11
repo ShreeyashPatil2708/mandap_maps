@@ -1,8 +1,9 @@
 # CloudFront fronts the static SPA (S3 via OAC) and also proxies the dynamic
 # /api/* path to the ALB, so a single distribution does all path routing and
 # Cloudflare only has to proxy the apex here. CloudFront sits behind Cloudflare,
-# which terminates TLS for the browser, so the distribution uses its default
-# *.cloudfront.net certificate (no custom domain and no us-east-1 ACM cert).
+# and lists the apex + www as aliases with a us-east-1 ACM cert (passed in as
+# acm_certificate_arn), because the free Cloudflare plan cannot rewrite the Host
+# header it forwards.
 
 # Origin Access Control: the modern replacement for OAI. It signs CloudFront's
 # requests to S3 with SigV4 so the bucket can stay fully private.
@@ -31,6 +32,32 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+# AWS-managed security headers for the SPA: HSTS, X-Content-Type-Options,
+# X-Frame-Options SAMEORIGIN, Referrer-Policy and X-XSS-Protection. The API
+# behavior is left alone (helmet already sets these on API responses).
+data "aws_cloudfront_response_headers_policy" "security_headers" {
+  name = "Managed-SecurityHeadersPolicy"
+}
+
+# Optional edge guard (off while edge_auth_secret is empty). When on, every
+# request must carry the x-mm-edge-auth header that the Cloudflare Transform
+# Rule adds; anything else (e.g. someone calling the *.cloudfront.net domain
+# directly, which could spoof X-Forwarded-For) gets a 403. The header is then
+# removed so it never reaches S3, the ALB, or logs. The snippet is appended to
+# an existing line, so with the guard off the function code is byte-identical
+# to before and a plan shows no change.
+locals {
+  edge_guard_enabled = var.edge_auth_secret != ""
+  edge_check_js = local.edge_guard_enabled ? join("\n", [
+    "",
+    "      var auth = request.headers['x-mm-edge-auth'];",
+    "      if (!auth || auth.value !== ${jsonencode(var.edge_auth_secret)}) {",
+    "        return { statusCode: 403, statusDescription: 'Forbidden' };",
+    "      }",
+    "      delete request.headers['x-mm-edge-auth'];",
+  ]) : ""
+}
+
 # SPA deep-link routing: rewrite extensionless paths to /index.html so client
 # routes (e.g. /explore) resolve to the SPA entry point. Attached only to the
 # default (S3) behavior, so genuine API status codes on /api/* are never
@@ -41,10 +68,25 @@ resource "aws_cloudfront_function" "spa_router" {
   publish = true
   code    = <<-EOT
     function handler(event) {
-      var request = event.request;
+      var request = event.request;${local.edge_check_js}
       if (request.uri.indexOf('.') === -1) {
         request.uri = '/index.html';
       }
+      return request;
+    }
+  EOT
+}
+
+# Edge guard for the /api behavior (which has no other function). Exists only
+# while the guard is on.
+resource "aws_cloudfront_function" "edge_guard" {
+  count   = local.edge_guard_enabled ? 1 : 0
+  name    = "${var.name}-edge-guard"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;${local.edge_check_js}
       return request;
     }
   EOT
@@ -88,12 +130,13 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "frontend-s3"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
-    compress               = true
+    target_origin_id           = "frontend-s3"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = true
 
     # SPA deep-link routing, scoped to the S3 behavior only (see the function).
     function_association {
@@ -112,6 +155,15 @@ resource "aws_cloudfront_distribution" "this" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     compress                 = true
+
+    # Edge guard, attached only while it is on (see edge_check_js above).
+    dynamic "function_association" {
+      for_each = aws_cloudfront_function.edge_guard
+      content {
+        event_type   = "viewer-request"
+        function_arn = function_association.value.arn
+      }
+    }
   }
 
   restrictions {

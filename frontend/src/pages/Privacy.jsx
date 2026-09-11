@@ -71,12 +71,44 @@ export default function Privacy({ onBack }) {
           <div className={heading}>Keeping and deleting data</div>
           <p>
             Chat memory is short-lived and clears on its own. You can clear it anytime by
-            ending the conversation.
+            ending the conversation. Live location points used for crowd detection are deleted
+            automatically after 30 minutes, and we only ever keep a count of how many people are
+            near a mandal, never an individual path.
+          </p>
+        </div>
+
+        <div>
+          <div className={heading}>How we protect your data</div>
+          <ul className="list-disc pl-5">
+            <li>Everything is anonymous. There is no account, and we never ask for your name, email, or phone number.</li>
+            <li>Location is stored coarsely (rounded to roughly a street block), so it cannot be used to trace exactly where you were.</li>
+            <li>All traffic is served over HTTPS, and data sits in a private database that is not open to the public internet.</li>
+            <li>We do not sell your data or share it with advertisers. The only outside service that sees your input is our AI provider (Groq), and only the text you send to the chat.</li>
+          </ul>
+        </div>
+
+        <div>
+          <div className={heading}>Your choices</div>
+          <p>
+            Crowd sharing is off by default and fully optional. You can turn it on or off anytime
+            from the menu, and you can clear the chat whenever you like. Because the data is
+            anonymous and deleted quickly, there is nothing tied to you to look up or export.
+          </p>
+        </div>
+
+        <div>
+          <div className={heading}>Contact</div>
+          <p>
+            Questions about privacy or data? Write to us at{' '}
+            <a href="mailto:hello@mandapmaps.in" className="font-medium text-gold">
+              hello@mandapmaps.in
+            </a>
+            .
           </p>
         </div>
 
         <p className="text-maroon/50">
-          This page will be updated as the app grows.
+          Last updated 11 September 2026. This page will be updated as the app grows.
         </p>
       </div>
     </div>

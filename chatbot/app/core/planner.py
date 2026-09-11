@@ -1,18 +1,18 @@
 """
-Darshan Planner — turns "plan my darshan route" into a concrete, ordered
+Darshan Planner: turns "plan my darshan route" into a concrete, ordered
 itinerary instead of a plain Q&A answer.
 
 Deliberately kept 100% deterministic (no LLM call): stop order, distances
 and duration all come from real mandal coordinates + haversine math, so
 the plan can never invent a mandal, an order, or a timing the way a free
 -text LLM completion could (see the "no fabrication" rule in llm.py's
-SYSTEM_PROMPT — the planner holds itself to the same bar, just by
+SYSTEM_PROMPT, the planner holds itself to the same bar, just by
 construction instead of by prompting).
 
 Route ordering uses a greedy nearest-neighbour walk from the start point.
 That's not a true TSP solve, but for ~5-8 old-Pune stops within a couple
 of km of each other it produces a sensible walking loop, is O(n^2), and
-is instant — appropriate for a chat response.
+is instant, appropriate for a chat response.
 """
 from dataclasses import dataclass
 
@@ -41,7 +41,7 @@ _KNOWN_STARTS = {
 _DEFAULT_START_NAME = "Pune Railway Station"
 _DEFAULT_START = _KNOWN_STARTS["pune railway station"]
 
-# Pace assumptions for old-Pune peth-area walking during the festival —
+# Pace assumptions for old-Pune peth-area walking during the festival,
 # short distances but heavy foot traffic, so speed is conservative.
 WALK_SPEED_KMPH = 3.0
 MINUTES_PER_STOP = 25  # darshan + queue time at each mandal, mirrors the
@@ -148,7 +148,7 @@ def build_plan(
     mandals = _target_mandals(entity_doc_ids, query)
 
     # If the user asked to avoid crowds, drop High-crowd mandals from the
-    # candidate list before ordering — but only when that still leaves at
+    # candidate list before ordering, but only when that still leaves at
     # least one stop, so we never return an empty plan.
     crowd_lookup = {c["name"]: c for c in (crowd_by_name or [])}
     if _wants_to_avoid_crowds(query):
@@ -199,7 +199,7 @@ def format_plan_text(plan: dict) -> str:
 
     # Each keycap numeral is several codepoints (digit + variation selector +
     # combining enclosing keycap), so this has to be a list of whole emoji,
-    # never a string sliced by index — slicing a concatenated string of them
+    # never a string sliced by index, slicing a concatenated string of them
     # tears the codepoints apart and prints garbled glyphs.
     numerals = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
     for i, stop in enumerate(plan["stops"]):
@@ -211,13 +211,13 @@ def format_plan_text(plan: dict) -> str:
 
     lo, hi = plan["estimated_minutes_low"], plan["estimated_minutes_high"]
     lines.append("⏱️ Estimated duration")
-    lines.append(f"~{lo // 60}h {lo % 60:.0f}m – {hi // 60}h {hi % 60:.0f}m")
+    lines.append(f"~{lo // 60}h {lo % 60:.0f}m to {hi // 60}h {hi % 60:.0f}m")
 
     if plan["requested_minutes"] and not plan["fits_budget"]:
         lines.append("")
         lines.append(
-            f"⚠️ This is a bit tight for your {plan['requested_minutes'] / 60:.1f}-hour window — "
-            "consider dropping a stop or starting earlier."
+            f"⚠️ This is a bit tight for your {plan['requested_minutes'] / 60:.1f}-hour window. "
+            "Consider dropping a stop or starting earlier."
         )
 
     if plan["food_stop"]:
@@ -228,7 +228,7 @@ def format_plan_text(plan: dict) -> str:
         if f.get("type"):
             label += f" ({f['type']})"
         if f.get("near"):
-            label += f" — near {f['near']}"
+            label += f", near {f['near']}"
         lines.append(label)
 
     lines.append("")

@@ -23,7 +23,11 @@ export POSTGRES_URL=$(echo "$DB_SECRET" | python3 -c "import sys,json; print(jso
 export GROQ_API_KEY=$(echo "$APP_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin).get('GROQ_API_KEY',''))")
 export INGEST_API_KEY=$(echo "$APP_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin).get('INGEST_API_KEY',''))")
 
-# Backend URL used by the chatbot
-export BACKEND_URL="https://mandapmaps.in"
+# Node API for live crowd levels. The API runs on its own fleet, so localhost
+# is wrong here, and the ALB only accepts CloudFront traffic carrying the
+# origin secret, so the chatbot uses the same public path the browser does.
+# chatbot.env can override it (the Terraform user-data writes it from the
+# domain variable); this default ships with every CD deploy.
+export BACKEND_URL="${BACKEND_URL:-https://mandapmaps.in}"
 
 exec python3.11 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1

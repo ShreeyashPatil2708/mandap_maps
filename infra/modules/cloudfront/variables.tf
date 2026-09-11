@@ -29,6 +29,13 @@ variable "origin_shared_secret" {
   sensitive   = true
 }
 
+variable "edge_auth_secret" {
+  description = "When non-empty, requests without the x-mm-edge-auth header carrying this value are rejected at the edge (see the root variable)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "aliases" {
   description = "Alternate domain names (CNAMEs) the distribution serves. Requires acm_certificate_arn to be set."
   type        = list(string)

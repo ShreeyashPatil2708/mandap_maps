@@ -24,6 +24,18 @@ settings = get_settings()
 
 _fallback_store: dict[str, list[dict]] = {}
 
+# The in-process fallback only exists for Redis outages / local dev. Bound it so
+# an outage during heavy traffic can't grow memory without limit: oldest
+# sessions are evicted first (dicts keep insertion order).
+_FALLBACK_MAX_SESSIONS = 1000
+
+
+def _bounded_put(store: dict, key: str, value) -> None:
+    store.pop(key, None)
+    store[key] = value
+    while len(store) > _FALLBACK_MAX_SESSIONS:
+        store.pop(next(iter(store)))
+
 _redis_client: "redis.Redis | None" = None
 REDIS_AVAILABLE = False
 
@@ -78,7 +90,7 @@ async def set_last_entity(session_id: str, doc_id: str, name_en: str):
             return
         except Exception:
             logger.warning("redis set failed; falling back to in-memory store", exc_info=True)
-    _fallback_entity_store[session_id] = payload
+    _bounded_put(_fallback_entity_store, session_id, payload)
 
 
 async def get_history(session_id: str) -> list[dict]:
@@ -102,7 +114,7 @@ async def append_turn(session_id: str, user_msg: str, assistant_msg: str):
             return
         except Exception:
             logger.warning("redis set failed; falling back to in-memory store", exc_info=True)
-    _fallback_store[session_id] = history
+    _bounded_put(_fallback_store, session_id, history)
 
 
 async def clear_history(session_id: str):

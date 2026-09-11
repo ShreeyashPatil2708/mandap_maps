@@ -42,7 +42,7 @@ class HybridRetriever:
         self, query: str, top_k: int | None = None, entity_doc_ids: list[str] | None = None
     ) -> list[dict]:
         """
-        entity_doc_ids: when given (from entity_resolver — a mandal named
+        entity_doc_ids: when given (from entity_resolver: a mandal named
         explicitly in the query, or carried forward from conversation
         context), retrieval is restricted to chunks from those mandals
         ONLY. This is the fix for cross-entity contamination: previously

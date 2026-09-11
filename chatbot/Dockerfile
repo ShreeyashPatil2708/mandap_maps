@@ -35,21 +35,22 @@ FROM base AS runner
 COPY --from=deps /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=deps /usr/local/bin /usr/local/bin
 
-WORKDIR /app
+# Copy application code. The app imports itself as `app.*`, so it must run
+# from inside the chatbot directory.
+COPY --chown=appuser:appuser chatbot/ /app/chatbot/
+WORKDIR /app/chatbot
 
-# Copy application code
-COPY --chown=appuser:appuser chatbot/ ./chatbot/
-
-# Create directories for FAISS index (will be populated at runtime from S3)
-RUN mkdir -p /app/faiss_index && chown -R appuser:appuser /app/faiss_index
+# Writable dirs for the FAISS index and the HuggingFace model cache (the
+# system user has no home directory to cache into).
+RUN mkdir -p /app/faiss_index /app/hf-cache && \
+    chown -R appuser:appuser /app/faiss_index /app/hf-cache
 
 # Environment variables (can be overridden at runtime)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/app/hf-cache \
     FAISS_INDEX_PATH=/app/faiss_index/index.bin \
-    FAISS_METADATA_PATH=/app/faiss_index/metadata.json \
-    AWS_REGION=us-east-1 \
-    APP_SECRET_ID=mandapmaps-prod/app
+    FAISS_METADATA_PATH=/app/faiss_index/metadata.json
 
 USER appuser
 
@@ -63,4 +64,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the FastAPI app with uvicorn
-CMD ["uvicorn", "chatbot.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

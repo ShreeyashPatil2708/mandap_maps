@@ -24,10 +24,13 @@ class Settings(BaseSettings):
 
     # ---- Groq (hosted LLM) ----
     GROQ_API_KEY: str = ""
-    # 70B follows the "don't fabricate / stay on-topic / formatting" rules in the
-    # system prompt noticeably better than 8B, and is still fast on Groq.
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    # Groq decommissioned the Llama chat models; gpt-oss-120b is what production
+    # runs (see infra/templates/chatbot-user-data.sh.tftpl).
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_TIMEOUT: int = 30
+    # Upper bound on generated tokens per answer (cost / abuse guard). Generous
+    # because reasoning models spend part of it before the visible answer.
+    LLM_MAX_TOKENS: int = 1500
 
     # ---- Embeddings ----
     # Multilingual model -> needed for English / Marathi / Hindi support
@@ -56,6 +59,13 @@ class Settings(BaseSettings):
     CACHE_TTL_SECONDS: int = 3600
     MEMORY_TURNS: int = 6          # how many past turns to keep per session
 
+    # ---- Node API (crowd levels) ----
+    # The chatbot runs on its own instance, so this must be a reachable URL, not
+    # localhost. Production uses the public site (https://mandapmaps.in), which
+    # routes /api through CloudFront to the ALB; see chatbot/scripts/run.sh.
+    BACKEND_URL: str = "http://localhost:4000"
+    BACKEND_TIMEOUT: float = 5.0
+
     # ---- CORS ----
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
@@ -70,6 +80,26 @@ class Settings(BaseSettings):
     # Upper bounds on request payloads (defense against cost/DoS abuse).
     MAX_QUERY_CHARS: int = 2000
     MAX_INGEST_CHARS: int = 50000
+    # How many proxies in front of the app append to X-Forwarded-For. Production
+    # is Cloudflare -> CloudFront -> ALB -> app (3), so the real client IP is the
+    # 3rd entry from the right. Without it every visitor shares the ALB's IP and
+    # one rate-limit bucket. -1 means "auto": 3 when ENV=production, else 0.
+    TRUSTED_PROXY_HOPS: int = -1
+    # Global concurrency gate (see core/concurrency.py): at most this many chat
+    # pipelines run at once; a request waits up to BUSY_WAIT_SECONDS for a slot
+    # before getting a 503, so a burst can't OOM the small instance.
+    MAX_CONCURRENT_CHATS: int = 4
+    BUSY_WAIT_SECONDS: float = 10.0
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENV.lower() == "production"
+
+    @property
+    def proxy_hops(self) -> int:
+        if self.TRUSTED_PROXY_HOPS >= 0:
+            return self.TRUSTED_PROXY_HOPS
+        return 3 if self.is_production else 0
 
     class Config:
         env_file = ".env"

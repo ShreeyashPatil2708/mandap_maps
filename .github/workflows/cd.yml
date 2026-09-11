@@ -8,18 +8,28 @@ permissions:
   id-token: write
   contents: read
 
+# One deploy at a time; a newer push waits for the running one instead of
+# racing it on the same instances.
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   # Match the Terraform stack region (infra/variables.tf).
   AWS_REGION: ap-south-1
 
 jobs:
+  # Lint + build gate: nothing deploys unless CI passes for this exact commit.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy-frontend:
     name: Deploy frontend to S3 + CloudFront
+    needs: ci
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
           cache: npm
@@ -30,12 +40,12 @@ jobs:
       - name: Build
         run: npm run build --workspace frontend
         env:
-          # Empty -> the SPA calls /api/* same-origin. Cloudflare routes /api/*
-          # to the ALB and everything else to CloudFront.
+          # Empty -> the SPA calls /api/* same-origin. CloudFront routes /api/*
+          # to the ALB and everything else to S3.
           VITE_API_URL: ''
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -57,10 +67,11 @@ jobs:
 
   deploy-backend:
     name: Deploy Node API via SSM
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -68,6 +79,11 @@ jobs:
       - name: Deploy to API ASG via SSM
         env:
           SHA: ${{ github.sha }}
+        # git and npm run as the unprivileged app user (npm install scripts
+        # never run as root); the repo is chowned first because earlier deploys
+        # checked out as root. Only systemctl runs as root.
+        # NOTE: no inner double quotes or commas inside a commands element, they
+        # break the SSM shorthand parser.
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
@@ -77,15 +93,16 @@ jobs:
               \"set -e\",
               \"git config --system --add safe.directory /opt/mandapmaps/repo\",
               \"cd /opt/mandapmaps/repo\",
-              \"PREV_SHA=\$(git rev-parse HEAD)\",
-              \"git fetch --depth 1 origin $SHA\",
-              \"git checkout --force $SHA\",
-              \"npm ci --omit=dev\",
-              \"sudo -u mandapmaps bash -c 'set -a; . /etc/mandapmaps/api.env; set +a; npm run migrate --workspace backend'\",
+              \"chown -R mandapmaps:mandapmaps /opt/mandapmaps/repo\",
+              \"PREV_SHA=\$(sudo -u mandapmaps git rev-parse HEAD)\",
+              \"sudo -u mandapmaps git fetch --depth 1 origin $SHA\",
+              \"sudo -u mandapmaps git checkout --force $SHA\",
+              \"sudo -u mandapmaps -H npm ci --omit=dev\",
+              \"sudo -u mandapmaps -H bash -c 'set -a; . /etc/mandapmaps/api.env; set +a; npm run migrate --workspace backend'\",
               \"systemctl restart mandapmaps-api\",
               \"PORT=\$(grep -E '^PORT=' /etc/mandapmaps/api.env | cut -d= -f2)\",
               \"ok=0; for i in \$(seq 1 20); do sleep 3; if curl -fsS http://localhost:\$PORT/ready >/dev/null 2>&1; then ok=1; break; fi; done\",
-              \"if [ \$ok -ne 1 ]; then echo readiness failed - rolling back to \$PREV_SHA; git checkout --force \$PREV_SHA; npm ci --omit=dev; systemctl restart mandapmaps-api; exit 1; fi\",
+              \"if [ \$ok -ne 1 ]; then echo readiness failed - rolling back to \$PREV_SHA; sudo -u mandapmaps git checkout --force \$PREV_SHA; sudo -u mandapmaps -H npm ci --omit=dev; systemctl restart mandapmaps-api; exit 1; fi\",
               \"echo readiness-ok at $SHA\"
             ]" \
             --timeout-seconds 300 \
@@ -111,10 +128,11 @@ jobs:
 
   deploy-chatbot:
     name: Deploy Python chatbot via SSM
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -122,6 +140,9 @@ jobs:
       - name: Deploy to chatbot ASG via SSM
         env:
           SHA: ${{ github.sha }}
+        # Same pattern as the API: git as the app user, then a health gate that
+        # rolls back to the previous commit if the service never comes up.
+        # (pip stays root: the bootstrap installs into the system python3.11.)
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
@@ -131,10 +152,15 @@ jobs:
               \"set -e\",
               \"git config --system --add safe.directory /opt/mandapmaps/repo\",
               \"cd /opt/mandapmaps/repo\",
-              \"git fetch --depth 1 origin $SHA\",
-              \"git checkout --force $SHA\",
+              \"chown -R mandapmaps:mandapmaps /opt/mandapmaps/repo\",
+              \"PREV_SHA=\$(sudo -u mandapmaps git rev-parse HEAD)\",
+              \"sudo -u mandapmaps git fetch --depth 1 origin $SHA\",
+              \"sudo -u mandapmaps git checkout --force $SHA\",
               \"python3.11 -m pip install --no-cache-dir -r chatbot/requirements.txt\",
-              \"systemctl restart mandapmaps-chatbot\"
+              \"systemctl restart mandapmaps-chatbot\",
+              \"ok=0; for i in \$(seq 1 36); do sleep 5; if curl -fsS http://localhost:8000/health >/dev/null 2>&1; then ok=1; break; fi; done\",
+              \"if [ \$ok -ne 1 ]; then echo health failed - rolling back to \$PREV_SHA; sudo -u mandapmaps git checkout --force \$PREV_SHA; python3.11 -m pip install --no-cache-dir -r chatbot/requirements.txt; systemctl restart mandapmaps-chatbot; exit 1; fi\",
+              \"echo health-ok at $SHA\"
             ]" \
             --timeout-seconds 600 \
             --comment "Deploy $SHA" \

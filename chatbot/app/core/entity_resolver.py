@@ -21,9 +21,9 @@ Strategy:
      so a typo like "Kasaba" still resolves without accidentally matching
      on a shared, common word like "Ganpati" alone.
   3. A small heuristic (`is_followup_query`) flags queries that are
-     probably referring back to a previously-discussed mandal — either
+     probably referring back to a previously-discussed mandal, either
      because they're short, or because they contain a pronoun/reference
-     word in English, Hindi, or Marathi — so the pipeline knows when to
+     word in English, Hindi, or Marathi, so the pipeline knows when to
      reuse the last resolved entity from session memory.
 """
 from functools import lru_cache
@@ -33,14 +33,14 @@ from rapidfuzz import fuzz
 from app.data.loader import load_records, slugify
 
 # Signals that a query is deliberately cross-mandal / not about "whatever
-# we were just discussing" — e.g. "which mandal has the oldest idol?" or
+# we were just discussing", e.g. "which mandal has the oldest idol?" or
 # "compare X and Y". When one of these is present, the pipeline should NOT
 # narrow retrieval to the last-discussed mandal even if none is named.
 _BROAD_QUERY_MARKERS = [
     "all mandal", "which mandal", "which ganpati", "list of", "every mandal",
     "top mandal", "best mandal", "nearby mandal", "other mandal",
     "different mandal", "compare", "vs ", " versus ",
-    # General Ganpati/festival knowledge (not about one specific mandal) —
+    # General Ganpati/festival knowledge (not about one specific mandal),
     # without these, a question like "why is ganpati celebrated?" incorrectly
     # gets stuck to whatever mandal was last discussed in the session.
     "story of ganpati", "story of ganesha", "why is ganpati", "why ganpati",
@@ -56,7 +56,7 @@ _FUZZY_THRESHOLD = 82.0
 @lru_cache
 def _entity_registry() -> list[dict]:
     """Canonical (doc_id, name_en, name_mr) for every mandal in the
-    dataset. Cached for the process lifetime — the dataset doesn't
+    dataset. Cached for the process lifetime, the dataset doesn't
     change without a restart/re-ingest."""
     entities = []
     for rec in load_records():
@@ -95,7 +95,7 @@ def _fuzzy_matches(query_lower: str, registry: list[dict]) -> list[dict]:
         best_score = 0.0
         # Slide a window the same length as the candidate name across the
         # query, so "Kasaba Ganpati timing?" is compared window-by-window
-        # ("kasaba ganpati", "ganpati timing?") rather than as one blob —
+        # ("kasaba ganpati", "ganpati timing?") rather than as one blob,
         # this keeps the match tied to the right words instead of just
         # rewarding any shared vocabulary.
         for i in range(max(1, len(tokens) - n_tokens + 1)):
@@ -144,7 +144,7 @@ def is_broad_query(text: str) -> bool:
     ("which mandal has...", "compare X and Y") rather than continuing a
     conversation about one specific mandal. rag_pipeline uses this: if a
     query names no mandal AND isn't broad, it defaults to carrying
-    forward whatever mandal was last discussed in the session — this is
+    forward whatever mandal was last discussed in the session, this is
     what correctly resolves "What happened to the idol over the
     centuries?" (no pronoun, but clearly a follow-up in context) to the
     mandal from two turns ago, instead of drifting to an unrelated one."""
