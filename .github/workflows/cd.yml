@@ -81,6 +81,7 @@ jobs:
               \"git fetch --depth 1 origin $SHA\",
               \"git checkout --force $SHA\",
               \"npm ci --omit=dev\",
+              \"sudo -u mandapmaps bash -c 'set -a; . /etc/mandapmaps/api.env; set +a; npm run migrate --workspace backend'\",
               \"systemctl restart mandapmaps-api\",
               \"PORT=\$(grep -E '^PORT=' /etc/mandapmaps/api.env | cut -d= -f2)\",
               \"ok=0; for i in \$(seq 1 20); do sleep 3; if curl -fsS http://localhost:\$PORT/ready >/dev/null 2>&1; then ok=1; break; fi; done\",

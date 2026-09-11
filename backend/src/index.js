@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import { loadSecrets } from './config/secrets.js';
+import { query } from './config/db.js';
 import ganpatisRouter from './routes/ganpatis.js';
 import crowdRouter from './routes/crowd.js';   // add this import near the top with the others
 import locationRouter from './routes/location.js';
@@ -43,8 +44,23 @@ async function createApp() {
     })
   );
 
+  // Shallow liveness: the process is up and serving.
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'mandapmaps-api', time: new Date().toISOString() });
+  });
+
+  // Deep readiness: the app can actually reach the database. The CD deploy
+  // probes this before declaring a rollout healthy (see .github/workflows/cd.yml),
+  // so a bad DB connection fails the deploy instead of going live broken.
+  app.get('/ready', async (_req, res) => {
+    try {
+      await query('SELECT 1');
+      res.json({ status: 'ready' });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Readiness check failed', err);
+      res.status(503).json({ status: 'not-ready' });
+    }
   });
 
   app.use('/api/ganpatis', ganpatisRouter);
