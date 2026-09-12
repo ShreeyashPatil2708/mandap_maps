@@ -3,6 +3,7 @@ import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
 import CIRCUITS from '../data/circuits.js';
 import Link from './Link.jsx';
+import SectionHeader from './SectionHeader.jsx';
 import { ganpatiPath } from '../router.js';
 
 // One circuit card: name, the stop count / time / distance meta, a short note,
@@ -28,14 +29,16 @@ function CircuitCard({ circuit, byName }) {
   const addAll = () => resolved.forEach((g) => addToRoute(g.id));
 
   return (
-    <div className="overflow-hidden rounded-card border border-maroon/[0.06] bg-surface">
-      <div className="px-gutter pb-4 pt-4">
+    <div className="flex h-full flex-col overflow-hidden rounded-card border border-maroon/[0.06] bg-surface">
+      <div className="px-5 pb-4 pt-4">
         <div className="font-serif text-[18px] leading-[1.25] text-maroon">{circuit.name}</div>
         <div className="mt-1.5 font-sans text-[12px] text-maroon/45">{meta}</div>
-        <div className="mt-1 font-sans text-[12px] leading-[1.5] text-maroon/40">{circuit.note}</div>
+        <div className="mt-1 font-sans text-[12px] leading-[1.5] text-maroon/40">
+          {circuit.note}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-maroon/[0.06] px-gutter py-3.5">
+      <div className="flex flex-1 flex-col gap-2 border-t border-maroon/[0.06] px-5 py-3.5">
         {circuit.stops.map((stopName, i) => {
           const g = byName.get(stopName);
           const className = `flex items-center gap-3 rounded-[10px] px-3 py-2 ${
@@ -64,13 +67,13 @@ function CircuitCard({ circuit, byName }) {
         })}
 
         {allInRoute ? (
-          <div className="mt-1.5 rounded-card border border-maroon/10 bg-light px-4 py-3 text-center font-sans text-[13px] font-semibold text-maroon/50">
+          <div className="mt-auto rounded-card border border-maroon/10 bg-light px-4 py-3 text-center font-sans text-[13px] font-semibold text-maroon/50">
             All stops added to route
           </div>
         ) : (
           <div
             onClick={addAll}
-            className="mt-1.5 cursor-pointer rounded-card bg-maroon px-4 py-3 text-center font-sans text-[13px] font-semibold text-light hover:bg-maroon-dark"
+            className="mt-auto cursor-pointer rounded-card bg-maroon px-4 py-3 text-center font-sans text-[13px] font-semibold text-light hover:bg-maroon-dark"
           >
             Add circuit to route
           </div>
@@ -87,13 +90,8 @@ export default function Circuits() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="font-serif text-[22px] text-maroon">Suggested Circuits</h2>
-        <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
-          ठरलेले मार्ग
-        </div>
-      </div>
-      <div className="flex flex-col gap-3.5">
+      <SectionHeader title="Suggested Circuits" marathi="ठरलेले मार्ग" />
+      <div className="grid gap-3.5 md:grid-cols-2">
         {CIRCUITS.map((c) => (
           <CircuitCard key={c.id} circuit={c} byName={byName} />
         ))}

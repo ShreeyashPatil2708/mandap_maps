@@ -1,27 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
-import { manachaBadge } from '../data/helpers.js';
+import { manachaBadge, areaFilters } from '../data/helpers.js';
 import { OmMark } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
 import Circuits from '../components/Circuits.jsx';
+import Container from '../components/Container.jsx';
+import SectionHeader from '../components/SectionHeader.jsx';
 import Link from '../components/Link.jsx';
 import { PATHS, ganpatiPath } from '../router.js';
-import { UPI_ID } from '../data/upi.js';
-
-const FACTS = [
-  "Dagdusheth's idol has 8 kg of gold, donated by devotees over 130 years.",
-  'Kasba Ganpati\'s idol was originally the size of a grain of rice. It has grown over 385 years.',
-  "Guruji Talim was co-founded by a Hindu and Muslim family in 1887, six years before Tilak's Ganeshotsav.",
-  'Tulshibaug Ganpati was the first mandal in Pune to use a fibreglass idol, in 1975.',
-  'Every public Ganeshotsav in India traces its origin to Kesariwada, where Tilak had the idea in 1893.',
-];
+import GANPATI_FACTS from '../data/facts.js';
 
 // Carousel card for a Manacha Ganpati on the homepage.
 function Manache5Card({ g }) {
   return (
     <Link
       to={ganpatiPath(g)}
-      className="w-[170px] flex-none cursor-pointer snap-start overflow-hidden rounded-card border border-maroon/[0.06] bg-surface"
+      className="w-[170px] flex-none cursor-pointer snap-start overflow-hidden rounded-card border border-maroon/[0.06] bg-surface transition-colors hover:border-gold/40 sm:w-auto"
     >
       <div className="relative flex h-[105px] items-center justify-center bg-maroon">
         <OmMark size={40} textSize={18} opacity={0.6} />
@@ -46,7 +40,7 @@ function VisitRow({ g }) {
   return (
     <Link
       to={ganpatiPath(g)}
-      className="flex cursor-pointer items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3 hover:border-gold/40"
+      className="flex cursor-pointer items-start gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3 hover:border-gold/40"
     >
       <div className="relative flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-lg bg-maroon">
         <OmMark size={28} textSize={13} opacity={0.5} />
@@ -57,65 +51,83 @@ function VisitRow({ g }) {
         <div className="font-devanagari text-xs text-maroon/40" lang="mr">
           {g.nameMarathi}
         </div>
+        {/* Stacked under the name rather than pinned to the right of the row.
+            Right-aligned, a long area squeezed a long name onto three lines. */}
+        <div className="mt-1 truncate font-sans text-xs text-maroon/40">{g.area}</div>
       </div>
-      <div className="whitespace-nowrap font-sans text-xs text-maroon/40">{g.area}</div>
     </Link>
   );
 }
 
-// Countdown to Ganeshotsav plus a rotating "Did you know?" fact. The fact
-// cross-fades every 5 seconds (0.4s out, swap, 0.4s in).
-function CountdownCard() {
-  const daysLeft = useMemo(() => {
-    const target = new Date(2026, 7, 22); // 22 August 2026 (month is 0-indexed)
-    const ms = target - new Date();
-    return Math.max(0, Math.ceil(ms / 86400000));
-  }, []);
+// "Did you know?" deck. Replaces the old countdown, which was pinned to a fixed
+// date and had already run down to zero.
+//
+// Facts are shown in a shuffled order and advanced by the reader, not on a
+// timer: a fact that changes under you while you are still reading it is worse
+// than one you asked for. The deck reshuffles once it has been through every
+// fact, so nothing repeats until all of them have been seen.
+function shuffled(n) {
+  const order = Array.from({ length: n }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
 
-  const [factIndex, setFactIndex] = useState(0);
+function DidYouKnow() {
+  // The homepage is prerendered, so the first render has to be deterministic or
+  // the server and client markup disagree. Shuffling happens after mount.
+  const [order, setOrder] = useState(null);
+  const [pos, setPos] = useState(0);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setFactIndex((i) => (i + 1) % FACTS.length);
-        setVisible(true);
-      }, 400);
-    }, 5000);
-    return () => clearInterval(interval);
+    setOrder(shuffled(GANPATI_FACTS.length));
   }, []);
 
+  const fact = GANPATI_FACTS[order ? order[pos] : 0];
+
+  const next = () => {
+    setVisible(false);
+    setTimeout(() => {
+      const at = pos + 1;
+      if (at >= (order ? order.length : GANPATI_FACTS.length)) {
+        // Seen them all, deal a fresh order.
+        setOrder(shuffled(GANPATI_FACTS.length));
+        setPos(0);
+      } else {
+        setPos(at);
+      }
+      setVisible(true);
+    }, 200);
+  };
+
   return (
-    <div className="overflow-hidden rounded-card border border-maroon/[0.06] bg-surface">
-      {/* Countdown */}
-      <div className="flex items-center gap-4 px-gutter py-5">
-        <div className="font-serif text-[52px] leading-none text-gold">{daysLeft}</div>
-        <div className="min-w-0">
-          <div className="font-sans text-[15px] leading-[1.3] text-maroon">
-            days to Ganeshotsav 2026
+    <div className="rounded-card border border-maroon/[0.06] bg-surface px-5 py-5">
+      {/* Stacked on a phone, a single row on wider screens so the card does not
+          become one short line of text stranded in a very wide box. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">
+            Did you know?
           </div>
-          <div className="mt-1.5 font-sans text-[11px] text-maroon/45">
-            <span className="font-devanagari">पुण्याचा उत्सव</span> · 50+ pandals mapped
+          {/* Reserve the height of the longest fact so the card does not jump
+              as the reader clicks through. */}
+          <div
+            className="min-h-[72px] font-sans text-[15px] leading-[1.6] text-maroon/75 transition-opacity duration-200 sm:min-h-[48px]"
+            style={{ opacity: visible ? 1 : 0 }}
+          >
+            {fact}
           </div>
         </div>
-      </div>
-
-
-      {/* Thin divider */}
-      <div className="border-t border-maroon/[0.08]" />
-
-      {/* Did you know */}
-      <div className="px-gutter py-5">
-        <div className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">
-          Did you know?
-        </div>
-        <div
-          className="min-h-[46px] font-sans text-[13px] leading-[1.6] text-maroon/70 transition-opacity duration-[400ms]"
-          style={{ opacity: visible ? 1 : 0 }}
+        <button
+          type="button"
+          onClick={next}
+          className="flex-none cursor-pointer self-start rounded-pill border-[1.5px] border-maroon/15 px-5 py-2 font-sans text-[13px] font-medium text-maroon transition-colors hover:border-maroon/40 hover:bg-maroon/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:self-center"
         >
-          {FACTS[factIndex]}
-        </div>
+          Next fact
+        </button>
       </div>
     </div>
   );
@@ -123,7 +135,7 @@ function CountdownCard() {
 
 // `enter` is the entry animation class, empty for the screen the visitor landed
 // on (it is already painted from the prerendered HTML). See App.jsx.
-export default function Home({ enter = 'animate-fadeIn' }) {
+export default function Home({ enter = 'animate-fadeIn', onFilter }) {
   const { ganpatis } = useGanpatis();
 
   // The five Manache Ganpatis, ordered by rank.
@@ -131,135 +143,121 @@ export default function Home({ enter = 'animate-fadeIn' }) {
     () => ganpatis.filter((g) => g.manacha).sort((a, b) => a.manacha - b.manacha),
     [ganpatis]
   );
-  // Three non-Manache pandals surfaced in the "Visit" section.
-  const visitPicks = useMemo(() => ganpatis.filter((g) => !g.manacha).slice(0, 3), [ganpatis]);
+  // Non-Manache pandals surfaced in the "Visit" section. This used to show
+  // three out of a hundred and seven, which left the homepage looking like it
+  // had nothing on it.
+  const visitPicks = useMemo(() => ganpatis.filter((g) => !g.manacha).slice(0, 8), [ganpatis]);
+  // Areas worth browsing, same source as the Explore filter chips.
+  const areas = useMemo(() => areaFilters(ganpatis).slice(0, 8), [ganpatis]);
+
+  // Open Explore already filtered to the area that was tapped.
+  const openArea = (key) => {
+    if (onFilter) onFilter(key);
+  };
 
   return (
     <main className={enter}>
       {/* Hero */}
-      <div className="relative flex min-h-[320px] flex-col justify-end overflow-hidden bg-maroon px-gutter-lg pb-11 pt-[60px]">
-        <div
-          className="pointer-events-none absolute -right-5 top-5 select-none font-devanagari text-[200px] font-bold leading-none text-gold/[0.06]"
-          aria-hidden="true"
-        >
-          श्री
-        </div>
-        <div className="relative z-[1] max-w-[600px]">
-          <div className="mb-3 font-sans text-[11px] font-medium uppercase tracking-[3px] text-gold">
-            Pune · Ganeshotsav 2026
+      <div className="relative overflow-hidden bg-maroon">
+        <Container className="relative flex min-h-[320px] flex-col justify-end pb-11 pt-[60px] md:min-h-[420px] md:justify-center">
+          <div
+            className="pointer-events-none absolute -right-5 top-5 select-none font-devanagari text-[200px] font-bold leading-none text-gold/[0.06] md:right-0 md:top-1/2 md:-translate-y-1/2 md:text-[260px]"
+            aria-hidden="true"
+          >
+            श्री
           </div>
-          <h1 className="mb-4 font-serif text-[clamp(32px,8vw,48px)] leading-[1.1] text-light">
-            Your Darshan
-            <br />
-            Companion
-          </h1>
-          <div className="mb-7 max-w-[340px] font-sans text-[15px] leading-[1.6] text-light/60">
-            Find pandals, plan your route, learn the history of Pune&apos;s beloved Ganpatis.
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to={PATHS.explore}
-              className="cursor-pointer whitespace-nowrap rounded-pill bg-gold px-8 py-3.5 font-sans text-[15px] font-semibold text-maroon hover:bg-gold-dark"
-            >
-              Start Exploring
-            </Link>
-            <Link
-              to={PATHS.route}
-              className="cursor-pointer rounded-pill border-[1.5px] border-light/25 px-7 py-[13px] font-sans text-[15px] font-medium text-light hover:border-light/50"
-            >
-              Plan Route
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Manache 5 */}
-      <div className="pb-7 pt-8">
-        <div className="mb-4 flex items-baseline justify-between px-gutter-lg">
-          <div>
-            <h2 className="font-serif text-[22px] text-maroon">Manache 5</h2>
-            <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
-              मानाचे पाच गणपती
+          <div className="relative z-[1] md:max-w-[58%]">
+            <div className="mb-3 font-sans text-[11px] font-medium uppercase tracking-[3px] text-gold">
+              Pune · Ganeshotsav 2026
+            </div>
+            <h1 className="mb-4 font-serif text-[clamp(32px,8vw,48px)] leading-[1.1] text-light">
+              Your Darshan
+              <br />
+              Companion
+            </h1>
+            <div className="mb-7 max-w-[340px] font-sans text-[15px] leading-[1.6] text-light/60">
+              Find pandals, plan your route, learn the history of Pune&apos;s beloved Ganpatis.
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={PATHS.explore}
+                className="cursor-pointer whitespace-nowrap rounded-pill bg-gold px-8 py-3.5 font-sans text-[15px] font-semibold text-maroon hover:bg-gold-dark"
+              >
+                Start Exploring
+              </Link>
+              <Link
+                to={PATHS.route}
+                className="cursor-pointer rounded-pill border-[1.5px] border-light/25 px-8 py-3.5 font-sans text-[15px] font-medium text-light hover:border-light/50"
+              >
+                Plan Route
+              </Link>
             </div>
           </div>
-          <Link
-            to={PATHS.explore}
-            className="cursor-pointer font-sans text-[13px] font-medium text-gold"
-          >
-            View others →
-          </Link>
-        </div>
-        <div className="flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-gutter-lg pb-2">
+        </Container>
+      </div>
+
+      {/* Manache 5. A snap rail on a phone, a row of five on a wide screen,
+          where the rail used to stop short and leave the section half empty. */}
+      <Container className="pb-9 pt-8">
+        <SectionHeader
+          title="Manache 5"
+          marathi="मानाचे पाच गणपती"
+          linkTo={PATHS.explore}
+          linkLabel="View others →"
+        />
+        <div className="-mx-gutter-lg flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-gutter-lg pb-2 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
           {manache5.map((g) => (
             <Manache5Card key={g.id} g={g} />
           ))}
         </div>
-      </div>
+      </Container>
+
+      {/* Did you know */}
+      <Container className="pb-9">
+        <DidYouKnow />
+      </Container>
 
       {/* Visit */}
-      <div className="px-gutter-lg pb-7">
-        <div className="mb-4 flex items-baseline justify-between">
-          <div>
-            <h2 className="font-serif text-[22px] text-maroon">Visit</h2>
-            <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
-              दर्शनासाठी
-            </div>
-          </div>
-          <Link
-            to={PATHS.explore}
-            className="cursor-pointer font-sans text-[13px] font-medium text-gold"
-          >
-            View all →
-          </Link>
-        </div>
-        <div className="flex flex-col gap-2.5">
+      <Container className="pb-9">
+        <SectionHeader
+          title="Visit"
+          marathi="दर्शनासाठी"
+          linkTo={PATHS.explore}
+          linkLabel="View all →"
+        />
+        <div className="grid gap-2.5 md:grid-cols-2">
           {visitPicks.map((g) => (
             <VisitRow key={g.id} g={g} />
           ))}
         </div>
-      </div>
+      </Container>
+
+      {/* Browse by area */}
+      {areas.length > 0 && (
+        <Container className="pb-9">
+          <SectionHeader title="Browse by area" marathi="भागानुसार" />
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {areas.map((a) => (
+              <Link
+                key={a.key}
+                to={PATHS.explore}
+                onClick={() => openArea(a.key)}
+                className="flex cursor-pointer items-center justify-between gap-2 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3 hover:border-gold/40"
+              >
+                <span className="min-w-0 truncate font-sans text-[14px] font-medium text-maroon">
+                  {a.label}
+                </span>
+                <span className="flex-none font-sans text-xs text-maroon/40">{a.count}</span>
+              </Link>
+            ))}
+          </div>
+        </Container>
+      )}
 
       {/* Suggested Circuits */}
-      <div className="px-gutter-lg pb-7">
+      <Container className="pb-9">
         <Circuits />
-      </div>
-
-      {/* Countdown + Did you know */}
-      <div className="px-gutter-lg pb-9 pt-2">
-        <CountdownCard />
-      </div>
-
-      {/* Support Us */}
-      <div className="px-gutter-lg pb-9">
-        <div className="overflow-hidden rounded-panel bg-maroon">
-          <div className="px-gutter pb-5 pt-6">
-            <div className="mb-2 font-serif text-[19px] text-light">Built with devotion</div>
-            <div className="font-sans text-[13px] leading-[1.6] text-light/60">
-              By 3 Pune engineers who wanted this to exist. If it made your darshan easier, we&apos;d
-              love your support.
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-3 bg-light/[0.06] p-gutter">
-            <div className="flex h-[170px] w-[170px] items-center justify-center overflow-hidden rounded-panel border-2 border-gold/30 bg-light">
-              <img src="/images/upi-qr.png" alt="UPI QR code" className="h-full w-full object-contain p-2" />
-            </div>
-            <div className="rounded-md bg-gold/10 px-3.5 py-[5px] font-sans text-[13px] font-medium tracking-[0.5px] text-gold">
-              {UPI_ID}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="flex flex-wrap items-center justify-between gap-3 bg-maroon px-gutter-lg pb-nav-safe pt-7">
-        <div>
-          <div className="mb-1 font-serif text-[15px] text-gold">MandapMaps</div>
-          <div className="font-sans text-[11px] text-light/35">Made with devotion in Pune</div>
-        </div>
-        <Link to={PATHS.privacy} className="cursor-pointer font-sans text-xs text-gold">
-          Privacy
-        </Link>
-      </footer>
+      </Container>
     </main>
   );
 }

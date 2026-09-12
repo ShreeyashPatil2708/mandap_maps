@@ -39,6 +39,7 @@ const STATIC_PAGES = [
   { page: 'home', file: 'index.html', inSitemap: true },
   { page: 'explore', file: 'explore/index.html', inSitemap: true },
   { page: 'privacy', file: 'privacy/index.html', inSitemap: true },
+  { page: 'team', file: 'team/index.html', inSitemap: true },
   { page: 'route', file: 'route/index.html', inSitemap: false },
   { page: 'notfound', file: '404.html', inSitemap: false },
 ];

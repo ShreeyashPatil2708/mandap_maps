@@ -13,7 +13,7 @@ export default {
           DEFAULT: '#6B1E2E',
           dark: '#5A1826',
         },
-               gold: {
+        gold: {
           DEFAULT: '#C9A84C',
           dark: '#B8973F',
         },
@@ -46,10 +46,20 @@ export default {
         sheet: '20px',
         pill: '50px',
       },
+      // The content column. Backgrounds stay full bleed, their contents are
+      // capped and centred by components/Container.jsx: `shell` for grids and
+      // lists, `prose` for reading columns (Privacy, the Detail body text).
+      maxWidth: {
+        shell: '1100px',
+        prose: '720px',
+      },
       spacing: {
         gutter: '20px',
         'gutter-lg': '24px',
-        'nav-safe': '90px',
+        // Clearance for the fixed bottom tab bar. BottomNav adds the safe-area
+        // inset to its own padding, so this has to as well, or the last row of
+        // content sits under the bar on a notched phone.
+        'nav-safe': 'calc(90px + env(safe-area-inset-bottom))',
       },
       keyframes: {
         fadeIn: {

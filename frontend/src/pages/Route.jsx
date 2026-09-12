@@ -2,13 +2,20 @@ import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
 import { useCrowd } from '../context/CrowdContext.jsx';
 import { directionsUrl } from '../data/helpers.js';
+import Container from '../components/Container.jsx';
 import Link from '../components/Link.jsx';
 import { PATHS } from '../router.js';
 
 function ChevronUp() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M4 10L8 6L12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M4 10L8 6L12 10"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -16,7 +23,13 @@ function ChevronUp() {
 function ChevronDown() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M4 6L8 10L12 6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -27,12 +40,9 @@ export default function Route({ enter = 'animate-fadeIn' }) {
   const { crowd } = useCrowd();
   const items = route.map((id) => ganpatis.find((g) => g.id === id)).filter(Boolean);
   const count = items.length;
-  const single = count === 1;
-  const time = single ? 'add more stops' : `${Math.round(count * 25)} min`;
-  const distance = single ? 'add more stops' : `${(count * 1.8).toFixed(1)} km`;
 
   return (
-    <main className={`${enter} px-gutter pb-nav-safe pt-gutter`}>
+    <Container as="main" width="prose" className={`${enter} pt-gutter`}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -71,20 +81,22 @@ export default function Route({ enter = 'animate-fadeIn' }) {
                 key={g.id}
                 className="flex items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5"
               >
-                <div className="w-7 flex-none text-center font-serif text-xl text-gold">{i + 1}</div>
-                <div className="min-w-0 flex-1">
-                <div className="font-serif text-[15px] text-maroon">
-                  {g.name}
-
-                  {crowd[g.id]?.level === 3 && (
-                    <span className="ml-2 rounded-pill bg-crowd-high/12 px-2 py-0.5 font-sans text-[11px] font-semibold text-crowd-high">
-                      Busy now, consider reordering
-                    </span>
-                  )}
+                <div className="w-7 flex-none text-center font-serif text-xl text-gold">
+                  {i + 1}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-serif text-[15px] text-maroon">
+                    {g.name}
 
-                <div className="font-sans text-xs text-maroon/40">{g.area}</div>
-              </div>
+                    {crowd[g.id]?.level === 3 && (
+                      <span className="ml-2 rounded-pill bg-crowd-high/12 px-2 py-0.5 font-sans text-[11px] font-semibold text-crowd-high">
+                        Busy now, consider reordering
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="font-sans text-xs text-maroon/40">{g.area}</div>
+                </div>
                 <div className="flex flex-none flex-col items-center text-maroon/35">
                   <div
                     className={`flex h-6 w-8 items-center justify-center rounded ${
@@ -120,47 +132,20 @@ export default function Route({ enter = 'animate-fadeIn' }) {
             ))}
           </div>
 
-          {/* Stats */}
-          <div className="mb-2 flex gap-5 rounded-card border border-maroon/[0.06] bg-surface px-5 py-[18px]">
-            <div className="flex-1 text-center">
-              <div className="mb-1 font-sans text-[11px] uppercase tracking-[0.5px] text-maroon/40">
-                Stops
-              </div>
-              <div className="font-serif text-[22px] text-maroon">{count}</div>
-            </div>
-            <div className="w-px bg-maroon/[0.08]" />
-            <div className="flex-1 text-center">
-              <div className="mb-1 font-sans text-[11px] uppercase tracking-[0.5px] text-maroon/40">
-                Est. Time
-              </div>
-              <div className="font-serif text-[22px] text-maroon">{time}</div>
-            </div>
-            <div className="w-px bg-maroon/[0.08]" />
-            <div className="flex-1 text-center">
-              <div className="mb-1 font-sans text-[11px] uppercase tracking-[0.5px] text-maroon/40">
-                Distance
-              </div>
-              <div className="font-serif text-[22px] text-maroon">{distance}</div>
-            </div>
-          </div>
-
-          {/* What the estimate means */}
-          <div className="mb-5 px-1 text-center font-sans text-[11px] leading-[1.6] text-maroon/40">
-            Rough total travel time and road distance for the whole route, based on about 25 min and
-            1.8 km between stops. Real times vary with festival crowds and darshan queues.
-          </div>
-
           {/* CTA */}
           <a
             href={directionsUrl(items)}
             target="_blank"
             rel="noopener noreferrer"
-            className="mb-3 block cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-base font-semibold text-maroon no-underline hover:bg-gold-dark"
+            className="mb-3 mt-6 block cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-base font-semibold text-maroon no-underline hover:bg-gold-dark"
           >
             Open in Google Maps
           </a>
           <div className="text-center">
-            <span className="cursor-pointer font-sans text-sm font-medium text-gold" onClick={clearRoute}>
+            <span
+              className="cursor-pointer font-sans text-sm font-medium text-gold"
+              onClick={clearRoute}
+            >
               Clear all
             </span>
           </div>
@@ -172,6 +157,6 @@ export default function Route({ enter = 'animate-fadeIn' }) {
         Phase 2: POST /api/optimize-route with { ganpati_ids: [...] }
         Returns optimal visit order. Replace static list order with response.
       */}
-    </main>
+    </Container>
   );
 }

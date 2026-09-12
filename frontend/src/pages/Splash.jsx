@@ -100,7 +100,15 @@ function DholIcon({ size = 34 }) {
     >
       <rect x="6" y="10" width="22" height="14" rx="3" fill="#C9A84C" />
       <ellipse cx="6" cy="17" rx="3.2" ry="7.2" fill="#FAF6F0" stroke="#6B1E2E" strokeWidth="1.5" />
-      <ellipse cx="28" cy="17" rx="3.2" ry="7.2" fill="#FAF6F0" stroke="#6B1E2E" strokeWidth="1.5" />
+      <ellipse
+        cx="28"
+        cy="17"
+        rx="3.2"
+        ry="7.2"
+        fill="#FAF6F0"
+        stroke="#6B1E2E"
+        strokeWidth="1.5"
+      />
       <line x1="9" y1="12" x2="25" y2="12" stroke="#6B1E2E" strokeWidth="1" opacity="0.5" />
       <line x1="9" y1="22" x2="25" y2="22" stroke="#6B1E2E" strokeWidth="1" opacity="0.5" />
     </svg>
@@ -140,9 +148,10 @@ function LoadingIntro() {
 }
 
 // First-visit landing screen. Shown once (App.jsx gates it behind
-// localStorage) before Home. onTeam navigates to the About/Team page.
-export default function Splash({ onEnter, onTeam, skipIntro = false }) {
-  const [loading, setLoading] = useState(!skipIntro);
+// localStorage) before Home. onTeam leaves the splash for /team, which is a
+// real page now, so nothing returns here and the intro only ever plays once.
+export default function Splash({ onEnter, onTeam }) {
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!loading) return undefined;
@@ -163,7 +172,10 @@ export default function Splash({ onEnter, onTeam, skipIntro = false }) {
           loading ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
-        <div className="relative flex items-center gap-3 animate-fadeIn" style={{ animationDelay: '0ms' }}>
+        <div
+          className="relative flex items-center gap-3 animate-fadeIn"
+          style={{ animationDelay: '0ms' }}
+        >
           <DholIcon />
           <div className="relative">
             <div className="absolute inset-[-14px] rounded-full border border-gold/40 animate-[ringPulse_2.6s_ease-out_infinite]" />
@@ -193,10 +205,10 @@ export default function Splash({ onEnter, onTeam, skipIntro = false }) {
         <p
           className="mx-auto mt-2 max-w-[320px] font-sans text-[15px] leading-relaxed text-light/85 animate-fadeIn"
           style={{ animationDelay: '400ms' }}
-        > A companion for finding Ganpati pandals near you, planning a darshan
-          route between them, and learning the history and traditions behind
-          Pune&apos;s most beloved Ganpatis.
-
+        >
+          {' '}
+          A companion for finding Ganpati pandals near you, planning a darshan route between them,
+          and learning the history and traditions behind Pune&apos;s most beloved Ganpatis.
         </p>
       </div>
 

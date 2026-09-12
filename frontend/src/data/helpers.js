@@ -113,3 +113,27 @@ export function safeHttpUrl(url) {
     return null;
   }
 }
+
+// The area chips on Explore and the "Browse by area" tiles on the homepage are
+// built from the same counts, so both screens always offer the same areas.
+// Areas with only one pandal are left out; they are reachable through search.
+const AREA_CHIP_MIN = 2;
+
+export function areaFilters(ganpatis) {
+  const counts = {};
+  for (const g of ganpatis) {
+    if (g.areaCategory) counts[g.areaCategory] = (counts[g.areaCategory] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .filter(([, n]) => n >= AREA_CHIP_MIN)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([key, count]) => ({ key, label: key, count }));
+}
+
+export function buildFilters(ganpatis) {
+  return [
+    { key: 'all', label: 'All' },
+    { key: 'manache5', label: 'Manache 5' },
+    ...areaFilters(ganpatis),
+  ];
+}

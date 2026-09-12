@@ -55,13 +55,13 @@ const STATIC_SEO = {
     path: PATHS.home,
     title: 'MandapMaps: Pune Ganpati Pandals & Darshan Guide 2026',
     description:
-      "Find Pune's Ganpati pandals for Ganeshotsav 2026: the Manache 5, aarti timings, history, live crowd levels and darshan routes you can walk.",
+      "Find Pune's Ganpati pandals for Ganeshotsav 2026: the Manache 5, aarti timings, history, area guides and darshan routes you can walk.",
   },
   explore: {
     path: PATHS.explore,
     title: 'All Pune Ganpati Pandals: Map, Areas & Manache 5 | MandapMaps',
     description:
-      'Browse every Pune Ganpati pandal, filter by area, tier or tag, see them on a map, and check how busy each mandal is right now.',
+      'Browse every Pune Ganpati pandal, filter by area, tier or tag, see them on a map, and sort them by distance from you.',
   },
   route: {
     path: PATHS.route,
@@ -73,7 +73,13 @@ const STATIC_SEO = {
     path: PATHS.privacy,
     title: 'Privacy | MandapMaps',
     description:
-      'How MandapMaps handles your data: no accounts, anonymous crowd sharing deleted after 30 minutes, and nothing sold or shared with advertisers.',
+      'How MandapMaps handles your data: no accounts, your location never leaves your device, and nothing sold or shared with advertisers.',
+  },
+  team: {
+    path: PATHS.team,
+    title: 'About the Team | MandapMaps',
+    description:
+      'MandapMaps is built by three engineers in Pune as a final-year project, to make Ganeshotsav darshan easier to plan.',
   },
   notfound: {
     path: '/404',

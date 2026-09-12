@@ -1,4 +1,5 @@
 import { LogoMark } from './icons.jsx';
+import Container from './Container.jsx';
 import Link from './Link.jsx';
 import { PATHS } from '../router.js';
 
@@ -7,20 +8,22 @@ import { PATHS } from '../router.js';
 // bar itself carries no duplicate text links.
 export default function Navbar({ onToggleMenu }) {
   return (
-    <header className="sticky top-0 z-[100] flex items-center justify-between bg-maroon px-gutter py-3.5">
-      <Link to={PATHS.home} className="flex cursor-pointer items-center gap-2">
-        <LogoMark />
-        <span className="font-serif text-[17px] tracking-[0.3px] text-gold">MandapMaps</span>
-      </Link>
-      <div
-        className="flex cursor-pointer flex-col gap-1 p-1.5"
-        onClick={onToggleMenu}
-        aria-label="Open menu"
-      >
-        <div className="h-0.5 w-5 rounded-[1px] bg-gold" />
-        <div className="h-0.5 w-5 rounded-[1px] bg-gold" />
-        <div className="h-0.5 w-3.5 rounded-[1px] bg-gold" />
-      </div>
+    <header className="sticky top-0 z-[100] bg-maroon">
+      <Container className="flex items-center justify-between py-3.5">
+        <Link to={PATHS.home} className="flex cursor-pointer items-center gap-2">
+          <LogoMark />
+          <span className="font-serif text-[17px] tracking-[0.3px] text-gold">MandapMaps</span>
+        </Link>
+        <div
+          className="flex cursor-pointer flex-col gap-1 p-1.5"
+          onClick={onToggleMenu}
+          aria-label="Open menu"
+        >
+          <div className="h-0.5 w-5 rounded-[1px] bg-gold" />
+          <div className="h-0.5 w-5 rounded-[1px] bg-gold" />
+          <div className="h-0.5 w-3.5 rounded-[1px] bg-gold" />
+        </div>
+      </Container>
     </header>
   );
 }

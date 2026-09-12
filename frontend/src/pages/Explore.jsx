@@ -1,8 +1,9 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
-import { manachaBadge, distanceKm, formatDistance } from '../data/helpers.js';
+import { manachaBadge, distanceKm, formatDistance, buildFilters } from '../data/helpers.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
+import Container from '../components/Container.jsx';
 import Link from '../components/Link.jsx';
 import { ganpatiPath } from '../router.js';
 
@@ -11,7 +12,6 @@ const MapView = lazy(() => import('../components/MapView.jsx'));
 
 // A neighbourhood becomes a filter chip once at least this many pandals share
 // it. Rarer areas stay reachable via "All" and search.
-const AREA_CHIP_MIN = 2;
 
 /**
  * The filter chips, built from the live data so they never go stale: "All",
@@ -22,19 +22,6 @@ const AREA_CHIP_MIN = 2;
  * labels like "Most Iconic" or "Notable" mean little to someone deciding where
  * to go). Search still matches tags, so nothing is unreachable.
  */
-function buildFilters(ganpatis) {
-  const areaCounts = {};
-  for (const g of ganpatis) {
-    if (g.areaCategory) areaCounts[g.areaCategory] = (areaCounts[g.areaCategory] || 0) + 1;
-  }
-  const areas = Object.entries(areaCounts)
-    .filter(([, n]) => n >= AREA_CHIP_MIN)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([key]) => ({ key, label: key }));
-
-  return [{ key: 'all', label: 'All' }, { key: 'manache5', label: 'Manache 5' }, ...areas];
-}
-
 // Grid card for the Explore results. Shows a distance line when Near Me is on.
 function GanpatiCard({ g, dist }) {
   return (
@@ -174,9 +161,9 @@ export default function Explore({
   };
 
   return (
-    <main className={`${enter} pb-nav-safe`}>
+    <Container as="main" className={enter}>
       {/* Heading */}
-      <div className="flex items-baseline justify-between px-gutter pt-gutter">
+      <div className="flex items-baseline justify-between pt-gutter">
         <h1 className="font-serif text-2xl text-maroon">Explore Pandals</h1>
         <div className="font-devanagari text-[13px] text-maroon/35" lang="mr">
           सर्व मंडळे
@@ -184,7 +171,7 @@ export default function Explore({
       </div>
 
       {/* Search */}
-      <div className="px-gutter pt-gutter">
+      <div className="pt-gutter">
         <div className="relative">
           <input
             type="text"
@@ -198,7 +185,7 @@ export default function Explore({
       </div>
 
       {/* Filter chips (Near Me toggle first, then the data-driven chips) */}
-      <div className="flex gap-2 overflow-x-auto px-gutter py-4">
+      <div className="flex gap-2 overflow-x-auto py-4">
         <div
           onClick={toggleNearMe}
           className={`flex flex-none cursor-pointer items-center gap-1 whitespace-nowrap rounded-pill border-[1.5px] px-[16px] py-2 font-sans text-[13px] font-medium transition-all ${
@@ -228,21 +215,19 @@ export default function Explore({
       </div>
 
       {/* Result count + Grid/Map toggle */}
-      <div className="flex items-center justify-between px-gutter pb-3">
+      <div className="flex items-center justify-between pb-3">
         <div className="font-sans text-[12px] text-maroon/50">{countLabel}</div>
         <ViewToggle view={view} onView={setView} />
       </div>
 
-      {geoError && (
-        <div className="px-gutter pb-2 font-sans text-[12px] text-maroon/50">{geoError}</div>
-      )}
+      {geoError && <div className="pb-2 font-sans text-[12px] text-maroon/50">{geoError}</div>}
 
       {/* Results */}
-      <div className="px-gutter">
+      <div>
         {view === 'map' ? (
           <Suspense
             fallback={
-              <div className="flex h-[440px] items-center justify-center rounded-card border border-maroon/[0.08] bg-surface font-sans text-sm text-maroon/50">
+              <div className="flex h-[440px] items-center justify-center rounded-card border border-maroon/[0.08] bg-surface font-sans text-sm text-maroon/50 lg:h-[560px]">
                 Loading map...
               </div>
             }
@@ -250,13 +235,13 @@ export default function Explore({
             <MapView ganpatis={results.map((r) => r.g)} />
           </Suspense>
         ) : count > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-3.5">
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
             {results.map(({ g, dist }) => (
               <GanpatiCard key={g.id} g={g} dist={dist} />
             ))}
           </div>
         ) : (
-          <div className="px-gutter py-[60px] text-center">
+          <div className="py-[60px] text-center">
             <div className="mb-4 text-5xl opacity-30">🔍</div>
             <div className="mb-2 font-serif text-xl text-maroon">No pandals found</div>
             <div className="font-sans text-sm text-maroon/50">
@@ -265,6 +250,6 @@ export default function Explore({
           </div>
         )}
       </div>
-    </main>
+    </Container>
   );
 }

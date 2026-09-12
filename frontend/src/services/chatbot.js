@@ -2,7 +2,7 @@
 // Same-origin in dev and prod: /api/chat is proxied to the chatbot service by
 // Vite locally (see vite.config.js) and by CloudFront in prod, so the browser
 // never needs a separate base URL or CORS.
-import { getOrCreateId, readShareLocation, safeGet, safeRemove } from '../data/storage.js';
+import { getOrCreateId, safeGet, safeRemove } from '../data/storage.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -52,29 +52,6 @@ export function resetSessionId() {
 }
 
 /**
- * Returns { lat, lng } if the user has already opted in to location sharing
- * (the same "Help detect crowds" toggle used by useLocationSharing.js) AND
- * the browser already has a recent cached fix, or null otherwise.
- *
- * This deliberately does NOT trigger a fresh GPS request or a permission
- * prompt of its own: maximumAge is set very high (accept an old cached fix)
- * and timeout is set very low (give up almost immediately if nothing is
- * cached), so asking the chatbot a question never waits on, or asks for,
- * location the user hasn't already agreed to share.
- */
-function getLastKnownPosition() {
-  if (!readShareLocation() || !navigator.geolocation) return Promise.resolve(null);
-
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null), // no cached fix, denied, or unavailable: proceed without it
-      { maximumAge: 10 * 60_000, timeout: 200 }
-    );
-  });
-}
-
-/**
  * An AbortSignal that fires when either the caller's signal aborts or the
  * request timeout elapses. Returns { signal, cancelTimeout }.
  */
@@ -110,7 +87,6 @@ export async function streamChatbotMessage(message, onText, onMeta, { signal } =
   // arrived instead of replacing it with the error message.
   let visible = '';
   try {
-    const position = await getLastKnownPosition();
     const res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -118,7 +94,6 @@ export async function streamChatbotMessage(message, onText, onMeta, { signal } =
         session_id: getSessionId(),
         query: message,
         language: 'auto',
-        ...(position && { lat: position.lat, lng: position.lng }),
       }),
       signal: requestSignal,
     });
@@ -176,7 +151,6 @@ export async function streamChatbotMessage(message, onText, onMeta, { signal } =
 export async function callChatbotAPI(message) {
   const { signal, cancelTimeout } = withTimeout();
   try {
-    const position = await getLastKnownPosition();
     const res = await fetch(`${API_BASE}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -184,7 +158,6 @@ export async function callChatbotAPI(message) {
         session_id: getSessionId(),
         query: message,
         language: 'auto',
-        ...(position && { lat: position.lat, lng: position.lng }),
       }),
       signal,
     });
