@@ -25,13 +25,15 @@ const WALKING = { travelmode: 'walking' };
 function renderMessageText(text) {
   const lines = text.replace(/\s*—\s*/g, ', ').split('\n');
   return lines.map((line, i) => {
-    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
-      part.startsWith('**') && part.endsWith('**') ? (
-        <strong key={j}>{part.slice(2, -2)}</strong>
-      ) : (
-        part
-      )
-    );
+    const parts = line
+      .split(/(\*\*[^*]+\*\*)/g)
+      .map((part, j) =>
+        part.startsWith('**') && part.endsWith('**') ? (
+          <strong key={j}>{part.slice(2, -2)}</strong>
+        ) : (
+          part
+        )
+      );
     return (
       <span key={i}>
         {parts}
@@ -106,12 +108,19 @@ function LocationCard({ location, ganpatis, onOpenGanpati }) {
 }
 
 function PlanDirectionsButton({ plan }) {
-  const stops = [{ name: plan.start_name, lat: plan.start_lat, lng: plan.start_lng }, ...plan.stops];
+  const stops = [
+    { name: plan.start_name, lat: plan.start_lat, lng: plan.start_lng },
+    ...plan.stops,
+  ];
   return (
     <button
       type="button"
       onClick={() =>
-        window.open(directionsUrl(stops, { ...WALKING, originFromFirst: true }), '_blank', 'noopener')
+        window.open(
+          directionsUrl(stops, { ...WALKING, originFromFirst: true }),
+          '_blank',
+          'noopener'
+        )
       }
       className="mt-1.5 max-w-[80%] cursor-pointer rounded-pill bg-gold px-4 py-2 text-center font-sans text-[13px] font-semibold text-maroon hover:bg-gold-dark"
     >
@@ -217,7 +226,11 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
     if (!text || sending) return;
     setInput('');
     setSending(true);
-    setMessages((prev) => [...prev, { from: 'user', text }, { from: 'bot', text: '', pending: true }]);
+    setMessages((prev) => [
+      ...prev,
+      { from: 'user', text },
+      { from: 'bot', text: '', pending: true },
+    ]);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -271,7 +284,9 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
         <div className="flex items-start justify-between px-gutter-lg pt-3">
           <div>
             <div className="font-serif text-xl text-maroon">Ask MandapMaps</div>
-            <div className="mt-0.5 font-devanagari text-[13px] text-maroon/40">मंडपमॅप्सला विचारा</div>
+            <div className="mt-0.5 font-devanagari text-[13px] text-maroon/40">
+              मंडपमॅप्सला विचारा
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 1 && (
@@ -294,12 +309,15 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
 
         {/* AI disclaimer */}
         <div className="px-gutter-lg pt-1.5 font-sans text-[11px] leading-snug text-maroon/40">
-          Ekdanta is an AI assistant and can be wrong. Please confirm timings and addresses
-          with the mandal.
+          Ekdanta is an AI assistant and can be wrong. Please confirm timings and addresses with the
+          mandal.
         </div>
 
         {/* Chat area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-gutter-lg py-4">
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto overscroll-contain px-gutter-lg py-4"
+        >
           <div className="flex flex-col gap-3">
             {messages.map((m, i) => (
               <div
@@ -308,9 +326,7 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
               >
                 <div
                   className={`max-w-[80%] rounded-card px-3.5 py-2.5 font-sans text-[14px] leading-[1.5] ${
-                    m.from === 'user'
-                      ? 'bg-maroon text-light'
-                      : 'bg-surface text-maroon/80'
+                    m.from === 'user' ? 'bg-maroon text-light' : 'bg-surface text-maroon/80'
                   }`}
                 >
                   {m.pending && !m.text ? (
@@ -321,7 +337,11 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
                 </div>
 
                 {m.meta?.location && (
-                  <LocationCard location={m.meta.location} ganpatis={ganpatis} onOpenGanpati={onOpenGanpati} />
+                  <LocationCard
+                    location={m.meta.location}
+                    ganpatis={ganpatis}
+                    onOpenGanpati={onOpenGanpati}
+                  />
                 )}
 
                 {m.meta?.plan && <PlanDirectionsButton plan={m.meta.plan} />}

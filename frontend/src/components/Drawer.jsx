@@ -1,20 +1,27 @@
 import Link from './Link.jsx';
 import { PATHS } from '../router.js';
+import { GitHubIcon } from './icons.jsx';
+import { GITHUB_URL, CONTACT_MAILTO, CORRECTION_MAILTO } from '../data/links.js';
 
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
-// stopped so they don't bubble to the backdrop. The "Help detect crowds" state
-// lives in App so the location pinger reacts to the toggle immediately.
-export default function Drawer({ open, onClose, onSupport, sharing, onToggleSharing }) {
+// stopped so they don't bubble to the backdrop.
+//
+// The credit block lives here rather than in the footer. It used to sit under a
+// divider at the very bottom of a tall maroon footer on every page, which is
+// both too far down to find and, repeated page after page, closer to an ask
+// than a colophon. Opening this menu is a deliberate act, so whoever reads it
+// went looking.
+export default function Drawer({ open, onClose, onSupport }) {
   if (!open) return null;
 
-  const link =
-    'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
+  const link = 'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
+  const meta = 'cursor-pointer font-sans text-[11px] text-maroon/45 hover:text-maroon no-underline';
 
   return (
     <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-maroon/45" />
       <div
-        className="relative flex h-full w-[260px] animate-slideInRight flex-col bg-cream"
+        className="relative flex h-full w-[260px] animate-slideInRight flex-col overflow-y-auto bg-cream"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-end px-gutter pt-gutter">
@@ -38,6 +45,9 @@ export default function Drawer({ open, onClose, onSupport, sharing, onToggleShar
           <Link to={PATHS.route} className={link} onClick={onClose}>
             Plan Route
           </Link>
+          <Link to={PATHS.team} className={link} onClick={onClose}>
+            About
+          </Link>
           <div className="mt-auto pt-6">
             <div
               className="cursor-pointer rounded-[10px] bg-maroon px-[18px] py-3.5 text-center"
@@ -48,31 +58,33 @@ export default function Drawer({ open, onClose, onSupport, sharing, onToggleShar
                 Built with devotion in Pune
               </div>
             </div>
-            {/* Live-crowd sharing: an informed, on-brand opt-in. Keeps the user
-                in control and states plainly what is shared and for how long. */}
-            <label className="mt-4 flex cursor-pointer items-start justify-between gap-3 rounded-[10px] border border-maroon/[0.08] bg-surface px-3.5 py-3">
-              <span>
-                <span className="block font-sans text-sm font-medium text-maroon">
-                  Help detect crowds
-                </span>
-                <span className="mt-0.5 block font-sans text-[11px] leading-[1.5] text-maroon/50">
-                  Shares your approximate location while the app is open so we can show live
-                  crowds. Anonymous, off by default, deleted after 30 min.
-                </span>
-              </span>
-              <input
-                type="checkbox"
-                checked={sharing}
-                onChange={onToggleSharing}
-                className="mt-0.5 h-4 w-4 flex-none accent-maroon"
-              />
-            </label>
 
-            <Link
-              to={PATHS.privacy}
-              className="mt-4 cursor-pointer text-center font-sans text-xs text-maroon/45"
-              onClick={onClose}
-            >
+            <p className="mt-4 font-sans text-[11px] leading-[1.7] text-maroon/45">
+              By 3 Pune engineers who wanted this to exist.
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <a
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="MandapMaps on GitHub"
+                className="flex items-center gap-1.5 font-sans text-[11px] text-maroon/45 no-underline hover:text-maroon"
+              >
+                <GitHubIcon size={14} /> GitHub
+              </a>
+              <a href={CONTACT_MAILTO} className={meta}>
+                Contact
+              </a>
+            </div>
+
+            {/* Timings drift through the festival, and whoever is standing in
+                front of a mandal notices before we do. */}
+            <a href={CORRECTION_MAILTO} className={`mt-3 block ${meta}`}>
+              Spotted something wrong? Suggest a correction
+            </a>
+
+            <Link to={PATHS.privacy} className={`mt-3 block ${meta}`} onClick={onClose}>
               Privacy
             </Link>
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { manachaBadge, directionsUrl, stripEditorialNotes } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
 import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
+import Container from '../components/Container.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
 import Link from '../components/Link.jsx';
 import { PATHS, canGoBack, goBack } from '../router.js';
@@ -29,12 +30,17 @@ function TimingRow({ title, value }) {
   );
 }
 
-// Where the current level comes from, for the line under the heading.
-function crowdBasis(current) {
-  if (current.source === 'location') return 'estimated from live locations';
-  if (current.source === 'interest') return 'estimated from planned routes';
+// The line under the heading. It has to work hardest when there is nothing to
+// report: an unlabelled row of three coloured buttons reads as a setting the
+// visitor is toggling for themselves, when it is actually a message to the next
+// person who opens this page.
+function crowdSummary(current) {
+  const mins = current?.windowMinutes || 45;
+  if (!current?.level) {
+    return `No reports in the last ${mins} min. Tap to tell the next visitor.`;
+  }
   const n = current.reportCount || 0;
-  return `${n} ${n === 1 ? 'report' : 'reports'} in the last 45 min`;
+  return `${current.label} right now, from ${n} ${n === 1 ? 'report' : 'reports'} in the last ${mins} min.`;
 }
 
 const REPORT_STATUS = {
@@ -42,6 +48,22 @@ const REPORT_STATUS = {
   cooldown: 'You reported this mandal recently. You can report again in a few minutes.',
   failed: "Couldn't send your report. Please check your connection and try again.",
 };
+
+const CROWD_OPTIONS = [
+  { level: 1, label: 'Low', tint: 'bg-crowd-low/12 text-crowd-low', on: 'bg-crowd-low text-light' },
+  {
+    level: 2,
+    label: 'Medium',
+    tint: 'bg-crowd-med/12 text-crowd-med',
+    on: 'bg-crowd-med text-light',
+  },
+  {
+    level: 3,
+    label: 'High',
+    tint: 'bg-crowd-high/12 text-crowd-high',
+    on: 'bg-crowd-high text-light',
+  },
+];
 
 function CrowdReportWidget({ ganpatiId }) {
   const { crowd, setLevel } = useCrowd();
@@ -67,38 +89,22 @@ function CrowdReportWidget({ ganpatiId }) {
 
   return (
     <div className="rounded-card border border-maroon/[0.06] bg-surface p-4">
-      <div className="mb-1 font-sans text-sm font-semibold text-maroon">How busy is it here?</div>
-      {current && (
-        <div className="mb-3 font-sans text-xs text-maroon/50">
-          Current: {current.label} ({crowdBasis(current)})
-        </div>
-      )}
-      <div className="flex gap-2">
-        {[
-          {
-            level: 1,
-            label: 'Low',
-            tint: 'bg-crowd-low/12 text-crowd-low',
-            on: 'bg-crowd-low text-light',
-          },
-          {
-            level: 2,
-            label: 'Medium',
-            tint: 'bg-crowd-med/12 text-crowd-med',
-            on: 'bg-crowd-med text-light',
-          },
-          {
-            level: 3,
-            label: 'High',
-            tint: 'bg-crowd-high/12 text-crowd-high',
-            on: 'bg-crowd-high text-light',
-          },
-        ].map((opt) => {
+      <div className="font-sans text-sm font-semibold text-maroon">How busy is it here?</div>
+      <div className="mt-1 font-sans text-xs leading-[1.6] text-maroon/50">
+        Reported by visitors standing here, not by us. {crowdSummary(current)}
+      </div>
+      <div
+        role="group"
+        aria-label="Report how busy this mandal is right now"
+        className="mt-3 flex gap-2"
+      >
+        {CROWD_OPTIONS.map((opt) => {
           const isCurrent = current?.level === opt.level;
           return (
             <button
               key={opt.level}
               disabled={submitting}
+              aria-pressed={isCurrent}
               onClick={() => submit(opt.level)}
               className={`flex-1 rounded-pill px-3 py-2 font-sans text-sm font-semibold transition-colors disabled:opacity-50 ${
                 isCurrent ? opt.on : opt.tint
@@ -192,9 +198,9 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
   };
 
   return (
-    <main className={`${enter} pb-[calc(150px_+_env(safe-area-inset-bottom))]`}>
+    <Container as="main" className={enter}>
       {/* Back */}
-      <div className="px-gutter py-3">
+      <div className="py-3">
         <Link
           to={backPath}
           onClick={onBackClick}
@@ -205,7 +211,7 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
       </div>
 
       {/* Photo, over the Om placeholder (which shows when there is none) */}
-      <div className="relative mx-gutter flex h-[220px] items-center justify-center overflow-hidden rounded-panel bg-maroon">
+      <div className="relative flex h-[220px] items-center justify-center overflow-hidden rounded-panel bg-maroon lg:h-[340px]">
         <div className="pointer-events-none absolute -right-2.5 -top-2.5 font-devanagari text-[140px] font-bold leading-none text-gold/[0.06]">
           ॐ
         </div>
@@ -214,7 +220,7 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
       </div>
 
       {/* Name & info */}
-      <div className="px-gutter-lg pt-5">
+      <div className="pt-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-serif text-[26px] leading-[1.2] text-maroon">{ganpati.name}</h1>
@@ -247,14 +253,14 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
       </div>
 
       {/* Crowd Report */}
-      <div className="mx-gutter-lg mt-5">
+      <div className="mt-5">
         {/* Keyed by mandal so the status line resets when switching pandals. */}
         <CrowdReportWidget key={ganpati.id} ganpatiId={ganpati.id} />
       </div>
 
       {/* Plan your visit: the practical, act-on-it-now info (directions, metro,
           ticket, food, parking) kept always-visible above the reference tabs. */}
-      <div className="mx-gutter-lg mt-5 flex flex-col gap-5">
+      <div className="mt-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <a
             href={directionsUrl([ganpati])}
@@ -294,7 +300,7 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
 
       {/* Did You Know */}
       {ganpati.didYouKnow && (
-        <div className="mx-gutter-lg mt-5 rounded-card border border-gold/25 bg-surface px-4 py-4">
+        <div className="mt-5 rounded-card border border-gold/25 bg-surface px-4 py-4">
           <div className="mb-1.5 font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">
             Did you know?
           </div>
@@ -305,7 +311,7 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
       )}
 
       {/* Tabs: secondary reference info */}
-      <div className="mx-gutter-lg mt-5 flex border-b-2 border-maroon/[0.08]">
+      <div className="mt-5 flex border-b-2 border-maroon/[0.08]">
         {TABS.map((t) => {
           const active = tab === t.key;
           return (
@@ -327,7 +333,7 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
       {/* Tab content. Both panels stay in the HTML (the inactive one hidden) so
           the history text is there for search engines and for a visitor who
           opens the page with JavaScript still loading. */}
-      <div className="px-gutter-lg py-5">
+      <div className="py-5">
         <div className="flex flex-col" hidden={tab !== 'timings'}>
           <TimingRow title="Morning Aarti" value={ganpati.morningAarti} />
           <TimingRow title="Evening Aarti" value={ganpati.eveningAarti} />
@@ -344,31 +350,35 @@ export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) 
 
       {/* Toast */}
       {toast && (
-        <div className="fixed inset-x-0 bottom-[calc(150px_+_env(safe-area-inset-bottom))] z-[60] flex justify-center px-gutter">
-          <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
-            Added to your route
-          </div>
+        <div className="fixed inset-x-0 bottom-[calc(150px_+_env(safe-area-inset-bottom))] z-[60]">
+          <Container className="flex justify-center">
+            <div className="animate-fadeIn rounded-pill bg-maroon px-5 py-2.5 font-sans text-[13px] font-medium text-light shadow-[0_4px_16px_rgba(107,30,46,0.25)]">
+              Added to your route
+            </div>
+          </Container>
         </div>
       )}
 
       {/* Action bar, stacked flush on top of the fixed bottom nav (never hidden) */}
-      <div className="fixed inset-x-0 bottom-[calc(56px_+_env(safe-area-inset-bottom))] z-50 flex gap-3 border-t border-maroon/[0.08] bg-cream px-gutter py-3.5">
-        {inRoute ? (
-          <div
-            className="flex-1 cursor-pointer rounded-card border border-maroon/10 bg-surface p-3.5 text-center font-sans text-sm font-semibold text-maroon/50 hover:text-maroon"
-            onClick={() => removeFromRoute(ganpati.id)}
-          >
-            Remove from Route
-          </div>
-        ) : (
-          <div
-            className="flex-1 cursor-pointer rounded-card bg-maroon p-3.5 text-center font-sans text-sm font-semibold text-light hover:bg-maroon-dark"
-            onClick={onAdd}
-          >
-            Add to Route
-          </div>
-        )}
+      <div className="fixed inset-x-0 bottom-[calc(56px_+_env(safe-area-inset-bottom))] z-50 border-t border-maroon/[0.08] bg-cream py-3.5">
+        <Container className="flex gap-3">
+          {inRoute ? (
+            <div
+              className="flex-1 cursor-pointer rounded-card border border-maroon/10 bg-surface p-3.5 text-center font-sans text-sm font-semibold text-maroon/50 hover:text-maroon"
+              onClick={() => removeFromRoute(ganpati.id)}
+            >
+              Remove from Route
+            </div>
+          ) : (
+            <div
+              className="flex-1 cursor-pointer rounded-card bg-maroon p-3.5 text-center font-sans text-sm font-semibold text-light hover:bg-maroon-dark"
+              onClick={onAdd}
+            >
+              Add to Route
+            </div>
+          )}
+        </Container>
       </div>
-    </main>
+    </Container>
   );
 }

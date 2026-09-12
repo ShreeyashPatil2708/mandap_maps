@@ -11,7 +11,6 @@ import { closeRedis } from './config/redis.js';
 import { PgRateLimitStore } from './repositories/limitsRepo.js';
 import ganpatisRouter from './routes/ganpatis.js';
 import { ganpatiCrowdRouter, crowdRouter } from './routes/crowd.js';
-import locationRouter from './routes/location.js';
 import { runCrowdAggregation } from './jobs/crowdAggregator.js';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -51,7 +50,7 @@ const ERROR_MESSAGES = {
 
 /**
  * Server bootstrap. Wires up security middleware, CORS, rate limiting,
- * health checks, and the Ganpati / crowd / location API (Redis-cached, RDS-backed).
+ * health checks, and the Ganpati / crowd API (Redis-cached, RDS-backed).
  */
 async function createApp() {
   // Pull DB/Redis creds from Secrets Manager in prod (no-op locally).
@@ -93,20 +92,15 @@ async function createApp() {
     legacyHeaders: false,
     skip: (req) => req.method !== 'POST',
   };
-  // Crowd taps and route interest set crowd levels directly, so their limit
-  // is counted in Postgres and holds across the whole fleet (the default store
-  // is per process, so N instances would allow N times the limit). A DB blip
-  // lets requests through rather than blocking them.
+  // Crowd taps set crowd levels directly, so their limit is counted in
+  // Postgres and holds across the whole fleet (the default store is per
+  // process, so N instances would allow N times the limit). A DB blip lets
+  // requests through rather than blocking them.
   const sharedWriteLimiter = rateLimit({
     ...writeLimit,
     store: new PgRateLimitStore('rl:write'),
     passOnStoreError: true,
   });
-  // Location pings stay on the cheap per-instance store on purpose: they are
-  // the high-volume write (one per sharing device per minute), and repeats
-  // from one device can't skew crowd counts, because the aggregator only uses
-  // each session's latest ping.
-  const pingLimiter = rateLimit(writeLimit);
 
   // Shallow liveness: the process is up and serving.
   app.get('/health', (_req, res) => {
@@ -127,14 +121,12 @@ async function createApp() {
   });
 
   app.use('/api/ganpatis', sharedWriteLimiter);
-  app.use('/api/locations', pingLimiter);
 
   app.use('/api/ganpatis', ganpatisRouter);
-  // /:id/crowd-report, /:id/crowd, /:id/interest, /by-name/:name/crowd
+  // /:id/crowd-report, /:id/crowd, /by-name/:name/crowd
   app.use('/api/ganpatis', ganpatiCrowdRouter);
   // / and /by-name
   app.use('/api/crowd', crowdRouter);
-  app.use('/api/locations', locationRouter);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 

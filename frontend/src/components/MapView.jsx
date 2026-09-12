@@ -58,14 +58,15 @@ export default function MapView({ ganpatis }) {
 
   return (
     <div className="overflow-hidden rounded-card border border-maroon/[0.08]">
-      <MapContainer center={PUNE_CENTRE}
+      <MapContainer
+        center={PUNE_CENTRE}
         zoom={13}
         minZoom={11}
         maxZoom={18}
         maxBounds={PUNE_BOUNDS}
         maxBoundsViscosity={1}
         scrollWheelZoom
-        style={{ height: '440px', width: '100%' }}
+        className="h-[440px] w-full lg:h-[560px]"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -74,9 +75,18 @@ export default function MapView({ ganpatis }) {
         {pins.map((g) => {
           const icon = CROWD_ICONS[crowd[g.id]?.level] || DEFAULT_ICON;
           return (
-            <Marker key={g.id} position={[g.lat, g.lng]} icon={icon} eventHandlers={{ click: () => openInNewTab(g) }}>
+            <Marker
+              key={g.id}
+              position={[g.lat, g.lng]}
+              icon={icon}
+              eventHandlers={{ click: () => openInNewTab(g) }}
+            >
               <Tooltip direction="top">
-                {g.name}{crowd[g.id] ? ` · ${crowd[g.id].label}` : ''}
+                {g.name}
+                {/* Gate on the level, not the object: a mandal with no reports
+                    used to arrive as a placeholder whose label was the string
+                    "No data yet", which the tooltip then appended to its name. */}
+                {crowd[g.id]?.level ? ` · ${crowd[g.id].label}` : ''}
               </Tooltip>
             </Marker>
           );

@@ -13,8 +13,9 @@ import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Splash from './pages/Splash.jsx';
+import Container from './components/Container.jsx';
+import Footer from './components/Footer.jsx';
 import Team from './pages/Team.jsx';
-import { useLocationSharing } from './hooks/useLocationSharing.js';
 import { useDocumentHead } from './hooks/useDocumentHead.js';
 import { slugify } from './data/helpers.js';
 import {
@@ -27,12 +28,7 @@ import {
   usePathname,
 } from './router.js';
 import { jsonLdFor, seoFor } from './seo.js';
-import {
-  readShareLocation,
-  writeShareLocation,
-  readSplashSeen,
-  writeSplashSeen,
-} from './data/storage.js';
+import { readSplashSeen, writeSplashSeen } from './data/storage.js';
 
 // Screen state driven by the URL: every screen has a real path (see router.js)
 // so pandals are crawlable, linkable and shareable. The darshan route list,
@@ -47,23 +43,9 @@ export default function App({ initialPath, ssr = false }) {
   const pathname = usePathname(initialPath);
   const { page, slug } = parsePath(pathname);
 
-  // "Help detect crowds" opt-in. Lives here (not in the Drawer) so the pinger
-  // starts and stops the moment the toggle changes.
-  const [shareLocation, setShareLocation] = useState(readShareLocation);
-  useLocationSharing(shareLocation);
-  const toggleShareLocation = () => {
-    const next = !shareLocation;
-    setShareLocation(next);
-    writeShareLocation(next);
-  };
-
   const { ganpatis, loading, error } = useGanpatis();
   const { route } = useRoute();
   const [showSplash, setShowSplash] = useState(() => !ssr && page === 'home' && !readSplashSeen());
-  const [showTeam, setShowTeam] = useState(false);
-  // Team is opened from the Splash, so its Back returns there; the dhol intro
-  // already played once, so skip it on the way back.
-  const [splashIntroDone, setSplashIntroDone] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [showMenu, setShowMenu] = useState(false);
@@ -119,10 +101,9 @@ export default function App({ initialPath, ssr = false }) {
   const showPage = !loading && !error && !notFound;
 
   return (
-    <div className="relative min-h-screen max-w-full bg-cream">
+    <div className="relative min-h-screen bg-cream">
       {showSplash && (
         <Splash
-          skipIntro={splashIntroDone}
           onEnter={() => {
             writeSplashSeen();
             setShowSplash(false);
@@ -130,16 +111,7 @@ export default function App({ initialPath, ssr = false }) {
           onTeam={() => {
             writeSplashSeen();
             setShowSplash(false);
-            setShowTeam(true);
-          }}
-        />
-      )}
-      {showTeam && (
-        <Team
-          onBack={() => {
-            setShowTeam(false);
-            setSplashIntroDone(true);
-            setShowSplash(true);
+            navigate(PATHS.team);
           }}
         />
       )}
@@ -147,23 +119,23 @@ export default function App({ initialPath, ssr = false }) {
       <Navbar onToggleMenu={() => setShowMenu((v) => !v)} />
 
       {loading && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-1 px-gutter text-center">
+        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-1 text-center">
           <div className="font-serif text-xl text-maroon">Loading pandals...</div>
           <div className="font-devanagari text-[13px] text-maroon/40">क्षणभर थांबा</div>
-        </div>
+        </Container>
       )}
 
       {!loading && error && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 px-gutter text-center">
+        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
           <div className="font-serif text-xl text-maroon">Could not load pandals</div>
           <div className="font-sans text-sm text-maroon/50">
             Please check your connection and try again.
           </div>
-        </div>
+        </Container>
       )}
 
       {!loading && !error && notFound && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 px-gutter text-center">
+        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
           <div className="font-serif text-xl text-maroon">Page not found</div>
           <div className="font-sans text-sm text-maroon/50">
             This page does not exist, or the pandal has moved.
@@ -174,10 +146,10 @@ export default function App({ initialPath, ssr = false }) {
           >
             Explore Pandals
           </Link>
-        </div>
+        </Container>
       )}
 
-      {showPage && page === 'home' && <Home enter={enter} />}
+      {showPage && page === 'home' && <Home enter={enter} onFilter={setFilter} />}
 
       {showPage && page === 'explore' && (
         <Explore
@@ -197,6 +169,16 @@ export default function App({ initialPath, ssr = false }) {
 
       {showPage && page === 'privacy' && <Privacy enter={enter} />}
 
+      {showPage && page === 'team' && <Team enter={enter} />}
+
+      {showPage && (
+        <Footer
+          bottomPad={
+            page === 'detail' ? 'pb-[calc(150px_+_env(safe-area-inset-bottom))]' : 'pb-nav-safe'
+          }
+        />
+      )}
+
       <BottomNav
         page={page}
         routeLen={route.length}
@@ -207,8 +189,6 @@ export default function App({ initialPath, ssr = false }) {
       <Drawer
         open={showMenu}
         onClose={closeMenu}
-        sharing={shareLocation}
-        onToggleSharing={toggleShareLocation}
         onSupport={() => {
           setShowModal(true);
           setShowMenu(false);

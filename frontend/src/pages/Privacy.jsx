@@ -1,12 +1,14 @@
+import Container from '../components/Container.jsx';
 import Link from '../components/Link.jsx';
 import { PATHS } from '../router.js';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '../data/links.js';
 
 // Plain-language privacy policy. Reached from the home footer and the menu drawer.
 export default function Privacy({ enter = 'animate-fadeIn' }) {
   const heading = 'mb-1 font-sans text-[13px] font-semibold text-maroon';
 
   return (
-    <main className={`${enter} px-gutter-lg pb-nav-safe pt-6`}>
+    <Container as="main" width="prose" className={`${enter} pt-6`}>
       <Link to={PATHS.home} className="cursor-pointer font-sans text-[13px] font-medium text-gold">
         ← Back
       </Link>
@@ -27,15 +29,8 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
           <ul className="list-disc pl-5">
             <li>The questions you type into the Ask chat.</li>
             <li>
-              Your approximate location, only if you use &quot;near me&quot;, to find nearby
-              pandals. It is used for that request and not tied to any profile.
-            </li>
-            <li>
-              If you turn on &quot;Help detect crowds&quot; in the menu, your device sends your
-              location roughly once a minute so we can estimate how busy a mandal is right now. We
-              only store how many people are near a mandal, never your name or a path of everywhere
-              you have been. Old location points are deleted automatically after 30 minutes. You can
-              turn this off anytime from the same menu.
+              Your approximate location, only if you tap &quot;near me&quot; on Explore, to sort
+              pandals by distance. It stays on your device and is never sent to us.
             </li>
             <li>
               A random id saved in your browser so the chat can remember the last few messages in a
@@ -55,11 +50,10 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
         <div>
           <div className={heading}>How accurate is this information?</div>
           <p>
-            Treat everything here as a helpful estimate, not an official record. Addresses, map
-            pins, aarti timings and crowd levels are collected by hand, pandal locations move each
-            year, and some are still being confirmed. Map pins can be off by a street or two. For
-            anything that matters, please check with the mandal or ask someone nearby once you are
-            in the area.
+            Treat everything here as a helpful estimate, not an official record. Addresses, map pins
+            and aarti timings are collected by hand, pandal locations move each year, and some are
+            still being confirmed. Map pins can be off by a street or two. For anything that
+            matters, please check with the mandal or ask someone nearby once you are in the area.
           </p>
         </div>
 
@@ -83,9 +77,7 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
           <div className={heading}>Keeping and deleting data</div>
           <p>
             Chat memory is short-lived and clears on its own. You can clear it anytime by ending the
-            conversation. Live location points used for crowd detection are deleted automatically
-            after 30 minutes, and we only ever keep a count of how many people are near a mandal,
-            never an individual path.
+            conversation. We do not store your location at all.
           </p>
         </div>
 
@@ -97,8 +89,8 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
               or phone number.
             </li>
             <li>
-              Location is stored coarsely (rounded to roughly a street block), so it cannot be used
-              to trace exactly where you were.
+              Your location never leaves your device, so there is no trail of where you have been
+              for anyone to look at.
             </li>
             <li>
               All traffic is served over HTTPS, and data sits in a private database that is not open
@@ -114,9 +106,9 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
         <div>
           <div className={heading}>Your choices</div>
           <p>
-            Crowd sharing is off by default and fully optional. You can turn it on or off anytime
-            from the menu, and you can clear the chat whenever you like. Because the data is
-            anonymous and deleted quickly, there is nothing tied to you to look up or export.
+            Sharing your location is entirely up to you: nothing is requested until you tap
+            &quot;near me&quot;, and you can clear the chat whenever you like. Because nothing is
+            tied to you, there is nothing to look up or export.
           </p>
         </div>
 
@@ -124,8 +116,8 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
           <div className={heading}>Contact</div>
           <p>
             Questions about privacy or data? Write to us at{' '}
-            <a href="mailto:connect@mandapmaps.in" className="font-medium text-gold">
-              connect@mandapmaps.in
+            <a href={CONTACT_MAILTO} className="font-medium text-gold">
+              {CONTACT_EMAIL}
             </a>
             .
           </p>
@@ -135,6 +127,6 @@ export default function Privacy({ enter = 'animate-fadeIn' }) {
           Last updated 11 September 2026. This page will be updated as the app grows.
         </p>
       </div>
-    </main>
+    </Container>
   );
 }

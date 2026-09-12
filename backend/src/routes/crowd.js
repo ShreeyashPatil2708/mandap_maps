@@ -5,7 +5,7 @@ import {
   getCrowdLevel,
   getCombinedCrowdLevels,
   getCombinedCrowdLevelsByName,
-  pingInterest,
+  noCrowdData,
 } from '../repositories/crowdRepo.js';
 import { getIdByName } from '../repositories/ganpatiRepo.js';
 import { claimSharedCooldown } from '../repositories/limitsRepo.js';
@@ -14,9 +14,7 @@ import { getRedis } from '../config/redis.js';
 const ALL_KEY = 'crowd:all';
 const CROWD_TTL_SECONDS = 90; // short TTL: crowd data must stay fresh, unlike the 24h ganpati cache
 const REPORT_COOLDOWN_SECONDS = 5 * 60; // one report per session per mandal per 5 minutes
-const INTEREST_COOLDOWN_SECONDS = 10 * 60; // one interest ping per session per mandal per 10 minutes
 const MAX_NAME_LENGTH = 200;
-const NO_DATA = { level: null, label: 'No data yet', source: null, reportCount: 0 };
 
 /** Positive integer id from a route param, or null. */
 function parseId(raw) {
@@ -48,7 +46,7 @@ ganpatiCrowdRouter.get('/by-name/:name/crowd', async (req, res, next) => {
     }
     const id = await getIdByName(name);
     if (!id) return res.status(404).json({ error: 'ganpati not found' });
-    res.json((await getCrowdLevel(id)) || NO_DATA);
+    res.json((await getCrowdLevel(id)) || noCrowdData());
   } catch (err) {
     next(err);
   }
@@ -83,7 +81,7 @@ ganpatiCrowdRouter.post('/:id/crowd-report', async (req, res, next) => {
     }
     // Reply with the fresh level straight from the DB, so the reporter sees the
     // result immediately no matter which instance serves their next read.
-    res.status(201).json({ ok: true, crowd: (await getCrowdLevel(id)) || NO_DATA });
+    res.status(201).json({ ok: true, crowd: (await getCrowdLevel(id)) || noCrowdData() });
   } catch (err) {
     next(err);
   }
@@ -94,26 +92,7 @@ ganpatiCrowdRouter.get('/:id/crowd', async (req, res, next) => {
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'invalid id' });
-    res.json((await getCrowdLevel(id)) || NO_DATA);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /api/ganpatis/:id/interest  -> anonymous "I have this in my route right now" ping.
-// Cooled down per session so repeated taps can't inflate a mandal's crowd level.
-ganpatiCrowdRouter.post('/:id/interest', async (req, res, next) => {
-  try {
-    const id = parseId(req.params.id);
-    const sessionId = parseSessionId(req.body?.sessionId);
-    if (!id || !sessionId) return res.status(400).json({ error: 'invalid id or sessionId' });
-
-    if (!(await claimSharedCooldown(`interest:${sessionId}:${id}`, INTEREST_COOLDOWN_SECONDS))) {
-      // Already counted recently; nothing new to record.
-      return res.status(200).json({ ok: true });
-    }
-    await pingInterest(id, sessionId);
-    res.status(201).json({ ok: true });
+    res.json((await getCrowdLevel(id)) || noCrowdData());
   } catch (err) {
     next(err);
   }

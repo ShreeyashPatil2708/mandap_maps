@@ -44,10 +44,12 @@ _DEFAULT_START = _KNOWN_STARTS["pune railway station"]
 # Pace assumptions for old-Pune peth-area walking during the festival,
 # short distances but heavy foot traffic, so speed is conservative.
 WALK_SPEED_KMPH = 3.0
-MINUTES_PER_STOP = 25  # darshan + queue time at each mandal, mirrors the
-                        # same 25-min/stop assumption used in the frontend's
-                        # manual Route planner (frontend/src/pages/Route.jsx)
-                        # so the two estimates stay consistent with each other.
+MINUTES_PER_STOP = 25  # darshan + queue time at each mandal. The frontend's
+                       # manual Route planner used to mirror this figure, but it
+                       # multiplied it by the stop count and called the result an
+                       # estimate, which ignored where the stops actually were.
+                       # That card is gone; this is now the only such estimate,
+                       # and it is paired with real per-leg haversine distance.
 _AVOID_CROWD_MARKERS = ["avoid crowd", "less crowd", "low crowd", "not crowded", "avoid busy"]
 
 

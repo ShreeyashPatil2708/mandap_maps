@@ -49,18 +49,6 @@ export function getOrCreateId(key) {
   return id;
 }
 
-// "Help detect crowds" opt-in flag, shared by the drawer toggle, the location
-// pinger and the chatbot's position lookup.
-const SHARE_LOCATION_KEY = 'mandapmaps.shareLocation';
-
-export function readShareLocation() {
-  return safeGet(SHARE_LOCATION_KEY) === 'true';
-}
-
-export function writeShareLocation(enabled) {
-  safeSet(SHARE_LOCATION_KEY, String(enabled));
-}
-
 // Splash is shown once per browser session: sessionStorage survives reloads in
 // the same tab but clears when the tab closes, so a fresh visit sees it again.
 const SPLASH_SEEN_KEY = 'mandapmaps.splashSeen';

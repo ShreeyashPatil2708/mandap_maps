@@ -1,4 +1,5 @@
 import { HomeNavIcon, ExploreNavIcon, RouteNavIcon, AskNavIcon } from './icons.jsx';
+import Container from './Container.jsx';
 import Link from './Link.jsx';
 import { PATHS } from '../router.js';
 
@@ -6,7 +7,12 @@ const ACTIVE = '#6B1E2E';
 const INACTIVE = 'rgba(107,30,46,0.3)';
 const ACTIVE_FILL = 'rgba(107,30,46,0.08)';
 
-const ITEM_CLASS = 'relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-1.5';
+// flex-1 spreads the four tabs across the full width on a phone, which is the
+// right mobile behaviour. On desktop the column is 1100px wide, so the tabs
+// take their natural width and cluster in the middle instead of drifting
+// hundreds of pixels apart.
+const ITEM_CLASS =
+  'relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-1.5 sm:w-28 sm:flex-none';
 
 function NavItemBody({ color, label, icon, badge }) {
   return (
@@ -43,50 +49,55 @@ export default function BottomNav({ page, routeLen, askOpen, onAsk }) {
   const routeActive = page === 'route';
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[90] flex border-t border-maroon/10 bg-cream pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
-      <NavLink
-        to={PATHS.home}
-        color={homeActive ? ACTIVE : INACTIVE}
-        label="Home"
-        icon={
-          <HomeNavIcon
-            color={homeActive ? ACTIVE : INACTIVE}
-            fill={homeActive ? ACTIVE_FILL : 'none'}
-          />
-        }
-      />
-      <NavLink
-        to={PATHS.explore}
-        color={exploreActive ? ACTIVE : INACTIVE}
-        label="Explore"
-        icon={
-          <ExploreNavIcon
-            color={exploreActive ? ACTIVE : INACTIVE}
-            fill={exploreActive ? ACTIVE_FILL : 'none'}
-          />
-        }
-      />
-      <NavLink
-        to={PATHS.route}
-        color={routeActive ? ACTIVE : INACTIVE}
-        label="Route"
-        badge={routeLen}
-        icon={
-          <RouteNavIcon
-            color={routeActive ? ACTIVE : INACTIVE}
-            fill={routeActive ? ACTIVE_FILL : 'none'}
-          />
-        }
-      />
-      <div className={ITEM_CLASS} onClick={onAsk}>
-        <NavItemBody
-          color={askOpen ? ACTIVE : INACTIVE}
-          label="Ask"
+    <nav className="fixed inset-x-0 bottom-0 z-[90] border-t border-maroon/10 bg-cream pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
+      <Container className="flex sm:justify-center">
+        <NavLink
+          to={PATHS.home}
+          color={homeActive ? ACTIVE : INACTIVE}
+          label="Home"
           icon={
-            <AskNavIcon color={askOpen ? ACTIVE : INACTIVE} fill={askOpen ? ACTIVE_FILL : 'none'} />
+            <HomeNavIcon
+              color={homeActive ? ACTIVE : INACTIVE}
+              fill={homeActive ? ACTIVE_FILL : 'none'}
+            />
           }
         />
-      </div>
+        <NavLink
+          to={PATHS.explore}
+          color={exploreActive ? ACTIVE : INACTIVE}
+          label="Explore"
+          icon={
+            <ExploreNavIcon
+              color={exploreActive ? ACTIVE : INACTIVE}
+              fill={exploreActive ? ACTIVE_FILL : 'none'}
+            />
+          }
+        />
+        <NavLink
+          to={PATHS.route}
+          color={routeActive ? ACTIVE : INACTIVE}
+          label="Route"
+          badge={routeLen}
+          icon={
+            <RouteNavIcon
+              color={routeActive ? ACTIVE : INACTIVE}
+              fill={routeActive ? ACTIVE_FILL : 'none'}
+            />
+          }
+        />
+        <div className={ITEM_CLASS} onClick={onAsk}>
+          <NavItemBody
+            color={askOpen ? ACTIVE : INACTIVE}
+            label="Ask"
+            icon={
+              <AskNavIcon
+                color={askOpen ? ACTIVE : INACTIVE}
+                fill={askOpen ? ACTIVE_FILL : 'none'}
+              />
+            }
+          />
+        </div>
+      </Container>
     </nav>
   );
 }
