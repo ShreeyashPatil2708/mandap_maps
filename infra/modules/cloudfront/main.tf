@@ -58,20 +58,75 @@ locals {
   ]) : ""
 }
 
-# SPA deep-link routing: rewrite extensionless paths to /index.html so client
-# routes (e.g. /explore) resolve to the SPA entry point. Attached only to the
-# default (S3) behavior, so genuine API status codes on /api/* are never
-# rewritten (a distribution-wide custom_error_response would clobber them).
+# Canonical host redirect, off while canonical_host is empty. The site answers
+# on the apex, on www and on the distribution domain, which search engines would
+# otherwise treat as three copies of every page.
+locals {
+  canonical_host_js = var.canonical_host != "" ? join("\n", [
+    "",
+    "      var host = request.headers.host ? request.headers.host.value : '';",
+    "      if (host && host !== ${jsonencode(var.canonical_host)}) {",
+    "        return redirect('https://' + ${jsonencode(var.canonical_host)} + uri + query(request.querystring));",
+    "      }",
+  ]) : ""
+}
+
+# Routing for the static site. The frontend build prerenders each route to its
+# own file (frontend/scripts/prerender.mjs), so a pandal URL must reach that
+# file rather than the SPA entry point, or a crawler would get the home page
+# (and the home page's canonical tag) on every pandal.
+#
+#   /                      -> /index.html
+#   /explore, /ganpati/x   -> /explore/index.html, /ganpati/x/index.html
+#   anything else          -> /index.html, where the app shows "Page not found"
+#
+# An unknown pandal slug resolves to a missing S3 key, which comes back as 403
+# and becomes the real 404 page (see custom_error_response below).
+#
+# Attached only to the default (S3) behavior, so genuine API status codes on
+# /api/* are never rewritten.
 resource "aws_cloudfront_function" "spa_router" {
   name    = "${var.name}-spa-router"
   runtime = "cloudfront-js-2.0"
   publish = true
   code    = <<-EOT
+    var PRERENDERED = /^\/(explore|route|privacy|ganpati\/[a-z0-9-]+)$/;
+
+    function query(querystring) {
+      var parts = [];
+      for (var key in querystring) {
+        var entry = querystring[key];
+        if (entry.multiValue) {
+          for (var i = 0; i < entry.multiValue.length; i++) {
+            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(entry.multiValue[i].value));
+          }
+        } else {
+          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(entry.value));
+        }
+      }
+      return parts.length ? '?' + parts.join('&') : '';
+    }
+
+    function redirect(location) {
+      return {
+        statusCode: 301,
+        statusDescription: 'Moved Permanently',
+        headers: { location: { value: location } },
+      };
+    }
+
     function handler(event) {
       var request = event.request;${local.edge_check_js}
-      if (request.uri.indexOf('.') === -1) {
-        request.uri = '/index.html';
+      var uri = request.uri;${local.canonical_host_js}
+
+      if (uri.length > 1 && uri.charAt(uri.length - 1) === '/') {
+        return redirect(uri.slice(0, -1) + query(request.querystring));
       }
+
+      if (uri.indexOf('.') === -1) {
+        request.uri = PRERENDERED.test(uri) ? uri + '/index.html' : '/index.html';
+      }
+
       return request;
     }
   EOT
@@ -196,6 +251,22 @@ resource "aws_cloudfront_distribution" "this" {
         function_arn = function_association.value.arn
       }
     }
+  }
+
+  # A path that does not exist in the bucket (an unknown pandal slug, say) comes
+  # back from S3 as 403, because the OAC policy grants GetObject and nothing
+  # else. Serve the prerendered 404 page with a real 404 status so search
+  # engines drop the URL instead of indexing an error.
+  #
+  # Deliberately scoped to 403 alone: the API behavior returns genuine 404s
+  # (/api/ganpatis/<unknown>) that must reach the client as JSON, so there is no
+  # distribution-wide error page here. The ALB's own 403 (a request without the
+  # origin secret) can only happen if the edge is misconfigured.
+  custom_error_response {
+    error_code            = 403
+    response_code         = 404
+    response_page_path    = "/404.html"
+    error_caching_min_ttl = 300
   }
 
   restrictions {

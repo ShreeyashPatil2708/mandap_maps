@@ -1,23 +1,58 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#6B1E2E" />
+    <!--seo:start-->
+    <!-- Search and sharing metadata for the home page. The build replaces
+         everything between these markers per route (scripts/prerender.mjs,
+         values from src/seo.js), so keep the markers and keep this in step with
+         seo.js's home entry. data-mm-seo marks the tags the app may replace on
+         a client-side navigation (src/hooks/useDocumentHead.js). -->
+    <title>MandapMaps: Pune Ganpati Pandals &amp; Darshan Guide 2026</title>
     <meta
       name="description"
-      content="MandapMaps, your darshan companion for Pune's Ganeshotsav. Find pandals, plan your route, learn the history of Pune's beloved Ganpatis."
+      content="Find Pune's Ganpati pandals for Ganeshotsav 2026: the Manache 5, aarti timings, history, live crowd levels and darshan routes you can walk."
+      data-mm-seo
     />
-    <title>MandapMaps · Pune Ganeshotsav</title>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" data-mm-seo />
+    <meta property="og:type" content="website" data-mm-seo />
+    <meta property="og:site_name" content="MandapMaps" data-mm-seo />
+    <meta property="og:locale" content="en_IN" data-mm-seo />
+    <meta
+      property="og:title"
+      content="MandapMaps: Pune Ganpati Pandals &amp; Darshan Guide 2026"
+      data-mm-seo
+    />
+    <meta
+      property="og:description"
+      content="Find Pune's Ganpati pandals for Ganeshotsav 2026: the Manache 5, aarti timings, history, live crowd levels and darshan routes you can walk."
+      data-mm-seo
+    />
+    <meta property="og:url" content="https://mandapmaps.in/" data-mm-seo />
+    <meta name="twitter:card" content="summary" data-mm-seo />
+    <meta
+      name="twitter:title"
+      content="MandapMaps: Pune Ganpati Pandals &amp; Darshan Guide 2026"
+      data-mm-seo
+    />
+    <meta
+      name="twitter:description"
+      content="Find Pune's Ganpati pandals for Ganeshotsav 2026: the Manache 5, aarti timings, history, live crowd levels and darshan routes you can walk."
+      data-mm-seo
+    />
+    <link rel="canonical" href="https://mandapmaps.in/" data-mm-seo />
+    <!--seo:end-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+Devanagari:wght@400;600;700&family=Playfair+Display:wght@700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+Devanagari:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--app-html--></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -10,7 +10,8 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
     "lint": "eslint src db scripts",
-    "photos": "node scripts/photos.js"
+    "photos": "node scripts/photos.js",
+    "data:review": "node scripts/data-review.js"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.679.0",

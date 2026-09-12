@@ -2,6 +2,8 @@ import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
 import { useCrowd } from '../context/CrowdContext.jsx';
 import { directionsUrl } from '../data/helpers.js';
+import Link from '../components/Link.jsx';
+import { PATHS } from '../router.js';
 
 function ChevronUp() {
   return (
@@ -19,7 +21,7 @@ function ChevronDown() {
   );
 }
 
-export default function Route({ onExplore }) {
+export default function Route({ enter = 'animate-fadeIn' }) {
   const { ganpatis } = useGanpatis();
   const { route, removeFromRoute, clearRoute, reorderRoute } = useRoute();
   const { crowd } = useCrowd();
@@ -30,12 +32,14 @@ export default function Route({ onExplore }) {
   const distance = single ? 'add more stops' : `${(count * 1.8).toFixed(1)} km`;
 
   return (
-    <div className="animate-fadeIn px-gutter pb-nav-safe pt-gutter">
+    <main className={`${enter} px-gutter pb-nav-safe pt-gutter`}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <div className="font-serif text-2xl text-maroon">My Darshan Route</div>
-          <div className="mt-0.5 font-devanagari text-[13px] text-maroon/40">माझा दर्शन मार्ग</div>
+          <h1 className="font-serif text-2xl text-maroon">My Darshan Route</h1>
+          <div className="mt-0.5 font-devanagari text-[13px] text-maroon/40" lang="mr">
+            माझा दर्शन मार्ग
+          </div>
         </div>
         {count > 0 && (
           <div className="rounded-[20px] bg-maroon px-3.5 py-1.5 font-sans text-[13px] font-semibold text-light">
@@ -51,12 +55,12 @@ export default function Route({ onExplore }) {
           <div className="mb-6 font-sans text-sm leading-[1.6] text-maroon/50">
             Add Ganpatis from the Explore page to build your darshan route
           </div>
-          <div
+          <Link
+            to={PATHS.explore}
             className="inline-block cursor-pointer rounded-pill bg-gold px-7 py-3 font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
-            onClick={onExplore}
           >
             Explore Pandals
-          </div>
+          </Link>
         </div>
       ) : (
         <>
@@ -168,6 +172,6 @@ export default function Route({ onExplore }) {
         Phase 2: POST /api/optimize-route with { ganpati_ids: [...] }
         Returns optimal visit order. Replace static list order with response.
       */}
-    </div>
+    </main>
   );
 }

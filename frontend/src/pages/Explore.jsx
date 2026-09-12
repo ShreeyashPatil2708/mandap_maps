@@ -3,67 +3,44 @@ import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge, distanceKm, formatDistance } from '../data/helpers.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
+import Link from '../components/Link.jsx';
+import { ganpatiPath } from '../router.js';
 
 // The map bundles Leaflet, so load it only when the user opens the map view.
 const MapView = lazy(() => import('../components/MapView.jsx'));
 
-// An area or tag becomes a filter chip once at least this many pandals share it.
-// Rarer one-off values stay reachable via "All" and search.
+// A neighbourhood becomes a filter chip once at least this many pandals share
+// it. Rarer areas stay reachable via "All" and search.
 const AREA_CHIP_MIN = 2;
-const TAG_CHIP_MIN = 2;
 
-// Prefixes that mark a filter key's dimension, so the single active-filter
-// string can carry either an area name, a tag, or a tier.
-const TAG_PREFIX = 'tag:';
-const TIER_PREFIX = 'tier:';
-
-// Coarse importance tiers in the data (1 Manache/Iconic, 2 Heritage/Famous,
-// 3 Notable), surfaced as friendly filter chips.
-const TIER_CHIPS = [
-  { key: `${TIER_PREFIX}1`, label: 'Most Iconic', tier: 1 },
-  { key: `${TIER_PREFIX}2`, label: 'Heritage & Famous', tier: 2 },
-  { key: `${TIER_PREFIX}3`, label: 'Notable', tier: 3 },
-];
-
-// Build the filter chips from the live data so they never go stale: "All",
-// "Manache 5", the tiers present, the busiest neighbourhoods, then common tags.
+/**
+ * The filter chips, built from the live data so they never go stale: "All",
+ * "Manache 5", then the neighbourhoods.
+ *
+ * Deliberately just those. The dataset's tags and tiers used to become chips
+ * too, which produced 85 of them (one tag sits on 67 of the 107 pandals, and
+ * labels like "Most Iconic" or "Notable" mean little to someone deciding where
+ * to go). Search still matches tags, so nothing is unreachable.
+ */
 function buildFilters(ganpatis) {
   const areaCounts = {};
-  const tagCounts = {};
-  const tiersPresent = new Set();
   for (const g of ganpatis) {
     if (g.areaCategory) areaCounts[g.areaCategory] = (areaCounts[g.areaCategory] || 0) + 1;
-    for (const t of g.tags || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
-    if (g.tier) tiersPresent.add(g.tier);
   }
-  const byCountThenName = (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]);
   const areas = Object.entries(areaCounts)
     .filter(([, n]) => n >= AREA_CHIP_MIN)
-    .sort(byCountThenName)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([key]) => ({ key, label: key }));
-  const tags = Object.entries(tagCounts)
-    .filter(([, n]) => n >= TAG_CHIP_MIN)
-    .sort(byCountThenName)
-    .map(([key]) => ({ key: `${TAG_PREFIX}${key}`, label: key }));
-  const tiers = TIER_CHIPS.filter((t) => tiersPresent.has(t.tier)).map(({ key, label }) => ({
-    key,
-    label,
-  }));
-  return [
-    { key: 'all', label: 'All' },
-    { key: 'manache5', label: 'Manache 5' },
-    ...tiers,
-    ...areas,
-    ...tags,
-  ];
+
+  return [{ key: 'all', label: 'All' }, { key: 'manache5', label: 'Manache 5' }, ...areas];
 }
 
 // Grid card for the Explore results. Shows a distance line when Near Me is on.
-function GanpatiCard({ g, dist, onOpen }) {
+function GanpatiCard({ g, dist }) {
   return (
-    <div
+    <Link
+      to={ganpatiPath(g)}
       className="cursor-pointer overflow-hidden rounded-card border border-maroon/[0.06] bg-surface transition-all hover:border-gold/40 hover:shadow-[0_2px_12px_rgba(107,30,46,0.08)]"
-      onClick={onOpen}
     >
       <div className="relative flex h-[90px] items-center justify-center bg-maroon">
         <OmMark size={32} textSize={18} opacity={0.5} />
@@ -80,7 +57,7 @@ function GanpatiCard({ g, dist, onOpen }) {
         )}
       </div>
       <div className="px-3.5 py-3">
-        <div className="mb-0.5 font-serif text-sm leading-[1.3] text-maroon">{g.name}</div>
+        <h3 className="mb-0.5 font-serif text-sm leading-[1.3] text-maroon">{g.name}</h3>
         <div className="font-sans text-[11px] text-maroon/40">{g.area}</div>
         {g.tags?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -95,7 +72,7 @@ function GanpatiCard({ g, dist, onOpen }) {
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -119,7 +96,13 @@ function ViewToggle({ view, onView }) {
   );
 }
 
-export default function Explore({ query, onQuery, activeFilter, onFilter, onOpenGanpati }) {
+export default function Explore({
+  enter = 'animate-fadeIn',
+  query,
+  onQuery,
+  activeFilter,
+  onFilter,
+}) {
   const { ganpatis } = useGanpatis();
   const [view, setView] = useState('grid');
   const [nearMe, setNearMe] = useState(false);
@@ -132,13 +115,7 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
   const results = useMemo(() => {
     let list = ganpatis;
     if (activeFilter === 'manache5') list = list.filter((g) => g.manacha);
-    else if (activeFilter.startsWith(TAG_PREFIX)) {
-      const tag = activeFilter.slice(TAG_PREFIX.length);
-      list = list.filter((g) => (g.tags || []).includes(tag));
-    } else if (activeFilter.startsWith(TIER_PREFIX)) {
-      const tier = Number(activeFilter.slice(TIER_PREFIX.length));
-      list = list.filter((g) => g.tier === tier);
-    } else if (activeFilter !== 'all') list = list.filter((g) => g.areaCategory === activeFilter);
+    else if (activeFilter !== 'all') list = list.filter((g) => g.areaCategory === activeFilter);
 
     if (query) {
       const q = query.toLowerCase();
@@ -197,11 +174,13 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
   };
 
   return (
-    <div className="animate-fadeIn pb-nav-safe">
+    <main className={`${enter} pb-nav-safe`}>
       {/* Heading */}
       <div className="flex items-baseline justify-between px-gutter pt-gutter">
-        <div className="font-serif text-2xl text-maroon">Explore Pandals</div>
-        <div className="font-devanagari text-[13px] text-maroon/35">सर्व मंडळे</div>
+        <h1 className="font-serif text-2xl text-maroon">Explore Pandals</h1>
+        <div className="font-devanagari text-[13px] text-maroon/35" lang="mr">
+          सर्व मंडळे
+        </div>
       </div>
 
       {/* Search */}
@@ -273,7 +252,7 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
         ) : count > 0 ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-3.5">
             {results.map(({ g, dist }) => (
-              <GanpatiCard key={g.id} g={g} dist={dist} onOpen={() => onOpenGanpati(g.id)} />
+              <GanpatiCard key={g.id} g={g} dist={dist} />
             ))}
           </div>
         ) : (
@@ -286,6 +265,6 @@ export default function Explore({ query, onQuery, activeFilter, onFilter, onOpen
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

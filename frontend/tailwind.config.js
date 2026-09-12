@@ -33,6 +33,10 @@ export default {
         serif: ['"DM Serif Display"', 'serif'],
         sans: ['Outfit', 'sans-serif'],
         devanagari: ['"Noto Serif Devanagari"', 'serif'],
+        // NOTE: the Playfair Display webfont is no longer requested in
+        // index.html. No screen uses `font-display`, and it was downloaded on
+        // every page load. Until that link is restored this token falls back to
+        // the generic serif.
         display: ['"Playfair Display"', 'serif'],
       },
       borderRadius: {

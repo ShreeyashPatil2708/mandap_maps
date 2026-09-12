@@ -39,7 +39,8 @@ export function formatDistance(km) {
  * does this: its first stop is the plan's start point).
  */
 export function directionsUrl(stops, { originFromFirst = false, travelmode } = {}) {
-  const point = (s) => (s.lat != null && s.lng != null ? `${s.lat},${s.lng}` : s.address ?? s.name);
+  const point = (s) =>
+    s.lat != null && s.lng != null ? `${s.lat},${s.lng}` : (s.address ?? s.name);
   const destination = encodeURIComponent(point(stops[stops.length - 1]));
   let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
   if (travelmode) url += `&travelmode=${travelmode}`;
@@ -51,6 +52,52 @@ export function directionsUrl(stops, { originFromFirst = false, travelmode } = {
     .join('|');
   if (waypoints) url += `&waypoints=${waypoints}`;
   return url;
+}
+
+// Working notes the maintainers left inside brackets in free-text fields, as
+// opposed to the many brackets that hold something a visitor wants ("(Kumthekar
+// Road)", "(approx. 30 km from Pune)", "(103 steps from the base)"). A bracket
+// can mix the two, e.g. "(exact address - TO CONFIRM; near Nimbalkar Talim)",
+// so notes are matched per segment rather than by discarding whole brackets.
+const EDITORIAL_NOTE =
+  /\bTO CONFIRM\b|\bTO UPDATE\b|\bTBD\b|confirm with|ask locals|^(?:exact|specific)\b[^,]*\b(?:address|mandal)\b/i;
+
+/**
+ * Free text with the maintainers' notes removed, for anything a visitor reads.
+ * "Aundh, Pune 411007 (specific mandal address, TO CONFIRM)" becomes
+ * "Aundh, Pune 411007", while "577, NC Kelkar Marg (Kumthekar Road), Narayan
+ * Peth" keeps its bracket. Bracket segments are split on a spaced dash or a
+ * semicolon, so hyphenated words ("south-east corner") stay intact.
+ */
+export function stripEditorialNotes(text) {
+  return (text || '')
+    .replace(/\s*\(([^)]*)\)/g, (_whole, inner) => {
+      const kept = inner
+        .split(/\s+[-–—]\s+|\s*;\s*/)
+        .map((part) => part.trim())
+        .filter((part) => part && !EDITORIAL_NOTE.test(part));
+      return kept.length ? ` (${kept.join(', ')})` : '';
+    })
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .replace(/[,\s]+$/, '');
+}
+
+/**
+ * URL-safe slug for a pandal's English name ("Kasba Ganpati" -> "kasba-ganpati").
+ * This is the pandal's address on the site, so it has to stay stable: the API
+ * never lets `name_english` be edited (see EDITABLE in ganpatiRepo.js), and the
+ * prerender build fails if two names ever collapse to the same slug. Numeric ids
+ * are untouched and still identify a pandal everywhere else (photos, crowd
+ * reports, the route list).
+ */
+export function slugify(name) {
+  return (name || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 /**

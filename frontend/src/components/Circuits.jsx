@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
 import CIRCUITS from '../data/circuits.js';
+import Link from './Link.jsx';
+import { ganpatiPath } from '../router.js';
 
 // One circuit card: name, the stop count / time / distance meta, a short note,
 // the ordered stops as tappable chips, then a button that loads the whole
@@ -9,7 +11,7 @@ import CIRCUITS from '../data/circuits.js';
 // Ganpati record and opens its detail view; unresolved names (if the dataset
 // ever changes) degrade to plain, non-tappable text and are skipped by the
 // "add all" action.
-function CircuitCard({ circuit, byName, onOpenGanpati }) {
+function CircuitCard({ circuit, byName }) {
   const { route, addToRoute } = useRoute();
 
   // Resolve stop names to live records once; keep only the ones that exist.
@@ -36,14 +38,11 @@ function CircuitCard({ circuit, byName, onOpenGanpati }) {
       <div className="flex flex-col gap-2 border-t border-maroon/[0.06] px-gutter py-3.5">
         {circuit.stops.map((stopName, i) => {
           const g = byName.get(stopName);
-          return (
-            <div
-              key={stopName}
-              onClick={g ? () => onOpenGanpati(g.id) : undefined}
-              className={`flex items-center gap-3 rounded-[10px] px-3 py-2 ${
-                g ? 'cursor-pointer bg-light hover:bg-cream' : 'bg-light/60'
-              }`}
-            >
+          const className = `flex items-center gap-3 rounded-[10px] px-3 py-2 ${
+            g ? 'cursor-pointer bg-light hover:bg-cream' : 'bg-light/60'
+          }`;
+          const body = (
+            <>
               <div className="w-5 flex-none text-center font-serif text-[15px] text-gold">
                 {i + 1}
               </div>
@@ -51,6 +50,15 @@ function CircuitCard({ circuit, byName, onOpenGanpati }) {
                 {g ? g.name : stopName}
               </div>
               {g && <div className="flex-none font-sans text-[16px] text-maroon/25">›</div>}
+            </>
+          );
+          return g ? (
+            <Link key={stopName} to={ganpatiPath(g)} className={className}>
+              {body}
+            </Link>
+          ) : (
+            <div key={stopName} className={className}>
+              {body}
             </div>
           );
         })}
@@ -73,19 +81,21 @@ function CircuitCard({ circuit, byName, onOpenGanpati }) {
 }
 
 // "Suggested Circuits" section: ready-made walking routes through Pune's pandals.
-export default function Circuits({ onOpenGanpati }) {
+export default function Circuits() {
   const { ganpatis } = useGanpatis();
   const byName = useMemo(() => new Map(ganpatis.map((g) => [g.name, g])), [ganpatis]);
 
   return (
     <div>
       <div className="mb-4">
-        <div className="font-serif text-[22px] text-maroon">Suggested Circuits</div>
-        <div className="font-devanagari text-[13px] text-maroon/40">ठरलेले मार्ग</div>
+        <h2 className="font-serif text-[22px] text-maroon">Suggested Circuits</h2>
+        <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
+          ठरलेले मार्ग
+        </div>
       </div>
       <div className="flex flex-col gap-3.5">
         {CIRCUITS.map((c) => (
-          <CircuitCard key={c.id} circuit={c} byName={byName} onOpenGanpati={onOpenGanpati} />
+          <CircuitCard key={c.id} circuit={c} byName={byName} />
         ))}
       </div>
     </div>
