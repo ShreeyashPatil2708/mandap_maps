@@ -4,6 +4,8 @@ import { manachaBadge } from '../data/helpers.js';
 import { OmMark } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
 import Circuits from '../components/Circuits.jsx';
+import Link from '../components/Link.jsx';
+import { PATHS, ganpatiPath } from '../router.js';
 import { UPI_ID } from '../data/upi.js';
 
 const FACTS = [
@@ -15,11 +17,11 @@ const FACTS = [
 ];
 
 // Carousel card for a Manacha Ganpati on the homepage.
-function Manache5Card({ g, onOpen }) {
+function Manache5Card({ g }) {
   return (
-    <div
+    <Link
+      to={ganpatiPath(g)}
       className="w-[170px] flex-none cursor-pointer snap-start overflow-hidden rounded-card border border-maroon/[0.06] bg-surface"
-      onClick={onOpen}
     >
       <div className="relative flex h-[105px] items-center justify-center bg-maroon">
         <OmMark size={40} textSize={18} opacity={0.6} />
@@ -30,19 +32,21 @@ function Manache5Card({ g, onOpen }) {
       </div>
       <div className="px-3.5 py-3">
         <div className="font-serif text-[15px] leading-[1.3] text-maroon">{g.name}</div>
-        <div className="mt-0.5 font-devanagari text-xs text-maroon/45">{g.nameMarathi}</div>
+        <div className="mt-0.5 font-devanagari text-xs text-maroon/45" lang="mr">
+          {g.nameMarathi}
+        </div>
         <div className="mt-1 font-sans text-xs text-maroon/35">{g.area}</div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 // Row card for the "Visit" list.
-function VisitRow({ g, onOpen }) {
+function VisitRow({ g }) {
   return (
-    <div
+    <Link
+      to={ganpatiPath(g)}
       className="flex cursor-pointer items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3 hover:border-gold/40"
-      onClick={onOpen}
     >
       <div className="relative flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-lg bg-maroon">
         <OmMark size={28} textSize={13} opacity={0.5} />
@@ -50,10 +54,12 @@ function VisitRow({ g, onOpen }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-serif text-[15px] leading-[1.3] text-maroon">{g.name}</div>
-        <div className="font-devanagari text-xs text-maroon/40">{g.nameMarathi}</div>
+        <div className="font-devanagari text-xs text-maroon/40" lang="mr">
+          {g.nameMarathi}
+        </div>
       </div>
       <div className="whitespace-nowrap font-sans text-xs text-maroon/40">{g.area}</div>
-    </div>
+    </Link>
   );
 }
 
@@ -115,7 +121,9 @@ function CountdownCard() {
   );
 }
 
-export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
+// `enter` is the entry animation class, empty for the screen the visitor landed
+// on (it is already painted from the prerendered HTML). See App.jsx.
+export default function Home({ enter = 'animate-fadeIn' }) {
   const { ganpatis } = useGanpatis();
 
   // The five Manache Ganpatis, ordered by rank.
@@ -127,37 +135,40 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
   const visitPicks = useMemo(() => ganpatis.filter((g) => !g.manacha).slice(0, 3), [ganpatis]);
 
   return (
-    <div className="animate-fadeIn">
+    <main className={enter}>
       {/* Hero */}
       <div className="relative flex min-h-[320px] flex-col justify-end overflow-hidden bg-maroon px-gutter-lg pb-11 pt-[60px]">
-        <div className="pointer-events-none absolute -right-5 top-5 select-none font-devanagari text-[200px] font-bold leading-none text-gold/[0.06]">
+        <div
+          className="pointer-events-none absolute -right-5 top-5 select-none font-devanagari text-[200px] font-bold leading-none text-gold/[0.06]"
+          aria-hidden="true"
+        >
           श्री
         </div>
         <div className="relative z-[1] max-w-[600px]">
           <div className="mb-3 font-sans text-[11px] font-medium uppercase tracking-[3px] text-gold">
             Pune · Ganeshotsav 2026
           </div>
-          <div className="mb-4 font-serif text-[clamp(32px,8vw,48px)] leading-[1.1] text-light">
+          <h1 className="mb-4 font-serif text-[clamp(32px,8vw,48px)] leading-[1.1] text-light">
             Your Darshan
             <br />
             Companion
-          </div>
+          </h1>
           <div className="mb-7 max-w-[340px] font-sans text-[15px] leading-[1.6] text-light/60">
             Find pandals, plan your route, learn the history of Pune&apos;s beloved Ganpatis.
           </div>
           <div className="flex flex-wrap gap-3">
-            <div
+            <Link
+              to={PATHS.explore}
               className="cursor-pointer whitespace-nowrap rounded-pill bg-gold px-8 py-3.5 font-sans text-[15px] font-semibold text-maroon hover:bg-gold-dark"
-              onClick={onExplore}
             >
               Start Exploring
-            </div>
-            <div
+            </Link>
+            <Link
+              to={PATHS.route}
               className="cursor-pointer rounded-pill border-[1.5px] border-light/25 px-7 py-[13px] font-sans text-[15px] font-medium text-light hover:border-light/50"
-              onClick={onRoute}
             >
               Plan Route
-            </div>
+            </Link>
           </div>
         </div>
       </div>
@@ -166,19 +177,21 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
       <div className="pb-7 pt-8">
         <div className="mb-4 flex items-baseline justify-between px-gutter-lg">
           <div>
-            <div className="font-serif text-[22px] text-maroon">Manache 5</div>
-            <div className="font-devanagari text-[13px] text-maroon/40">मानाचे पाच गणपती</div>
+            <h2 className="font-serif text-[22px] text-maroon">Manache 5</h2>
+            <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
+              मानाचे पाच गणपती
+            </div>
           </div>
-          <div
+          <Link
+            to={PATHS.explore}
             className="cursor-pointer font-sans text-[13px] font-medium text-gold"
-            onClick={onExplore}
           >
             View others →
-          </div>
+          </Link>
         </div>
         <div className="flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-gutter-lg pb-2">
           {manache5.map((g) => (
-            <Manache5Card key={g.id} g={g} onOpen={() => onOpenGanpati(g.id)} />
+            <Manache5Card key={g.id} g={g} />
           ))}
         </div>
       </div>
@@ -187,26 +200,28 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
       <div className="px-gutter-lg pb-7">
         <div className="mb-4 flex items-baseline justify-between">
           <div>
-            <div className="font-serif text-[22px] text-maroon">Visit</div>
-            <div className="font-devanagari text-[13px] text-maroon/40">दर्शनासाठी</div>
+            <h2 className="font-serif text-[22px] text-maroon">Visit</h2>
+            <div className="font-devanagari text-[13px] text-maroon/40" lang="mr">
+              दर्शनासाठी
+            </div>
           </div>
-          <div
+          <Link
+            to={PATHS.explore}
             className="cursor-pointer font-sans text-[13px] font-medium text-gold"
-            onClick={onExplore}
           >
             View all →
-          </div>
+          </Link>
         </div>
         <div className="flex flex-col gap-2.5">
           {visitPicks.map((g) => (
-            <VisitRow key={g.id} g={g} onOpen={() => onOpenGanpati(g.id)} />
+            <VisitRow key={g.id} g={g} />
           ))}
         </div>
       </div>
 
       {/* Suggested Circuits */}
       <div className="px-gutter-lg pb-7">
-        <Circuits onOpenGanpati={onOpenGanpati} />
+        <Circuits />
       </div>
 
       {/* Countdown + Did you know */}
@@ -236,15 +251,15 @@ export default function Home({ onExplore, onRoute, onOpenGanpati, onPrivacy }) {
       </div>
 
       {/* Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-maroon px-gutter-lg pb-nav-safe pt-7">
+      <footer className="flex flex-wrap items-center justify-between gap-3 bg-maroon px-gutter-lg pb-nav-safe pt-7">
         <div>
           <div className="mb-1 font-serif text-[15px] text-gold">MandapMaps</div>
           <div className="font-sans text-[11px] text-light/35">Made with devotion in Pune</div>
         </div>
-        <div className="cursor-pointer font-sans text-xs text-gold" onClick={onPrivacy}>
+        <Link to={PATHS.privacy} className="cursor-pointer font-sans text-xs text-gold">
           Privacy
-        </div>
-      </div>
-    </div>
+        </Link>
+      </footer>
+    </main>
   );
 }

@@ -1,0 +1,119 @@
+{
+  "notes": [
+    "Coordinate corrections, applied by db/generate-seed-data.py over the spreadsheet",
+    "and by db/schema.sql over the rows already in the database.",
+    "",
+    "The dataset's coordinates were approximate: many were rounded to 3 decimal places",
+    "(about 110 m) and several pins sat on the wrong building, with Dagdusheth's landing",
+    "on Tambdi Jogeshwari. Each correction here was matched to a named temple in",
+    "OpenStreetMap or Wikidata and then checked by hand. Suggestions that pointed at a",
+    "school, a gym or a neighbouring mandal were discarded rather than applied, which is",
+    "why this list is short: most pandals are in neither source.",
+    "",
+    "Each entry records the value it replaces, so it applies only while the source data",
+    "still holds that stale value. Fix the spreadsheet and the entry stops doing anything.",
+    "",
+    "Regenerate candidates with: npm run data:review"
+  ],
+  "corrections": [
+    {
+      "name_english": "Akhil Mandai Mandal (Sharda Ganpati)",
+      "from": [18.517, 73.8562],
+      "to": [18.51183, 73.8563],
+      "moves_metres": 575,
+      "source": "Wikidata",
+      "source_name": "Akhil Mandai Mandal",
+      "source_url": "https://www.wikidata.org/wiki/Q110118560"
+    },
+    {
+      "name_english": "Dagdusheth Halwai Ganpati",
+      "from": [18.5167, 73.8553],
+      "to": [18.516391, 73.856084],
+      "moves_metres": 90,
+      "source": "OpenStreetMap",
+      "source_name": "Shreemant Dagdusheth Halwai Ganpati Mandir",
+      "source_url": "https://www.openstreetmap.org/way/264276391"
+    },
+    {
+      "name_english": "Guruji Talim Ganpati",
+      "from": [18.5163, 73.8558],
+      "to": [18.515047, 73.85466],
+      "moves_metres": 184,
+      "source": "OpenStreetMap",
+      "source_name": "Guruji Talim",
+      "source_url": "https://www.openstreetmap.org/node/5832579354"
+    },
+    {
+      "name_english": "Hatti Ganpati Mandal",
+      "from": [18.512, 73.848],
+      "to": [18.511223, 73.845858],
+      "moves_metres": 242,
+      "source": "OpenStreetMap",
+      "source_name": "Hatti Ganpati Mandir",
+      "source_url": "https://www.openstreetmap.org/node/2536024948"
+    },
+    {
+      "name_english": "Hutatma Babu Genu Ganpati (Navsacha Ganpati)",
+      "from": [18.5168, 73.8558],
+      "to": [18.513924, 73.856333],
+      "moves_metres": 325,
+      "source": "Wikidata",
+      "source_name": "Hutatma Babu Genu Mandal",
+      "source_url": "https://www.wikidata.org/wiki/Q110120249"
+    },
+    {
+      "name_english": "Jejuri Khandoba Temple (Ganesh presence)",
+      "from": [18.271, 74.157],
+      "to": [18.272384, 74.160418],
+      "moves_metres": 392,
+      "source": "Wikidata",
+      "source_name": "Khandoba Temple, Jejuri",
+      "source_url": "https://www.wikidata.org/wiki/Q110823714"
+    },
+    {
+      "name_english": "Nimbalkar Talim Ganpati",
+      "from": [18.5118, 73.848],
+      "to": [18.511927, 73.852217],
+      "moves_metres": 445,
+      "source": "OpenStreetMap",
+      "source_name": "Nimbalkar Talim Ganpati Mandir",
+      "source_url": "https://www.openstreetmap.org/node/12176170904"
+    },
+    {
+      "name_english": "Peshwe Ganpati (Shaniwarwada Ganpati)",
+      "from": [18.5196, 73.8548],
+      "to": [18.518808, 73.856079],
+      "moves_metres": 161,
+      "source": "OpenStreetMap",
+      "source_name": "Shrimant Peshwe Ganesh Mandir",
+      "source_url": "https://www.openstreetmap.org/way/327073026"
+    },
+    {
+      "name_english": "Phadke Haud Ganpati",
+      "from": [18.5189, 73.8569],
+      "to": [18.517867, 73.858764],
+      "moves_metres": 228,
+      "source": "Wikidata",
+      "source_name": "Phadke Wada Ganpati",
+      "source_url": "https://www.wikidata.org/wiki/Q98803788"
+    },
+    {
+      "name_english": "Tambdi Jogeshwari",
+      "from": [18.5175, 73.8562],
+      "to": [18.516602, 73.854874],
+      "moves_metres": 172,
+      "source": "Wikidata",
+      "source_name": "Tambdi Jogeshwari Temple and Deepmaal",
+      "source_url": "https://www.wikidata.org/wiki/Q98801548"
+    },
+    {
+      "name_english": "Tulshibaug Ganpati",
+      "from": [18.5158, 73.8553],
+      "to": [18.514317, 73.855426],
+      "moves_metres": 165,
+      "source": "Wikidata",
+      "source_name": "Tulshibaug Ganapati Temple",
+      "source_url": "https://www.wikidata.org/wiki/Q19807630"
+    }
+  ]
+}

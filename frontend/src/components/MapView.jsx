@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { useCrowd } from '../context/CrowdContext.jsx';
+import { ganpatiPath } from '../router.js';
 
 // Pune city centre and a generous greater-Pune bound. The map is locked to this
 // box (and a zoom floor) so only a small, bounded set of OSM tiles ever loads,
@@ -43,8 +44,8 @@ const CROWD_ICONS = Object.fromEntries(
 
 // Open a pandal's detail in a new tab via its shareable deep link, so the map
 // (and the user's zoom/scroll position) stays put in the current tab.
-function openInNewTab(id) {
-  window.open(`${window.location.pathname}?g=${id}`, '_blank', 'noopener');
+function openInNewTab(g) {
+  window.open(ganpatiPath(g), '_blank', 'noopener');
 }
 
 // Map of the pandals passed in (already filtered/searched by Explore). Pins
@@ -73,7 +74,7 @@ export default function MapView({ ganpatis }) {
         {pins.map((g) => {
           const icon = CROWD_ICONS[crowd[g.id]?.level] || DEFAULT_ICON;
           return (
-            <Marker key={g.id} position={[g.lat, g.lng]} icon={icon} eventHandlers={{ click: () => openInNewTab(g.id) }}>
+            <Marker key={g.id} position={[g.lat, g.lng]} icon={icon} eventHandlers={{ click: () => openInNewTab(g) }}>
               <Tooltip direction="top">
                 {g.name}{crowd[g.id] ? ` · ${crowd[g.id].label}` : ''}
               </Tooltip>

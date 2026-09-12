@@ -70,5 +70,15 @@ export default [
     },
   },
 
+  // Build scripts (frontend/scripts, backend/scripts) also run in Node.
+  {
+    files: ['**/scripts/**/*.{js,mjs}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
+
   prettier,
 ];

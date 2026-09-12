@@ -7,6 +7,8 @@ node_modules/
 dist/
 build/
 frontend/dist/
+# SSR bundle used by the prerender step; deleted once the pages are written.
+frontend/dist-ssr/
 
 # Environment / secrets (never commit real values)
 .env

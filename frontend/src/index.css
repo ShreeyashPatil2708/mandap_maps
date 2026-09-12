@@ -16,10 +16,31 @@
     box-sizing: border-box;
   }
 
-  a {
+  /* Content links stay gold. :where() adds no specificity, so these rules keep
+     behaving exactly as `a` / `a:hover` did, while skipping in-app navigation
+     links (components/Link.jsx), which must look like the divs they replaced. */
+  a:where(:not(.mm-link)) {
     color: theme('colors.gold.DEFAULT');
   }
-  a:hover {
+  a:where(:not(.mm-link)):hover {
     color: theme('colors.maroon.DEFAULT');
+  }
+
+  /* Tailwind's preflight does not reset [hidden], and a `display` utility would
+     otherwise beat the browser default. Panels that stay in the HTML for search
+     engines (the Detail tabs) rely on this. */
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* Navigation links replace plain divs, so they must not inherit the global
+     link colour or <a>'s inline display. Utilities (flex, grid, text-*) come
+     from a later layer and still override these. */
+  .mm-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
   }
 }

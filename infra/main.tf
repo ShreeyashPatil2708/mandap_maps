@@ -160,6 +160,7 @@ module "cloudfront" {
   origin_shared_secret                 = var.origin_shared_secret
   edge_auth_secret                     = var.edge_auth_secret
   aliases                              = [var.domain_name, "www.${var.domain_name}"]
+  canonical_host                       = var.domain_name
   acm_certificate_arn                  = aws_acm_certificate_validation.cdn.certificate_arn
   tags                                 = local.common_tags
 }

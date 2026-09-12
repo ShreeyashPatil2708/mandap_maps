@@ -107,6 +107,53 @@ def parse_food(cell):
     return {"name": parts[0], "type": None, "dist": None}
 
 
+CORRECTIONS_FILE = Path(__file__).with_name("coordinate-corrections.json")
+
+
+def load_corrections():
+    """
+    Hand-checked coordinate fixes, keyed by name. Each one records the value it
+    replaces, so it applies only while the spreadsheet still holds that stale
+    value: once a coordinate is corrected at the source, the entry goes quiet
+    instead of overwriting the newer value. See the notes in the JSON file.
+    """
+    if not CORRECTIONS_FILE.exists():
+        return {}
+    doc = json.loads(CORRECTIONS_FILE.read_text(encoding="utf-8"))
+    return {c["name_english"]: c for c in doc.get("corrections", [])}
+
+
+def corrected(name, lat, lng, corrections):
+    """The coordinate to seed: the correction when the sheet is still stale."""
+    fix = corrections.get(name)
+    if not fix or lat is None or lng is None:
+        return lat, lng
+    was_lat, was_lng = fix["from"]
+    if round(lat, 6) == round(was_lat, 6) and round(lng, 6) == round(was_lng, 6):
+        return fix["to"][0], fix["to"][1]
+    return lat, lng
+
+
+def maps_url(sheet_value, lat, lng):
+    """
+    A map link that actually resolves.
+
+    The companion sheet's "Google Maps Link" column holds invented short links
+    (maps.app.goo.gl/<PandalName>), which 404: a real short link is a random
+    code, never a readable name, and there is no way to tell a good one from a
+    made-up one by looking at it. So short links are dropped, a full
+    google.com/maps URL is trusted, and anything else falls back to the
+    coordinates, which is exactly what the app's "Open in Google Maps" button
+    builds. Without coordinates there is no link, rather than a broken one.
+    """
+    value = (sheet_value or "").strip()
+    if "google.com/maps" in value and "goo.gl" not in value:
+        return value
+    if lat is None or lng is None:
+        return None
+    return f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
+
+
 def main():
     m_hdr, m_rows = rows_of(MAIN_XLSX, "Pune Ganpati 2026")
     c_hdr, c_rows = rows_of(COMPANION_XLSX, "MandapMaps Companion")
@@ -114,6 +161,8 @@ def main():
     mi = {name: i for i, name in enumerate(m_hdr)}
     ci = {name: i for i, name in enumerate(c_hdr)}
     companion = {clean(r[ci["ID"]]): r for r in c_rows}
+
+    corrections = load_corrections()
 
     records = []
     for r in m_rows:
@@ -141,8 +190,14 @@ def main():
                     food.append(ff)
             gmaps = clean(comp[ci["Google Maps Link (Pandal / Temple)"]])
 
+        name_english = clean(r[mi["Name (English)"]])
+        lat, lng = corrected(
+            name_english, to_num(r[mi["Latitude"]]), to_num(r[mi["Longitude"]]), corrections
+        )
+        gmaps = maps_url(gmaps, lat, lng)
+
         records.append({
-            "name_english": clean(r[mi["Name (English)"]]),
+            "name_english": name_english,
             "name_marathi": clean(r[mi["Name (Marathi)"]]),
             "manacha_number": manacha_number,
             "tier": tier,
@@ -155,8 +210,8 @@ def main():
             "idol_description": clean(r[mi["Idol / Murti Description"]]),
             "mandir_address": clean(r[mi["Mandir Address (permanent)"]]),
             "pandal_address": clean(r[col(mi, "Pandal Address")]),
-            "latitude": to_num(r[mi["Latitude"]]),
-            "longitude": to_num(r[mi["Longitude"]]),
+            "latitude": lat,
+            "longitude": lng,
             "morning_aarti": clean(r[mi["Morning Aarti Time"]]),
             "evening_aarti": clean(r[mi["Evening Aarti Time"]]),
             "special_events": clean(r[mi["Special Events During 10 Days"]]),

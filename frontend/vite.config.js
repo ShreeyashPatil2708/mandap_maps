@@ -37,9 +37,33 @@ function contentSecurityPolicy() {
   };
 }
 
+/**
+ * Start the pandal fetch while the bundle is still downloading. Prerendered
+ * pages show their content immediately but only become interactive once that
+ * data arrives (see src/main.jsx), so this shortens the wait by a round trip.
+ * Skipped when the API lives on another origin, where the same-origin path
+ * would not resolve.
+ */
+function preloadGanpatis() {
+  return {
+    name: 'mandapmaps-preload-ganpatis',
+    apply: 'build',
+    transformIndexHtml: () =>
+      process.env.VITE_API_URL
+        ? []
+        : [
+            {
+              tag: 'link',
+              attrs: { rel: 'preload', href: '/api/ganpatis', as: 'fetch', crossorigin: 'anonymous' },
+              injectTo: 'head',
+            },
+          ],
+  };
+}
+
 // Frontend builds to static files -> S3 -> CloudFront (see architecture notes).
 export default defineConfig({
-  plugins: [react(), contentSecurityPolicy()],
+  plugins: [react(), contentSecurityPolicy(), preloadGanpatis()],
   server: {
     port: 5173,
     proxy: {

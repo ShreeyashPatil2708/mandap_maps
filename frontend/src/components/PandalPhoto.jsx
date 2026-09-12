@@ -1,29 +1,5 @@
 import { useState } from 'react';
-import photos from '../data/photos.js';
-import { safeHttpUrl } from '../data/helpers.js';
-
-/**
- * Photo for a pandal: the generated photos map (npm run photos) first, then the
- * API's photoUrl. Returns { src, srcSet, credit } or null when there is none.
- */
-function photoFor(g) {
-  const entry = photos[g.name];
-  if (entry) {
-    const url = (w) => safeHttpUrl(`${entry.src}.${w}.webp`);
-    // Default src: the largest variant up to 800px, for browsers without srcset.
-    const fallback = entry.widths.filter((w) => w <= 800).pop() ?? entry.widths[0];
-    const src = url(fallback);
-    if (src) {
-      return {
-        src,
-        srcSet: entry.widths.map((w) => `${url(w)} ${w}w`).join(', '),
-        credit: entry.credit,
-      };
-    }
-  }
-  const src = safeHttpUrl(g.photoUrl);
-  return src ? { src, srcSet: undefined, credit: undefined } : null;
-}
+import { photoFor } from '../data/photo.js';
 
 /**
  * Pandal photo filling its tile. The tile must be positioned (relative) and

@@ -51,6 +51,12 @@ variable "edge_auth_secret" {
   sensitive   = true
 }
 
+variable "canonical_host" {
+  description = "The one hostname pages should be served from (e.g. mandapmaps.in). Any other Host on the SPA behavior gets a 301 here, so www and the *.cloudfront.net name do not become duplicate copies of the site in search results. Empty disables the redirect."
+  type        = string
+  default     = ""
+}
+
 variable "aliases" {
   description = "Alternate domain names (CNAMEs) the distribution serves. Requires acm_certificate_arn to be set."
   type        = list(string)

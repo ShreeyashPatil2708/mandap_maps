@@ -1,17 +1,10 @@
+import Link from './Link.jsx';
+import { PATHS } from '../router.js';
+
 // Right-side slide-in navigation drawer. Backdrop closes it; inner clicks are
 // stopped so they don't bubble to the backdrop. The "Help detect crowds" state
 // lives in App so the location pinger reacts to the toggle immediately.
-export default function Drawer({
-  open,
-  onClose,
-  onHome,
-  onExplore,
-  onRoute,
-  onPrivacy,
-  onSupport,
-  sharing,
-  onToggleSharing,
-}) {
+export default function Drawer({ open, onClose, onSupport, sharing, onToggleSharing }) {
   if (!open) return null;
 
   const link =
@@ -36,15 +29,15 @@ export default function Drawer({
           <div className="mb-3 font-sans text-[10px] font-semibold uppercase tracking-[2px] text-maroon/35">
             Navigation
           </div>
-          <div className={link} onClick={onHome}>
+          <Link to={PATHS.home} className={link} onClick={onClose}>
             Home
-          </div>
-          <div className={link} onClick={onExplore}>
+          </Link>
+          <Link to={PATHS.explore} className={link} onClick={onClose}>
             Explore
-          </div>
-          <div className={link} onClick={onRoute}>
+          </Link>
+          <Link to={PATHS.route} className={link} onClick={onClose}>
             Plan Route
-          </div>
+          </Link>
           <div className="mt-auto pt-6">
             <div
               className="cursor-pointer rounded-[10px] bg-maroon px-[18px] py-3.5 text-center"
@@ -75,12 +68,13 @@ export default function Drawer({
               />
             </label>
 
-            <div
+            <Link
+              to={PATHS.privacy}
               className="mt-4 cursor-pointer text-center font-sans text-xs text-maroon/45"
-              onClick={onPrivacy}
+              onClick={onClose}
             >
               Privacy
-            </div>
+            </Link>
           </div>
         </div>
       </div>

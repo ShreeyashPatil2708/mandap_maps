@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { manachaBadge, directionsUrl } from '../data/helpers.js';
+import { manachaBadge, directionsUrl, stripEditorialNotes } from '../data/helpers.js';
 import { useRoute } from '../context/RouteContext.jsx';
 import { OmMark, MetroIcon, FoodIcon, ParkingIcon } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
+import Link from '../components/Link.jsx';
+import { PATHS, canGoBack, goBack } from '../router.js';
 import { reportCrowd } from '../services/crowd.js';
 import { useCrowd } from '../context/CrowdContext.jsx';
 
@@ -73,9 +75,24 @@ function CrowdReportWidget({ ganpatiId }) {
       )}
       <div className="flex gap-2">
         {[
-          { level: 1, label: 'Low', tint: 'bg-crowd-low/12 text-crowd-low', on: 'bg-crowd-low text-light' },
-          { level: 2, label: 'Medium', tint: 'bg-crowd-med/12 text-crowd-med', on: 'bg-crowd-med text-light' },
-          { level: 3, label: 'High', tint: 'bg-crowd-high/12 text-crowd-high', on: 'bg-crowd-high text-light' },
+          {
+            level: 1,
+            label: 'Low',
+            tint: 'bg-crowd-low/12 text-crowd-low',
+            on: 'bg-crowd-low text-light',
+          },
+          {
+            level: 2,
+            label: 'Medium',
+            tint: 'bg-crowd-med/12 text-crowd-med',
+            on: 'bg-crowd-med text-light',
+          },
+          {
+            level: 3,
+            label: 'High',
+            tint: 'bg-crowd-high/12 text-crowd-high',
+            on: 'bg-crowd-high text-light',
+          },
         ].map((opt) => {
           const isCurrent = current?.level === opt.level;
           return (
@@ -145,13 +162,24 @@ function NearbyGroup({ icon, title, children }) {
   );
 }
 
-export default function Detail({ ganpati, prevPage, onBack }) {
+export default function Detail({ enter = 'animate-fadeIn', ganpati, prevPage }) {
   const [tab, setTab] = useState('timings');
   const [toast, setToast] = useState(false);
   const toastTimer = useRef(null);
   const { route, addToRoute, removeFromRoute } = useRoute();
   const inRoute = route.includes(ganpati.id);
-  const backLabel = prevPage === 'home' ? '← Back to Home' : '← Back to Explore';
+  const cameFromHome = prevPage === 'home';
+  const backLabel = cameFromHome ? '← Back to Home' : '← Back to Explore';
+  const backPath = cameFromHome ? PATHS.home : PATHS.explore;
+
+  // A real link (crawlable, and right for a visitor who landed here from
+  // search), but inside the app it steps back through history instead, so the
+  // listing keeps its scroll position and filters.
+  const onBackClick = (event) => {
+    if (!canGoBack()) return;
+    event.preventDefault();
+    goBack();
+  };
 
   // Don't fire a pending toast timeout after the page has been left.
   useEffect(() => () => clearTimeout(toastTimer.current), []);
@@ -164,15 +192,16 @@ export default function Detail({ ganpati, prevPage, onBack }) {
   };
 
   return (
-    <div className="animate-fadeIn pb-[calc(150px_+_env(safe-area-inset-bottom))]">
+    <main className={`${enter} pb-[calc(150px_+_env(safe-area-inset-bottom))]`}>
       {/* Back */}
       <div className="px-gutter py-3">
-        <div
+        <Link
+          to={backPath}
+          onClick={onBackClick}
           className="inline-flex cursor-pointer items-center gap-1.5 font-sans text-sm text-maroon/60 hover:text-maroon"
-          onClick={onBack}
         >
           {backLabel}
-        </div>
+        </Link>
       </div>
 
       {/* Photo, over the Om placeholder (which shows when there is none) */}
@@ -188,8 +217,8 @@ export default function Detail({ ganpati, prevPage, onBack }) {
       <div className="px-gutter-lg pt-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="font-serif text-[26px] leading-[1.2] text-maroon">{ganpati.name}</div>
-            <div className="mt-0.5 font-devanagari text-[15px] text-maroon/40">
+            <h1 className="font-serif text-[26px] leading-[1.2] text-maroon">{ganpati.name}</h1>
+            <div className="mt-0.5 font-devanagari text-[15px] text-maroon/40" lang="mr">
               {ganpati.nameMarathi}
             </div>
           </div>
@@ -217,15 +246,11 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         )}
       </div>
 
-    
-
-       {/* Crowd Report */}
+      {/* Crowd Report */}
       <div className="mx-gutter-lg mt-5">
         {/* Keyed by mandal so the status line resets when switching pandals. */}
         <CrowdReportWidget key={ganpati.id} ganpatiId={ganpati.id} />
       </div>
-
-      
 
       {/* Plan your visit: the practical, act-on-it-now info (directions, metro,
           ticket, food, parking) kept always-visible above the reference tabs. */}
@@ -239,7 +264,9 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           >
             Open in Google Maps
           </a>
-          <div className="font-sans text-sm leading-[1.6] text-maroon/60">{ganpati.address}</div>
+          <div className="font-sans text-sm leading-[1.6] text-maroon/60">
+            {stripEditorialNotes(ganpati.address)}
+          </div>
           <div className="font-sans text-xs font-medium text-gold">
             Pandal location updated for 2026 season
           </div>
@@ -297,21 +324,22 @@ export default function Detail({ ganpati, prevPage, onBack }) {
         })}
       </div>
 
-      {/* Tab content */}
+      {/* Tab content. Both panels stay in the HTML (the inactive one hidden) so
+          the history text is there for search engines and for a visitor who
+          opens the page with JavaScript still loading. */}
       <div className="px-gutter-lg py-5">
-        {tab === 'timings' && (
-          <div className="flex flex-col">
-            <TimingRow title="Morning Aarti" value={ganpati.morningAarti} />
-            <TimingRow title="Evening Aarti" value={ganpati.eveningAarti} />
-            <TimingRow title="Special Events" value={ganpati.specialEvents} />
-          </div>
-        )}
+        <div className="flex flex-col" hidden={tab !== 'timings'}>
+          <TimingRow title="Morning Aarti" value={ganpati.morningAarti} />
+          <TimingRow title="Evening Aarti" value={ganpati.eveningAarti} />
+          <TimingRow title="Special Events" value={ganpati.specialEvents} />
+        </div>
 
-        {tab === 'history' && (
-          <div className="font-sans text-[15px] leading-[1.8] text-maroon/75">
-            {ganpati.history}
-          </div>
-        )}
+        <div
+          className="font-sans text-[15px] leading-[1.8] text-maroon/75"
+          hidden={tab !== 'history'}
+        >
+          {ganpati.history}
+        </div>
       </div>
 
       {/* Toast */}
@@ -341,6 +369,6 @@ export default function Detail({ ganpati, prevPage, onBack }) {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
