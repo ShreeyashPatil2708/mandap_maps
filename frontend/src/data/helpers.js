@@ -39,8 +39,12 @@ export function formatDistance(km) {
  * does this: its first stop is the plan's start point).
  */
 export function directionsUrl(stops, { originFromFirst = false, travelmode } = {}) {
+  // Without a verified pin, hand Google the name and cleaned address to search,
+  // which finds a real mandal far more often than a guessed coordinate would.
   const point = (s) =>
-    s.lat != null && s.lng != null ? `${s.lat},${s.lng}` : (s.address ?? s.name);
+    s.lat != null && s.lng != null
+      ? `${s.lat},${s.lng}`
+      : [s.name, stripEditorialNotes(s.address)].filter(Boolean).join(', ');
   const destination = encodeURIComponent(point(stops[stops.length - 1]));
   let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
   if (travelmode) url += `&travelmode=${travelmode}`;
@@ -88,8 +92,8 @@ export function stripEditorialNotes(text) {
  * This is the pandal's address on the site, so it has to stay stable: the API
  * never lets `name_english` be edited (see EDITABLE in ganpatiRepo.js), and the
  * prerender build fails if two names ever collapse to the same slug. Numeric ids
- * are untouched and still identify a pandal everywhere else (photos, crowd
- * reports, the route list).
+ * are untouched and still identify a pandal everywhere else (photos, the route
+ * list).
  */
 export function slugify(name) {
   return (name || '')

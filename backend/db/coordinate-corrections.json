@@ -13,13 +13,24 @@
     "Each entry records the value it replaces, so it applies only while the source data",
     "still holds that stale value. Fix the spreadsheet and the entry stops doing anything.",
     "",
-    "Regenerate candidates with: npm run data:review"
+    "Regenerate candidates with: npm run data:review",
+    "",
+    "Entries with source \"Google Maps\" (added 2026-09-13) were matched to the named place",
+    "on Google Maps. Entries with \"to\": null had no matching named place anywhere, so their",
+    "approximate pin is cleared and the site shows the location as unavailable; the Maps",
+    "button then searches by name instead of sending visitors to a guessed spot."
   ],
   "corrections": [
     {
       "name_english": "Akhil Mandai Mandal (Sharda Ganpati)",
-      "from": [18.517, 73.8562],
-      "to": [18.51183, 73.8563],
+      "from": [
+        18.517,
+        73.8562
+      ],
+      "to": [
+        18.51183,
+        73.8563
+      ],
       "moves_metres": 575,
       "source": "Wikidata",
       "source_name": "Akhil Mandai Mandal",
@@ -27,8 +38,14 @@
     },
     {
       "name_english": "Dagdusheth Halwai Ganpati",
-      "from": [18.5167, 73.8553],
-      "to": [18.516391, 73.856084],
+      "from": [
+        18.5167,
+        73.8553
+      ],
+      "to": [
+        18.516391,
+        73.856084
+      ],
       "moves_metres": 90,
       "source": "OpenStreetMap",
       "source_name": "Shreemant Dagdusheth Halwai Ganpati Mandir",
@@ -36,8 +53,14 @@
     },
     {
       "name_english": "Guruji Talim Ganpati",
-      "from": [18.5163, 73.8558],
-      "to": [18.515047, 73.85466],
+      "from": [
+        18.5163,
+        73.8558
+      ],
+      "to": [
+        18.515047,
+        73.85466
+      ],
       "moves_metres": 184,
       "source": "OpenStreetMap",
       "source_name": "Guruji Talim",
@@ -45,8 +68,14 @@
     },
     {
       "name_english": "Hatti Ganpati Mandal",
-      "from": [18.512, 73.848],
-      "to": [18.511223, 73.845858],
+      "from": [
+        18.512,
+        73.848
+      ],
+      "to": [
+        18.511223,
+        73.845858
+      ],
       "moves_metres": 242,
       "source": "OpenStreetMap",
       "source_name": "Hatti Ganpati Mandir",
@@ -54,8 +83,14 @@
     },
     {
       "name_english": "Hutatma Babu Genu Ganpati (Navsacha Ganpati)",
-      "from": [18.5168, 73.8558],
-      "to": [18.513924, 73.856333],
+      "from": [
+        18.5168,
+        73.8558
+      ],
+      "to": [
+        18.513924,
+        73.856333
+      ],
       "moves_metres": 325,
       "source": "Wikidata",
       "source_name": "Hutatma Babu Genu Mandal",
@@ -63,8 +98,14 @@
     },
     {
       "name_english": "Jejuri Khandoba Temple (Ganesh presence)",
-      "from": [18.271, 74.157],
-      "to": [18.272384, 74.160418],
+      "from": [
+        18.271,
+        74.157
+      ],
+      "to": [
+        18.272384,
+        74.160418
+      ],
       "moves_metres": 392,
       "source": "Wikidata",
       "source_name": "Khandoba Temple, Jejuri",
@@ -72,8 +113,14 @@
     },
     {
       "name_english": "Nimbalkar Talim Ganpati",
-      "from": [18.5118, 73.848],
-      "to": [18.511927, 73.852217],
+      "from": [
+        18.5118,
+        73.848
+      ],
+      "to": [
+        18.511927,
+        73.852217
+      ],
       "moves_metres": 445,
       "source": "OpenStreetMap",
       "source_name": "Nimbalkar Talim Ganpati Mandir",
@@ -81,8 +128,14 @@
     },
     {
       "name_english": "Peshwe Ganpati (Shaniwarwada Ganpati)",
-      "from": [18.5196, 73.8548],
-      "to": [18.518808, 73.856079],
+      "from": [
+        18.5196,
+        73.8548
+      ],
+      "to": [
+        18.518808,
+        73.856079
+      ],
       "moves_metres": 161,
       "source": "OpenStreetMap",
       "source_name": "Shrimant Peshwe Ganesh Mandir",
@@ -90,8 +143,14 @@
     },
     {
       "name_english": "Phadke Haud Ganpati",
-      "from": [18.5189, 73.8569],
-      "to": [18.517867, 73.858764],
+      "from": [
+        18.5189,
+        73.8569
+      ],
+      "to": [
+        18.517867,
+        73.858764
+      ],
       "moves_metres": 228,
       "source": "Wikidata",
       "source_name": "Phadke Wada Ganpati",
@@ -99,8 +158,14 @@
     },
     {
       "name_english": "Tambdi Jogeshwari",
-      "from": [18.5175, 73.8562],
-      "to": [18.516602, 73.854874],
+      "from": [
+        18.5175,
+        73.8562
+      ],
+      "to": [
+        18.516602,
+        73.854874
+      ],
       "moves_metres": 172,
       "source": "Wikidata",
       "source_name": "Tambdi Jogeshwari Temple and Deepmaal",
@@ -108,12 +173,613 @@
     },
     {
       "name_english": "Tulshibaug Ganpati",
-      "from": [18.5158, 73.8553],
-      "to": [18.514317, 73.855426],
+      "from": [
+        18.5158,
+        73.8553
+      ],
+      "to": [
+        18.514317,
+        73.855426
+      ],
       "moves_metres": 165,
       "source": "Wikidata",
       "source_name": "Tulshibaug Ganapati Temple",
       "source_url": "https://www.wikidata.org/wiki/Q19807630"
+    },
+    {
+      "name_english": "Kesariwada Ganpati",
+      "from": [
+        18.5135,
+        73.853
+      ],
+      "to": [
+        18.515767,
+        73.848909
+      ],
+      "moves_metres": 500,
+      "source": "Google Maps",
+      "source_name": "Kesariwada Ganpati"
+    },
+    {
+      "name_english": "Tambat Ali Ganpati (Bhausaheb Rangari Ganpati)",
+      "from": [
+        18.5172,
+        73.856
+      ],
+      "to": [
+        18.51754,
+        73.855312
+      ],
+      "moves_metres": 82,
+      "source": "Google Maps",
+      "source_name": "Shrimant Bhausaheb Rangari Ganpati"
+    },
+    {
+      "name_english": "Chhatrapati Rajaram Mandal",
+      "from": [
+        18.513,
+        73.849
+      ],
+      "to": [
+        18.512386,
+        73.847342
+      ],
+      "moves_metres": 188,
+      "source": "Google Maps",
+      "source_name": "Chhatrapati Rajaram Mandal"
+    },
+    {
+      "name_english": "Garud Ganpati Mandal",
+      "from": [
+        18.5165,
+        73.8555
+      ],
+      "to": [
+        18.513666,
+        73.845667
+      ],
+      "moves_metres": 1084,
+      "source": "Google Maps",
+      "source_name": "Garud Ganpati"
+    },
+    {
+      "name_english": "Jilbya Maruti Ganpati",
+      "from": [
+        18.5155,
+        73.855
+      ],
+      "to": [
+        18.513305,
+        73.854912
+      ],
+      "moves_metres": 244,
+      "source": "Google Maps",
+      "source_name": "Shri Jilbya Maruti Mandal"
+    },
+    {
+      "name_english": "Jotyachi Talim Ganpati",
+      "from": [
+        18.516,
+        73.857
+      ],
+      "to": [
+        18.514687,
+        73.862938
+      ],
+      "moves_metres": 643,
+      "source": "Google Maps",
+      "source_name": "जोत्याची तालीम मंडळ (1 review)",
+      "confidence": "low: only match has a single review"
+    },
+    {
+      "name_english": "Natu Baug Ganpati",
+      "from": [
+        18.5115,
+        73.8478
+      ],
+      "to": [
+        18.510694,
+        73.853819
+      ],
+      "moves_metres": 641,
+      "source": "Google Maps",
+      "source_name": "Natubaug Mandal"
+    },
+    {
+      "name_english": "Navjawan Mitra Mandal",
+      "from": [
+        18.514,
+        73.849
+      ],
+      "to": [
+        18.512686,
+        73.848685
+      ],
+      "moves_metres": 150,
+      "source": "Google Maps",
+      "source_name": "Navjawan mitra mandal"
+    },
+    {
+      "name_english": "Shanipar Ganpati (Bajirao Road Mandal)",
+      "from": [
+        18.5196,
+        73.8553
+      ],
+      "to": [
+        18.512612,
+        73.852547
+      ],
+      "moves_metres": 829,
+      "source": "Google Maps",
+      "source_name": "Shanipar Mandal Ganpati Devasthan"
+    },
+    {
+      "name_english": "Munjabacha Bol Ganpati",
+      "from": [
+        18.517,
+        73.856
+      ],
+      "to": [
+        18.515017,
+        73.849853
+      ],
+      "moves_metres": 685,
+      "source": "Google Maps",
+      "source_name": "Munjabacha Bol Tarun Mandal Trust"
+    },
+    {
+      "name_english": "Chimnya Ganapati Temple",
+      "from": [
+        18.512,
+        73.848
+      ],
+      "to": [
+        18.511144,
+        73.852135
+      ],
+      "moves_metres": 446,
+      "source": "Google Maps",
+      "source_name": "Chimnya Ganapati Mandir"
+    },
+    {
+      "name_english": "Parvati Nandan Ganpati (Khinditla Ganpati)",
+      "from": [
+        18.558,
+        73.814
+      ],
+      "to": [
+        18.541178,
+        73.829076
+      ],
+      "moves_metres": 2455,
+      "source": "Google Maps",
+      "source_name": "Shri Parvatinandan Ganpati Devsthan (Khinditla)"
+    },
+    {
+      "name_english": "Ranjangaon Mahaganapati",
+      "from": [
+        18.75,
+        74.233
+      ],
+      "to": [
+        18.754099,
+        74.241806
+      ],
+      "moves_metres": 1033,
+      "source": "Google Maps",
+      "source_name": "Shree Mahaganapati Temple, Ranjangaon"
+    },
+    {
+      "name_english": "Lenyadri Girijatmaj Ganpati",
+      "from": [
+        19.24278,
+        73.88556
+      ],
+      "to": [
+        19.243453,
+        73.887419
+      ],
+      "moves_metres": 209,
+      "source": "Google Maps",
+      "source_name": "Shree Girijaatmaja Ganapati Temple, Lenyadri"
+    },
+    {
+      "name_english": "Morgaon Mayureshwar Ganpati",
+      "from": [
+        18.276056,
+        74.32139
+      ],
+      "to": [
+        18.278111,
+        74.317461
+      ],
+      "moves_metres": 474,
+      "source": "Google Maps",
+      "source_name": "Shri Mayureshwar Ganapati Temple, Morgaon"
+    },
+    {
+      "name_english": "Pimpri-Chinchwad Ganpati (Chinchwad Devasthan)",
+      "from": [
+        18.6298,
+        73.7997
+      ],
+      "to": [
+        18.626385,
+        73.778323
+      ],
+      "moves_metres": 2284,
+      "source": "Google Maps",
+      "source_name": "Morya Gosavi Sanjivan Samadhi Mandir"
+    },
+    {
+      "name_english": "Alandi Ganesh Temple (Sant Dnyaneshwar Pilgrimage Town)",
+      "from": [
+        18.674,
+        73.896
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Ambegaon Ganpati Mandal",
+      "from": [
+        18.4524,
+        73.8511
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Bavdhan Ganpati Mandal",
+      "from": [
+        18.5201,
+        73.7793
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Bopodi Ganpati Mandal",
+      "from": [
+        18.5642,
+        73.8454
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Charoli Ganpati Mandal",
+      "from": [
+        18.6612,
+        73.9052
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Dehu Ganesh Temple (Sant Tukaram Pilgrimage Town)",
+      "from": [
+        18.659,
+        73.761
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Dhanori Ganpati Mandal",
+      "from": [
+        18.5934,
+        73.9115
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Dhayari Ganpati Mandal",
+      "from": [
+        18.464,
+        73.8283
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Gajanan Ganpati Mandal",
+      "from": [
+        18.516,
+        73.856
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Ganesh Peth Mandal",
+      "from": [
+        18.515,
+        73.857
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Kasarwadi Ganpati Mandal",
+      "from": [
+        18.6037,
+        73.8213
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Kasba Peth Talim Ganpati",
+      "from": [
+        18.518,
+        73.857
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Khadakwasla Ganpati Mandal",
+      "from": [
+        18.45,
+        73.773
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Khadki Ganpati Mandal (Kirkee)",
+      "from": [
+        18.5694,
+        73.85
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Koregaon Park Ganpati Mandal",
+      "from": [
+        18.537,
+        73.8962
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Lohegaon Ganpati Mandal",
+      "from": [
+        18.5821,
+        73.9145
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Mangalwar Peth Ganpati Mandal",
+      "from": [
+        18.518,
+        73.856
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Mundhwa Ganpati Mandal",
+      "from": [
+        18.5262,
+        73.9232
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Narayan Peth Ganpati Mandal",
+      "from": [
+        18.513,
+        73.852
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Pashan Ganpati Mandal",
+      "from": [
+        18.5352,
+        73.8083
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Pimpri Ganpati (Morya Gosavi Peth Mandal)",
+      "from": [
+        18.6274,
+        73.7997
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Pirangut Ganpati Mandal",
+      "from": [
+        18.497,
+        73.699
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Pisoli Ganpati Mandal",
+      "from": [
+        18.4491,
+        73.9058
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Raviwar Peth Ganpati Mandal",
+      "from": [
+        18.517,
+        73.858
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Sangvi Ganpati Mandal",
+      "from": [
+        18.5831,
+        73.7931
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Saswad Ganpati (Historic Maratha Town)",
+      "from": [
+        18.344,
+        73.914
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Shukrawar Peth Ganpati Mandal",
+      "from": [
+        18.517,
+        73.856
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Somwar Peth Ganpati Mandal",
+      "from": [
+        18.516,
+        73.862
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Sus / Mahalunge Ganpati Mandal",
+      "from": [
+        18.5501,
+        73.7801
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Tambe Ganpati (Shrimant Tambe Mandal)",
+      "from": [
+        18.5122,
+        73.8495
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Twasta Kasar Ganpati Mandal",
+      "from": [
+        18.5185,
+        73.857
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Umbrya Ganapati Temple",
+      "from": [
+        18.511,
+        73.847
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Vishrambag Wada Ganpati",
+      "from": [
+        18.5125,
+        73.852
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Vishrantwadi Ganpati Mandal",
+      "from": [
+        18.5989,
+        73.9052
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Wanwadi Ganpati Mandal",
+      "from": [
+        18.4979,
+        73.8884
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Warje Ganpati Mandal",
+      "from": [
+        18.4812,
+        73.8132
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
+    },
+    {
+      "name_english": "Yerawada Ganpati Mandal",
+      "from": [
+        18.5484,
+        73.8972
+      ],
+      "to": null,
+      "source": "unverified",
+      "note": "No matching named place found; pin was approximate. Shown as location unavailable."
     }
   ]
 }

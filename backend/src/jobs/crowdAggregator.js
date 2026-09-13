@@ -1,5 +1,5 @@
 import { query } from '../config/db.js';
-import { purgeOldInterest } from '../repositories/crowdRepo.js';
+import { purgeOldInterest, purgeOldCrowdReports } from '../repositories/crowdRepo.js';
 import { purgeExpiredLimits } from '../repositories/limitsRepo.js';
 
 const JOB_NAME = 'crowd-aggregation';
@@ -34,11 +34,12 @@ async function claimRun() {
  * gone, along with the interest signal it sat beside. Crowd levels now come
  * only from people tapping Low/Medium/High.
  *
- * What is left still has to run: purgeExpiredLimits keeps the shared report
- * cooldown table from growing without bound, and purgeOldInterest drains the
- * anonymous session ids written before the interest signal was removed.
+ * What is left still has to run: purgeOldCrowdReports keeps crowd taps to a
+ * day, purgeExpiredLimits keeps the shared report cooldown table (which is
+ * keyed by client IP) from growing without bound, and purgeOldInterest drains
+ * the anonymous session ids written before the interest signal was removed.
  */
 export async function runCrowdAggregation() {
   if (!(await claimRun())) return;
-  await Promise.all([purgeOldInterest(), purgeExpiredLimits()]);
+  await Promise.all([purgeOldCrowdReports(), purgeOldInterest(), purgeExpiredLimits()]);
 }

@@ -4,7 +4,6 @@ import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { RouteProvider } from './context/RouteContext.jsx';
 import { GanpatisProvider } from './context/GanpatisContext.jsx';
-import { CrowdProvider } from './context/CrowdContext.jsx';
 import { fetchGanpatis } from './services/ganpatis.js';
 import './index.css';
 
@@ -21,9 +20,7 @@ function mount(initialData) {
       <ErrorBoundary>
         <GanpatisProvider initialData={initialData}>
           <RouteProvider>
-            <CrowdProvider>
-              <App />
-            </CrowdProvider>
+            <App />
           </RouteProvider>
         </GanpatisProvider>
       </ErrorBoundary>

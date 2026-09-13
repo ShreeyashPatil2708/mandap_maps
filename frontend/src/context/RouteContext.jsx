@@ -40,11 +40,7 @@ export function RouteProvider({ children }) {
   }, [route]);
 
   // Adds a stop, only when it is new (re-adding an existing stop is a no-op).
-  //
-  // This used to also POST an anonymous "interested" ping, which the API turned
-  // into a crowd level: saving a mandal to your route was enough to paint its
-  // map pin as though somebody had looked at the queue. Planning a visit is not
-  // a crowd observation, so the ping is gone and the route stays local.
+  // The route stays local; nothing is sent to the API.
   const addToRoute = useCallback((id) => {
     if (routeRef.current.includes(id)) return;
     routeRef.current = [...routeRef.current, id];

@@ -20,14 +20,6 @@ export default {
         cream: '#EDE4D0', // page background
         surface: '#F9F2E5', // card / panel background
         light: '#FAF6F0', // text/icons on maroon backgrounds
-        // Crowd traffic-light, tuned to sit on the cream/surface palette. Shared
-        // by the crowd report buttons, the route "busy" badge, and the map pins
-        // (MapView.jsx CROWD_COLORS mirrors these exact hexes).
-        crowd: {
-          low: '#3E8E5A', // Low  / not busy
-          med: '#C99A2E', // Medium
-          high: '#B23A3A', // High / busy
-        },
       },
       fontFamily: {
         serif: ['"DM Serif Display"', 'serif'],
@@ -50,8 +42,15 @@ export default {
       // capped and centred by components/Container.jsx: `shell` for grids and
       // lists, `prose` for reading columns (Privacy, the Detail body text).
       maxWidth: {
-        shell: '1100px',
+        // The app column on desktop. Wide enough for a 4-up card grid without
+        // letting a row of cards sprawl across a 1920px monitor.
+        shell: '1280px',
+        // Reading measure for linear pages (Route, Privacy). Deliberately
+        // narrow: a 1280px line of 13px legal copy is unreadable.
         prose: '720px',
+        // Long-form body copy sitting inside a wide page, e.g. Detail's
+        // History tab, which otherwise ran past 250 characters per line.
+        read: '70ch',
       },
       spacing: {
         gutter: '20px',

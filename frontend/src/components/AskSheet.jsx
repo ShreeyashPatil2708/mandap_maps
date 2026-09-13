@@ -274,7 +274,7 @@ export default function AskSheet({ onClose, ganpatis, onOpenGanpati, onExplore }
     <div className="fixed inset-0 z-[95] flex" onClick={onClose}>
       <div className="absolute inset-0 bg-maroon/45" />
       <div
-        className="absolute inset-x-0 top-[8vh] bottom-[calc(56px_+_env(safe-area-inset-bottom))] mx-auto flex w-full max-w-[480px] animate-slideUp flex-col rounded-t-sheet bg-cream"
+        className="absolute inset-x-0 top-[8vh] bottom-[calc(56px_+_env(safe-area-inset-bottom))] mx-auto flex w-full max-w-[480px] animate-slideUp flex-col rounded-t-sheet bg-cream lg:bottom-[8vh] lg:max-w-[560px] lg:rounded-sheet lg:shadow-[0_18px_50px_rgba(107,30,46,0.28)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}

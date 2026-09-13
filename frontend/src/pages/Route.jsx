@@ -1,6 +1,5 @@
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { useRoute } from '../context/RouteContext.jsx';
-import { useCrowd } from '../context/CrowdContext.jsx';
 import { directionsUrl } from '../data/helpers.js';
 import Container from '../components/Container.jsx';
 import Link from '../components/Link.jsx';
@@ -37,12 +36,11 @@ function ChevronDown() {
 export default function Route({ enter = 'animate-fadeIn' }) {
   const { ganpatis } = useGanpatis();
   const { route, removeFromRoute, clearRoute, reorderRoute } = useRoute();
-  const { crowd } = useCrowd();
   const items = route.map((id) => ganpatis.find((g) => g.id === id)).filter(Boolean);
   const count = items.length;
 
   return (
-    <Container as="main" width="prose" className={`${enter} pt-gutter`}>
+    <Container as="main" className={`${enter} pt-gutter`}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -60,7 +58,7 @@ export default function Route({ enter = 'animate-fadeIn' }) {
 
       {count === 0 ? (
         /* Empty state */
-        <div className="rounded-2xl border border-maroon/[0.06] bg-surface px-gutter py-[60px] text-center">
+        <div className="mx-auto max-w-prose rounded-2xl border border-maroon/[0.06] bg-surface px-gutter py-[60px] text-center">
           <div className="mb-2 font-serif text-xl text-maroon">No Ganpatis added yet</div>
           <div className="mb-6 font-sans text-sm leading-[1.6] text-maroon/50">
             Add Ganpatis from the Explore page to build your darshan route
@@ -73,9 +71,10 @@ export default function Route({ enter = 'animate-fadeIn' }) {
           </Link>
         </div>
       ) : (
-        <>
-          {/* Route list */}
-          <div className="mb-5 flex flex-col gap-2.5">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-10">
+          {/* Route list. One ordered column at every width: the order is the
+              whole point of a route, so a multi-column grid would be wrong. */}
+          <div className="mb-5 flex flex-col gap-2.5 lg:mb-0">
             {items.map((g, i) => (
               <div
                 key={g.id}
@@ -87,12 +86,6 @@ export default function Route({ enter = 'animate-fadeIn' }) {
                 <div className="min-w-0 flex-1">
                   <div className="font-serif text-[15px] text-maroon">
                     {g.name}
-
-                    {crowd[g.id]?.level === 3 && (
-                      <span className="ml-2 rounded-pill bg-crowd-high/12 px-2 py-0.5 font-sans text-[11px] font-semibold text-crowd-high">
-                        Busy now, consider reordering
-                      </span>
-                    )}
                   </div>
 
                   <div className="font-sans text-xs text-maroon/40">{g.area}</div>
@@ -132,24 +125,31 @@ export default function Route({ enter = 'animate-fadeIn' }) {
             ))}
           </div>
 
-          {/* CTA */}
-          <a
-            href={directionsUrl(items)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-3 mt-6 block cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-base font-semibold text-maroon no-underline hover:bg-gold-dark"
-          >
-            Open in Google Maps
-          </a>
-          <div className="text-center">
-            <span
-              className="cursor-pointer font-sans text-sm font-medium text-gold"
-              onClick={clearRoute}
+          {/* Actions. Sits under the list on a phone, which is where a thumb
+              expects it; on a laptop it sticks beside the list instead of
+              sitting below the fold of a long route. */}
+          <aside className="lg:sticky lg:top-24">
+            <div className="mb-3 hidden font-sans text-[13px] text-maroon/45 lg:block">
+              {count} {count === 1 ? 'stop' : 'stops'} on this route
+            </div>
+            <a
+              href={directionsUrl(items)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-3 mt-6 block cursor-pointer rounded-card bg-gold p-4 text-center font-sans text-base font-semibold text-maroon no-underline hover:bg-gold-dark lg:mt-0"
             >
-              Clear all
-            </span>
-          </div>
-        </>
+              Open in Google Maps
+            </a>
+            <div className="text-center">
+              <span
+                className="cursor-pointer font-sans text-sm font-medium text-gold"
+                onClick={clearRoute}
+              >
+                Clear all
+              </span>
+            </div>
+          </aside>
+        </div>
       )}
 
       {/*
