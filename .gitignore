@@ -77,6 +77,8 @@ chatbot/app/data/faiss_index/
 *.tfvars
 *.tfvars.json
 !*.example.tfvars
+# Saved plans (terraform plan -out) embed variable values, secrets included.
+*.tfplan
 crash.log
 crash.*.log
 

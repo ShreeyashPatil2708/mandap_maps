@@ -30,7 +30,12 @@ import {
   usePathname,
 } from './router.js';
 import { jsonLdFor, seoFor } from './seo.js';
-import { readSplashSeen, writeSplashSeen } from './data/storage.js';
+import {
+  readSplashSeen,
+  readSupportShown,
+  writeSplashSeen,
+  writeSupportShown,
+} from './data/storage.js';
 
 // Screen state driven by the URL: every screen has a real path (see router.js)
 // so pandals are crawlable, linkable and shareable. The darshan route list,
@@ -92,13 +97,16 @@ export default function App({ initialPath, ssr = false }) {
 
   const closeMenu = () => setShowMenu(false);
 
-  // Show the Support popup once per browser, when Home first becomes active.
+  // Show the Support popup once per visit, the first time Home is on screen:
+  // straight after the splash closes, or on arrival when there is no splash.
+  // It used to be once per browser ever, so a laptop that had seen it once
+  // never showed it again, and it opened hidden behind the splash.
   useEffect(() => {
-    if (page === 'home' && !localStorage.getItem('supportShown')) {
+    if (page === 'home' && !showSplash && !readSupportShown()) {
       setShowModal(true);
-      localStorage.setItem('supportShown', 'true');
+      writeSupportShown();
     }
-  }, [page]);
+  }, [page, showSplash]);
 
   const showPage = !loading && !error && !notFound;
 
@@ -201,6 +209,10 @@ export default function App({ initialPath, ssr = false }) {
       <Drawer
         open={showMenu}
         onClose={closeMenu}
+        onAsk={() => {
+          setShowAsk(true);
+          setShowMenu(false);
+        }}
         onSupport={() => {
           setShowModal(true);
           setShowMenu(false);

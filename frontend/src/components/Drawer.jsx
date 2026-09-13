@@ -12,7 +12,7 @@ import { PATHS } from '../router.js';
 // the social links and the corrections link that briefly lived here made a
 // short menu into a wall of small print; the credit belongs in the footer,
 // where a colophon is expected.
-export default function Drawer({ open, onClose, onSupport }) {
+export default function Drawer({ open, onClose, onAsk, onSupport }) {
   if (!open) return null;
 
   const link = 'cursor-pointer border-b border-maroon/[0.07] py-3 font-serif text-xl text-maroon';
@@ -43,8 +43,12 @@ export default function Drawer({ open, onClose, onSupport }) {
             Explore
           </Link>
           <Link to={PATHS.route} className={link} onClick={onClose}>
-            Plan Route
+            Route
           </Link>
+          {/* Ask opens the chat sheet rather than navigating, as in the tab bar. */}
+          <button type="button" className={`${link} text-left`} onClick={onAsk}>
+            Ask
+          </button>
           <Link to={PATHS.about} className={link} onClick={onClose}>
             About
           </Link>

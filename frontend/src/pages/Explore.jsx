@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
 import { manachaBadge, distanceKm, formatDistance, buildFilters } from '../data/helpers.js';
+import { byPopularity } from '../data/popularity.js';
 import { OmMark, SearchIcon } from '../components/icons.jsx';
 import PandalPhoto from '../components/PandalPhoto.jsx';
 import Container from '../components/Container.jsx';
@@ -99,8 +100,9 @@ export default function Explore({
 
   const filterOptions = useMemo(() => buildFilters(ganpatis), [ganpatis]);
 
+  // Most popular first (data/popularity.js). Near Me re-sorts by distance below.
   const results = useMemo(() => {
-    let list = ganpatis;
+    let list = byPopularity(ganpatis);
     if (activeFilter === 'manache5') list = list.filter((g) => g.manacha);
     else if (activeFilter !== 'all') list = list.filter((g) => g.areaCategory === activeFilter);
 

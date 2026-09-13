@@ -35,7 +35,7 @@ export default function SupportModal({ open, onClose }) {
           </div>
           <p className="mx-auto mt-4 max-w-[340px] font-sans text-[13px] leading-[1.6] text-maroon/60">
             MandapMaps is free, with no ads. If it helped your darshan, a small contribution helps
-            us cover the server bills. Only if you want to, no pressure at all.
+            us cover the server bills.
           </p>
           <div className="mt-4 font-serif text-lg text-maroon">Ganpati Bappa Morya 🙏</div>
         </div>

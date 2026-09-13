@@ -11,7 +11,8 @@
     "seed": "node db/seed.js",
     "lint": "eslint src db scripts",
     "photos": "node scripts/photos.js",
-    "data:review": "node scripts/data-review.js"
+    "data:review": "node scripts/data-review.js",
+    "content:push": "node scripts/content-push.js"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.679.0",

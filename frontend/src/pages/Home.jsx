@@ -19,7 +19,7 @@ const VISIT_PICKS = [
   'Sarasbaug Siddhivinayak (Talyatla Ganpati)',
   'Hutatma Babu Genu Ganpati (Navsacha Ganpati)',
   'Hatti Ganpati Mandal',
-  'Twasta Kasar Ganpati Mandal',
+  'Tvashta Kasar Ganpati Mandal',
   'Chhatrapati Rajaram Mandal',
 ];
 
@@ -195,16 +195,18 @@ export default function Home({ enter = 'animate-fadeIn', onFilter }) {
             <div className="mb-7 max-w-[340px] font-sans text-[15px] leading-[1.6] text-light/60">
               Find pandals, plan your route, learn the history of Pune&apos;s beloved Ganpatis.
             </div>
-            <div className="flex flex-wrap gap-3">
+            {/* Two equal halves at every width, so neither button looks like
+                the lesser action. */}
+            <div className="grid max-w-[400px] grid-cols-2 gap-3">
               <Link
                 to={PATHS.explore}
-                className="cursor-pointer whitespace-nowrap rounded-pill bg-gold px-8 py-3.5 font-sans text-[15px] font-semibold text-maroon hover:bg-gold-dark"
+                className="cursor-pointer whitespace-nowrap rounded-pill border-[1.5px] border-gold bg-gold px-4 py-3.5 text-center font-sans text-[15px] font-semibold text-maroon hover:border-gold-dark hover:bg-gold-dark"
               >
                 Start Exploring
               </Link>
               <Link
                 to={PATHS.route}
-                className="cursor-pointer rounded-pill border-[1.5px] border-light/25 px-8 py-3.5 font-sans text-[15px] font-medium text-light hover:border-light/50"
+                className="cursor-pointer whitespace-nowrap rounded-pill border-[1.5px] border-light/25 px-4 py-3.5 text-center font-sans text-[15px] font-medium text-light hover:border-light/50"
               >
                 Plan Route
               </Link>
