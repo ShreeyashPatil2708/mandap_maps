@@ -188,9 +188,9 @@ export default function Home({ enter = 'animate-fadeIn', onFilter }) {
               Pune · Ganeshotsav 2026
             </div>
             <h1 className="mb-4 font-serif text-[clamp(32px,8vw,48px)] leading-[1.1] text-light">
-              Your Darshan
+              Pune Ganpati
               <br />
-              Companion
+              Darshan Guide
             </h1>
             <div className="mb-7 max-w-[340px] font-sans text-[15px] leading-[1.6] text-light/60">
               Find pandals, plan your route, learn the history of Pune&apos;s beloved Ganpatis.

@@ -80,6 +80,37 @@ jobs:
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
 
+      # Tell Bing (and the other IndexNow engines) every page on the site after
+      # each deploy, so new and changed pages are crawled in hours, not weeks.
+      # The key is public by design: it lives at /<key>.txt so the engines can
+      # confirm the ping came from the site owner. Best effort: a failed ping
+      # never fails a deploy that has already shipped.
+      - name: Ping IndexNow
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: f840dbceabb4794bde5193baf6b2a35a
+        run: |
+          node -e '
+            const fs = require("fs");
+            const xml = fs.readFileSync("frontend/dist/sitemap.xml", "utf8");
+            const urlList = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+            const key = process.env.INDEXNOW_KEY;
+            const body = {
+              host: "mandapmaps.in",
+              key,
+              keyLocation: `https://mandapmaps.in/${key}.txt`,
+              urlList,
+            };
+            fetch("https://api.indexnow.org/indexnow", {
+              method: "POST",
+              headers: { "Content-Type": "application/json; charset=utf-8" },
+              body: JSON.stringify(body),
+            }).then((r) => {
+              console.log(`IndexNow: ${urlList.length} URLs, HTTP ${r.status}`);
+              if (!r.ok) process.exit(1);
+            });
+          '
+
   deploy-backend:
     name: Deploy Node API via SSM
     needs: ci

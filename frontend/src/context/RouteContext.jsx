@@ -48,6 +48,8 @@ export function RouteProvider({ children }) {
   }, []);
   const removeFromRoute = useCallback((id) => setRoute((prev) => prev.filter((r) => r !== id)), []);
   const clearRoute = useCallback(() => setRoute([]), []);
+  // Replaces the whole list in one step, e.g. with a reordered route.
+  const replaceRoute = useCallback((ids) => setRoute([...ids]), []);
   const reorderRoute = useCallback(
     (from, to) =>
       setRoute((prev) => {
@@ -61,8 +63,8 @@ export function RouteProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ route, addToRoute, removeFromRoute, clearRoute, reorderRoute }),
-    [route, addToRoute, removeFromRoute, clearRoute, reorderRoute]
+    () => ({ route, addToRoute, removeFromRoute, clearRoute, reorderRoute, replaceRoute }),
+    [route, addToRoute, removeFromRoute, clearRoute, reorderRoute, replaceRoute]
   );
 
   return <RouteContext.Provider value={value}>{children}</RouteContext.Provider>;

@@ -32,8 +32,17 @@ export default function Footer({ bottomPad = 'pb-nav-safe' }) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="font-serif text-[17px] text-gold">MandapMaps</div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 font-sans text-[13px]">
+            <Link to={PATHS.about} className={link}>
+              About
+            </Link>
             <Link to={PATHS.privacy} className={link}>
               Privacy
+            </Link>
+            <Link to={PATHS.terms} className={link}>
+              Terms
+            </Link>
+            <Link to={PATHS.disclaimer} className={link}>
+              Disclaimer
             </Link>
           </div>
         </div>

@@ -75,6 +75,24 @@ const STATIC_SEO = {
     description:
       'How MandapMaps handles your data: no accounts, your location never leaves your device, and nothing sold or shared with advertisers.',
   },
+  about: {
+    path: PATHS.about,
+    title: 'About MandapMaps: A Free Pune Ganpati Darshan Guide',
+    description:
+      'Why MandapMaps exists, what it covers across Pune’s Ganeshotsav, and how to clear what it keeps on your device.',
+  },
+  terms: {
+    path: PATHS.terms,
+    title: 'Terms of Use | MandapMaps',
+    description:
+      'The terms for using MandapMaps, a free and independent guide to Pune’s Ganpati pandals.',
+  },
+  disclaimer: {
+    path: PATHS.disclaimer,
+    title: 'Disclaimer | MandapMaps',
+    description:
+      'MandapMaps is an independent guide, not affiliated with any mandal. Confirm timings on the ground and stay safe in festival crowds.',
+  },
   notfound: {
     path: '/404',
     title: 'Page not found | MandapMaps',

@@ -90,7 +90,7 @@ resource "aws_cloudfront_function" "spa_router" {
   runtime = "cloudfront-js-2.0"
   publish = true
   code    = <<-EOT
-    var PRERENDERED = /^\/(explore|route|privacy|ganpati\/[a-z0-9-]+)$/;
+    var PRERENDERED = /^\/(explore|route|privacy|about|terms|disclaimer|ganpati\/[a-z0-9-]+)$/;
 
     function query(querystring) {
       var parts = [];
