@@ -152,6 +152,26 @@ function LoadingIntro() {
 export default function Splash({ onEnter }) {
   const [loading, setLoading] = useState(true);
 
+  // Home is already rendered underneath this overlay, and a wheel or swipe on
+  // the overlay used to scroll it, so the visitor entered Home halfway down.
+  // Lock the page while the splash is up and put things back when it closes.
+  useEffect(() => {
+    const html = document.documentElement.style;
+    const body = document.body.style;
+    const previous = { html: html.overflow, body: body.overflow };
+    html.overflow = 'hidden';
+    body.overflow = 'hidden';
+    return () => {
+      html.overflow = previous.html;
+      body.overflow = previous.body;
+    };
+  }, []);
+
+  const enter = () => {
+    window.scrollTo(0, 0);
+    onEnter();
+  };
+
   useEffect(() => {
     if (!loading) return undefined;
     const t = setTimeout(() => setLoading(false), 1800);
@@ -159,7 +179,9 @@ export default function Splash({ onEnter }) {
   }, [loading]);
 
   return (
-    <div className="fixed inset-0 z-[400] flex flex-col items-center justify-between overflow-hidden bg-maroon px-gutter-lg py-14 text-center">
+    // touch-none: iOS Safari still pans the page under `overflow: hidden` when a
+    // drag starts on a fixed element, so the overlay refuses panning itself.
+    <div className="fixed inset-0 z-[400] flex touch-none flex-col items-center justify-between overflow-hidden overscroll-none bg-maroon px-gutter-lg py-14 text-center">
       <AnimatedBackdrop />
       <Particles />
       {!loading && <CrackerBursts count={5} />}
@@ -218,7 +240,7 @@ export default function Splash({ onEnter }) {
         style={{ animationDelay: '520ms' }}
       >
         <button
-          onClick={onEnter}
+          onClick={enter}
           className="group relative w-full overflow-hidden rounded-pill border-2 border-gold bg-transparent px-8 py-3.5 font-sans text-[15px] font-semibold text-gold transition-colors duration-300 hover:text-maroon"
         >
           <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-300 group-hover:translate-x-0" />

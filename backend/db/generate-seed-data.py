@@ -151,6 +151,32 @@ def load_removed():
     return {r["name_english"] for r in doc.get("removed", [])}
 
 
+# Spelling fixes the spreadsheet still carries, applied to every text field of
+# every record (English names and history, Marathi names and history). Lookups
+# against coordinate-corrections.json and removed-pandals.json run first, on
+# the name as the sheet spells it. Mirrors migration 010.
+TEXT_FIXES = [
+    ("Twasta", "Tvashta"),
+    ("चिम्न्या", "चिमण्या"),
+    ("उंब्र्या", "उंबऱ्या"),
+    ("मुंजाबाचा बोल", "मुंजाबाचा बोळ"),
+    ("ताम्बे", "तांबे"),
+]
+
+
+def spelled(value):
+    """`value` with TEXT_FIXES applied, recursing into lists and dicts."""
+    if isinstance(value, str):
+        for wrong, right in TEXT_FIXES:
+            value = value.replace(wrong, right)
+        return value
+    if isinstance(value, list):
+        return [spelled(v) for v in value]
+    if isinstance(value, dict):
+        return {k: spelled(v) for k, v in value.items()}
+    return value
+
+
 def maps_url(sheet_value, lat, lng):
     """
     A map link that actually resolves.
@@ -216,7 +242,7 @@ def main():
         )
         gmaps = maps_url(gmaps, lat, lng)
 
-        records.append({
+        records.append(spelled({
             "name_english": name_english,
             "name_marathi": clean(r[mi["Name (Marathi)"]]),
             "manacha_number": manacha_number,
@@ -241,7 +267,7 @@ def main():
             "metro": metro,
             "food": food,
             "is_manacha": manacha_number is not None,
-        })
+        }))
 
     OUT.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {len(records)} records to {OUT.relative_to(ROOT)}")

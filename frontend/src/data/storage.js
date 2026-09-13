@@ -68,3 +68,22 @@ export function writeSplashSeen() {
     // Best-effort: worst case the splash shows again next load.
   }
 }
+
+// The Support popup follows the splash: once per browser session.
+const SUPPORT_SHOWN_KEY = 'mandapmaps.supportShown';
+
+export function readSupportShown() {
+  try {
+    return sessionStorage.getItem(SUPPORT_SHOWN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function writeSupportShown() {
+  try {
+    sessionStorage.setItem(SUPPORT_SHOWN_KEY, 'true');
+  } catch {
+    // Best-effort: worst case the popup shows again next load.
+  }
+}
