@@ -57,8 +57,6 @@ const POPULARITY = [
   'Kasba Peth Talim Ganpati',
   'Gajanan Ganpati Mandal',
   'Pimpri Ganpati (Morya Gosavi Peth Mandal)',
-  'Alandi Ganesh Temple (Sant Dnyaneshwar Pilgrimage Town)',
-  'Dehu Ganesh Temple (Sant Tukaram Pilgrimage Town)',
 ];
 
 const RANK = new Map(POPULARITY.map((name, i) => [name, i]));

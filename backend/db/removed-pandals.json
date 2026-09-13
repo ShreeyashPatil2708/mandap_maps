@@ -152,6 +152,18 @@
     {
       "name_english": "Jejuri Khandoba Temple (Ganesh presence)",
       "reason": "Not a Ganpati: Jejuri is a Khandoba temple with no major Ganpati of its own, so it does not belong in a Ganpati darshan guide."
+    },
+    {
+      "name_english": "Alandi Ganesh Temple (Sant Dnyaneshwar Pilgrimage Town)",
+      "reason": "Not a Ganpati place: Alandi is Sant Dnyaneshwar's samadhi town and the record describes the town, with no specific Ganpati temple found in sources (same reason as Jejuri)."
+    },
+    {
+      "name_english": "Dehu Ganesh Temple (Sant Tukaram Pilgrimage Town)",
+      "reason": "Not a Ganpati place: Dehu is Sant Tukaram's town and the record describes the town, with no specific Ganpati temple found in sources (same reason as Jejuri)."
+    },
+    {
+      "name_english": "Pisoli Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, no pin, and no notable mandal found for the area."
     }
   ]
 }

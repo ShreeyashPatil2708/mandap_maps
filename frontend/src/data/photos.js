@@ -39,10 +39,130 @@ const photos = {
     src: 'https://mandapmaps.in/photos/7.b5b1ea02',
     widths: [400, 640],
   },
+  'Tambat Ali Ganpati (Bhausaheb Rangari Ganpati)': {
+    id: 8,
+    src: 'https://mandapmaps.in/photos/8.fad743a5',
+    widths: [400, 547],
+  },
+  'Tvashta Kasar Ganpati Mandal': {
+    id: 9,
+    src: 'https://mandapmaps.in/photos/9.431f1145',
+    widths: [400, 451],
+  },
   'Hatti Ganpati Mandal': {
     id: 10,
     src: 'https://mandapmaps.in/photos/10.bce7b219',
     widths: [400, 574],
+  },
+  'Chhatrapati Rajaram Mandal': {
+    id: 11,
+    src: 'https://mandapmaps.in/photos/11.47bf608d',
+    widths: [400, 444],
+  },
+  'Hutatma Babu Genu Ganpati (Navsacha Ganpati)': {
+    id: 12,
+    src: 'https://mandapmaps.in/photos/12.f77c719c',
+    widths: [399],
+  },
+  'Akhil Mandai Mandal (Sharda Ganpati)': {
+    id: 13,
+    src: 'https://mandapmaps.in/photos/13.8df76171',
+    widths: [400, 547],
+  },
+  'Natu Baug Ganpati': {
+    id: 14,
+    src: 'https://mandapmaps.in/photos/14.c3fcc81a',
+    widths: [399],
+  },
+  'Shanipar Ganpati (Bajirao Road Mandal)': {
+    id: 15,
+    src: 'https://mandapmaps.in/photos/15.f47759d3',
+    widths: [400, 547],
+  },
+  'Jilbya Maruti Ganpati': {
+    id: 16,
+    src: 'https://mandapmaps.in/photos/16.85f2a9c7',
+    widths: [400, 447],
+  },
+  'Navjawan Mitra Mandal': {
+    id: 17,
+    src: 'https://mandapmaps.in/photos/17.27f72fa2',
+    widths: [400, 480],
+  },
+  'Nimbalkar Talim Ganpati': {
+    id: 19,
+    src: 'https://mandapmaps.in/photos/19.37168faf',
+    widths: [387],
+  },
+  'Garud Ganpati Mandal': {
+    id: 21,
+    src: 'https://mandapmaps.in/photos/21.223094ed',
+    widths: [186],
+  },
+  'Parvati Devachi Ganpati (Parvati Hill)': {
+    id: 22,
+    src: 'https://mandapmaps.in/photos/22.dd90edab',
+    widths: [219],
+  },
+  'Dashabhuja Ganapati Temple': {
+    id: 23,
+    src: 'https://mandapmaps.in/photos/23.4fa08925',
+    widths: [400, 480],
+  },
+  'Parvati Nandan Ganpati (Khinditla Ganpati)': {
+    id: 24,
+    src: 'https://mandapmaps.in/photos/24.1c736825',
+    widths: [400, 768],
+  },
+  'Peshwe Ganpati (Shaniwarwada Ganpati)': {
+    id: 25,
+    src: 'https://mandapmaps.in/photos/25.d9820dcf',
+    widths: [225],
+  },
+  'Phadke Haud Ganpati': {
+    id: 26,
+    src: 'https://mandapmaps.in/photos/26.54edb486',
+    widths: [400, 470],
+  },
+  'Trishund Mayureshwar Ganapati': {
+    id: 27,
+    src: 'https://mandapmaps.in/photos/27.b6b92251',
+    widths: [240],
+  },
+  'Umbrya Ganapati Temple': {
+    id: 29,
+    src: 'https://mandapmaps.in/photos/29.d4c7aa41',
+    widths: [92],
+  },
+  'Pimpri Ganpati (Morya Gosavi Peth Mandal)': {
+    id: 46,
+    src: 'https://mandapmaps.in/photos/46.d7c64b12',
+    widths: [386],
+  },
+  'Theur Chintamani Ganpati': {
+    id: 73,
+    src: 'https://mandapmaps.in/photos/73.1daeaf61',
+    widths: [240],
+  },
+  'Ranjangaon Mahaganapati': {
+    id: 74,
+    src: 'https://mandapmaps.in/photos/74.7ea1aa10',
+    widths: [400, 604],
+  },
+  'Ozar Vighnahar Ganpati': {
+    id: 75,
+    src: 'https://mandapmaps.in/photos/75.8ace6911',
+    widths: [240],
+  },
+  'Lenyadri Girijatmaj Ganpati': {
+    id: 76,
+    src: 'https://mandapmaps.in/photos/76.ddcc5801',
+    widths: [400, 426],
+  },
+  'Morgaon Mayureshwar Ganpati': {
+    id: 77,
+    src: 'https://mandapmaps.in/photos/77.6cf584bc',
+    widths: [326],
   },
 };
 
