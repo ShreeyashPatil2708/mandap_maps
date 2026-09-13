@@ -45,6 +45,9 @@ export default function Drawer({ open, onClose, onSupport }) {
           <Link to={PATHS.route} className={link} onClick={onClose}>
             Plan Route
           </Link>
+          <Link to={PATHS.about} className={link} onClick={onClose}>
+            About
+          </Link>
           <div className="mt-auto pt-6">
             <div
               className="cursor-pointer rounded-[10px] bg-maroon px-[18px] py-3.5 text-center"

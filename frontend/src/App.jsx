@@ -12,6 +12,9 @@ import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
 import Privacy from './pages/Privacy.jsx';
+import About from './pages/About.jsx';
+import Terms from './pages/Terms.jsx';
+import Disclaimer from './pages/Disclaimer.jsx';
 import Splash from './pages/Splash.jsx';
 import Container from './components/Container.jsx';
 import Footer from './components/Footer.jsx';
@@ -172,6 +175,12 @@ export default function App({ initialPath, ssr = false }) {
         {showPage && page === 'route' && <Route enter={enter} />}
 
         {showPage && page === 'privacy' && <Privacy enter={enter} />}
+
+        {showPage && page === 'about' && <About enter={enter} />}
+
+        {showPage && page === 'terms' && <Terms enter={enter} />}
+
+        {showPage && page === 'disclaimer' && <Disclaimer enter={enter} />}
       </div>
 
       {showPage && (
