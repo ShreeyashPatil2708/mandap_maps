@@ -89,7 +89,7 @@ export default function About({ enter = 'animate-fadeIn' }) {
   };
 
   return (
-    <Container as="main" width="prose" className={`${enter} pt-6`}>
+    <Container as="main" className={`${enter} pt-6`}>
       <Link to={PATHS.home} className="cursor-pointer font-sans text-[13px] font-medium text-gold">
         ← Back
       </Link>
@@ -99,88 +99,97 @@ export default function About({ enter = 'animate-fadeIn' }) {
         आमच्याबद्दल
       </div>
 
-      {/* Why it exists */}
-      <div className="mt-6 overflow-hidden rounded-panel bg-maroon px-6 py-6 lg:px-8 lg:py-7">
-        <div className="mb-2 font-sans text-[11px] font-medium uppercase tracking-[3px] text-gold">
-          Why we built this
+      {/* Two rows of two columns on a laptop, one column on a phone. The story
+          sits beside what is inside it, and the data controls beside the
+          policies that describe them. */}
+      <div className="lg:mt-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+        {/* Why it exists */}
+        <div className="mt-6 overflow-hidden lg:mt-0 rounded-panel bg-maroon px-6 py-6 lg:px-8 lg:py-7">
+          <div className="mb-2 font-sans text-[11px] font-medium uppercase tracking-[3px] text-gold">
+            Why we built this
+          </div>
+          <p className="font-sans text-[15px] leading-[1.7] text-light/75">
+            Every Ganeshotsav the same questions come up. Which pandals matter, where exactly they
+            are, when the aarti is, and how to fit a few of them into one evening without getting
+            lost in the peths. The answers were scattered across old articles, forwards and word of
+            mouth. MandapMaps puts them in one place: the history of each Ganpati, its timings, the
+            nearest metro and food, and a route you can walk.
+          </p>
+          <p className="mt-3 font-sans text-[13px] leading-[1.6] text-light/45">
+            Free, no account, built in Pune. An independent project, not affiliated with any mandal
+            or festival committee.
+          </p>
         </div>
-        <p className="font-sans text-[15px] leading-[1.7] text-light/75">
-          Every Ganeshotsav the same questions come up. Which pandals matter, where exactly they
-          are, when the aarti is, and how to fit a few of them into one evening without getting lost
-          in the peths. The answers were scattered across old articles, forwards and word of mouth.
-          MandapMaps puts them in one place: the history of each Ganpati, its timings, the nearest
-          metro and food, and a route you can walk.
-        </p>
-        <p className="mt-3 font-sans text-[13px] leading-[1.6] text-light/45">
-          Free, no account, built in Pune. An independent project, not affiliated with any mandal or
-          festival committee.
-        </p>
-      </div>
 
-      {/* What is inside */}
-      <section className="mt-9">
-        <SectionTitle>What&apos;s inside</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5">
-          {facts.map((f) => (
-            <div
-              key={f.label}
-              className="rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5"
-            >
-              <div className="font-serif text-[26px] leading-none text-gold">{f.value}</div>
-              <div className="mt-1.5 font-sans text-xs leading-[1.5] text-maroon/55">{f.label}</div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 font-sans text-[13px] leading-[1.6] text-maroon/55">
-          Plus darshan circuits, a map, &quot;Near me&quot; sorting, and Ask, an assistant that
-          answers questions about the pandals.
-        </p>
-      </section>
-
-      {/* Stored data */}
-      <section className="mt-9">
-        <SectionTitle>Your data on this device</SectionTitle>
-        <p className="mb-3 font-sans text-[13px] leading-[1.6] text-maroon/55">
-          MandapMaps keeps a few things in your browser so they survive a refresh. Clear them here
-          at any time.
-        </p>
-        <div className="flex flex-col gap-2.5">
-          <ClearRow
-            title="Saved route"
-            detail="The pandals you added to your darshan route."
-            onClear={clearRoute}
-          />
-          <ClearRow
-            title="Chat history"
-            detail="Your Ask conversation, and the id that links it to the assistant."
-            onClear={clearChat}
-          />
-        </div>
-      </section>
-
-      {/* Policies */}
-      <section className="mt-9">
-        <SectionTitle>Policies</SectionTitle>
-        <div className="flex flex-col gap-2.5">
-          {POLICIES.map((p) => (
-            <Link
-              key={p.to}
-              to={p.to}
-              className="flex cursor-pointer items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5 hover:border-gold/40"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="font-sans text-[14px] font-medium text-maroon">{p.title}</div>
-                <div className="mt-0.5 font-sans text-xs leading-[1.5] text-maroon/45">
-                  {p.summary}
+        {/* What is inside */}
+        <section className="mt-9 lg:mt-0">
+          <SectionTitle>What&apos;s inside</SectionTitle>
+          <div className="grid grid-cols-2 gap-2.5">
+            {facts.map((f) => (
+              <div
+                key={f.label}
+                className="rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5"
+              >
+                <div className="font-serif text-[26px] leading-none text-gold">{f.value}</div>
+                <div className="mt-1.5 font-sans text-xs leading-[1.5] text-maroon/55">
+                  {f.label}
                 </div>
               </div>
-              <div className="flex-none font-sans text-[16px] text-maroon/25">›</div>
-            </Link>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+          <p className="mt-3 font-sans text-[13px] leading-[1.6] text-maroon/55">
+            Plus darshan circuits, a map, &quot;Near me&quot; sorting, and Ask, an assistant that
+            answers questions about the pandals.
+          </p>
+        </section>
+      </div>
 
-      <p className="mt-9 font-sans text-[13px] leading-[1.6] text-maroon/55">
+      <div className="lg:mt-12 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+        {/* Stored data */}
+        <section className="mt-9 lg:mt-0">
+          <SectionTitle>Your data on this device</SectionTitle>
+          <p className="mb-3 font-sans text-[13px] leading-[1.6] text-maroon/55">
+            MandapMaps keeps a few things in your browser so they survive a refresh. Clear them here
+            at any time.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <ClearRow
+              title="Saved route"
+              detail="The pandals you added to your darshan route."
+              onClear={clearRoute}
+            />
+            <ClearRow
+              title="Chat history"
+              detail="Your Ask conversation, and the id that links it to the assistant."
+              onClear={clearChat}
+            />
+          </div>
+        </section>
+
+        {/* Policies */}
+        <section className="mt-9 lg:mt-0">
+          <SectionTitle>Policies</SectionTitle>
+          <div className="flex flex-col gap-2.5">
+            {POLICIES.map((p) => (
+              <Link
+                key={p.to}
+                to={p.to}
+                className="flex cursor-pointer items-center gap-3 rounded-card border border-maroon/[0.06] bg-surface px-4 py-3.5 hover:border-gold/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="font-sans text-[14px] font-medium text-maroon">{p.title}</div>
+                  <div className="mt-0.5 font-sans text-xs leading-[1.5] text-maroon/45">
+                    {p.summary}
+                  </div>
+                </div>
+                <div className="flex-none font-sans text-[16px] text-maroon/25">›</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <p className="mt-9 lg:mt-12 font-sans text-[13px] leading-[1.6] text-maroon/55">
         Spotted a mistake, or know a pandal we should add? Write to{' '}
         <a href={CONTACT_MAILTO} className="font-medium text-gold no-underline">
           {CONTACT_EMAIL}

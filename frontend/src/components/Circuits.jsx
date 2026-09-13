@@ -5,8 +5,11 @@ import CIRCUITS from '../data/circuits.js';
 import Link from './Link.jsx';
 import SectionHeader from './SectionHeader.jsx';
 import { ganpatiPath } from '../router.js';
+import { formatDistance } from '../data/helpers.js';
+import { routeStats } from '../data/walk.js';
 
-// One circuit card: name, the stop count / time / distance meta, a short note,
+// One circuit card: name, the stop count / time / walking distance meta, a
+// short note and the best time to go,
 // the ordered stops as tappable chips, then a button that loads the whole
 // circuit into the darshan route in one tap. Each stop resolves to a live
 // Ganpati record and opens its detail view; unresolved names (if the dataset
@@ -22,7 +25,14 @@ function CircuitCard({ circuit, byName }) {
   );
   const allInRoute = resolved.length > 0 && resolved.every((g) => route.includes(g.id));
 
-  const meta = [`${circuit.stops.length} stops`, circuit.time, circuit.distance]
+  // The distance comes from the records' map pins, so it cannot drift from the
+  // data the way a typed-in figure did.
+  const { km, legs } = routeStats(resolved);
+  const meta = [
+    `${circuit.stops.length} stops`,
+    circuit.time,
+    legs > 0 ? `~${formatDistance(km)} walk` : '',
+  ]
     .filter(Boolean)
     .join(' · ');
 
@@ -36,6 +46,11 @@ function CircuitCard({ circuit, byName }) {
         <div className="mt-1 font-sans text-[12px] leading-[1.5] text-maroon/40">
           {circuit.note}
         </div>
+        {circuit.bestTime && (
+          <div className="mt-1.5 font-sans text-[12px] font-medium text-gold">
+            Best time: {circuit.bestTime}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 border-t border-maroon/[0.06] px-5 py-3.5">
