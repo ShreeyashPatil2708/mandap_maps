@@ -4,7 +4,6 @@ import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { RouteProvider } from './context/RouteContext.jsx';
 import { GanpatisProvider } from './context/GanpatisContext.jsx';
-import { CrowdProvider } from './context/CrowdContext.jsx';
 
 // Build-time entry point. `vite build --ssr` bundles this, and
 // scripts/prerender.mjs calls render() once per route to write real HTML into
@@ -22,9 +21,7 @@ export function render(path, ganpatis) {
       <ErrorBoundary>
         <GanpatisProvider initialData={ganpatis}>
           <RouteProvider>
-            <CrowdProvider>
-              <App initialPath={path} ssr />
-            </CrowdProvider>
+            <App initialPath={path} ssr />
           </RouteProvider>
         </GanpatisProvider>
       </ErrorBoundary>

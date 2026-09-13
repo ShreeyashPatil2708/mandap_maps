@@ -5,7 +5,6 @@
 //   /explore                the pandal grid / map
 //   /route                  the darshan route (private to the visitor, noindex)
 //   /privacy                privacy policy
-//   /team                   who built this
 //   /ganpati/<slug>         one pandal
 //
 // The build prerenders one HTML file per route (scripts/prerender.mjs), so the
@@ -24,7 +23,6 @@ export const PATHS = {
   explore: '/explore',
   route: '/route',
   privacy: '/privacy',
-  team: '/team',
 };
 
 /** The path a pandal lives at. */
@@ -48,7 +46,6 @@ export function parsePath(pathname) {
   if (path === PATHS.explore) return { page: 'explore', slug: null };
   if (path === PATHS.route) return { page: 'route', slug: null };
   if (path === PATHS.privacy) return { page: 'privacy', slug: null };
-  if (path === PATHS.team) return { page: 'team', slug: null };
   const match = /^\/ganpati\/([a-z0-9-]+)$/.exec(path);
   if (match) return { page: 'detail', slug: match[1] };
   return { page: 'notfound', slug: null };

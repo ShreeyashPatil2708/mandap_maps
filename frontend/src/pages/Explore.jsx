@@ -29,9 +29,9 @@ function GanpatiCard({ g, dist }) {
       to={ganpatiPath(g)}
       className="cursor-pointer overflow-hidden rounded-card border border-maroon/[0.06] bg-surface transition-all hover:border-gold/40 hover:shadow-[0_2px_12px_rgba(107,30,46,0.08)]"
     >
-      <div className="relative flex h-[90px] items-center justify-center bg-maroon">
+      <div className="relative flex h-[90px] items-center justify-center bg-maroon lg:h-[150px]">
         <OmMark size={32} textSize={18} opacity={0.5} />
-        <PandalPhoto g={g} sizes="(max-width: 480px) 50vw, 240px" />
+        <PandalPhoto g={g} sizes="(max-width: 480px) 50vw, (max-width: 1024px) 33vw, 280px" />
         {g.manacha && (
           <div className="absolute left-2 top-2 whitespace-nowrap rounded-badge bg-gold px-2 py-0.5 font-sans text-[9px] font-semibold text-maroon">
             {manachaBadge(g.manacha)}
@@ -235,7 +235,7 @@ export default function Explore({
             <MapView ganpatis={results.map((r) => r.g)} />
           </Suspense>
         ) : count > 0 ? (
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
             {results.map(({ g, dist }) => (
               <GanpatiCard key={g.id} g={g} dist={dist} />
             ))}

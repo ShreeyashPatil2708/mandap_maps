@@ -75,12 +75,6 @@ const STATIC_SEO = {
     description:
       'How MandapMaps handles your data: no accounts, your location never leaves your device, and nothing sold or shared with advertisers.',
   },
-  team: {
-    path: PATHS.team,
-    title: 'About the Team | MandapMaps',
-    description:
-      'MandapMaps is built by three engineers in Pune as a final-year project, to make Ganeshotsav darshan easier to plan.',
-  },
   notfound: {
     path: '/404',
     title: 'Page not found | MandapMaps',
@@ -125,7 +119,7 @@ export function seoFor({ page, ganpati }) {
  * client-side update cannot drift apart. Open Graph identifies itself with
  * `property`, Twitter with `name`.
  *
- * Pandals with no photo (99 of 107 today) get no image tag at all: a shared
+ * Pandals with no photo (63 of 71 today) get no image tag at all: a shared
  * link then previews as title, description and domain, which is the honest
  * result. Inventing a stand-in image is worse than showing none.
  */
@@ -168,7 +162,7 @@ const PLACEHOLDER = /TO CONFIRM|TO UPDATE|TBD/i;
 
 /**
  * A pandal's address, fit to publish: the same text the page shows, with the
- * maintainers' notes removed (66 of the 107 carry one). Returns null if a note
+ * maintainers' notes removed (34 of the 71 carry one). Returns null if a note
  * survives, rather than claiming a placeholder is an address.
  */
 function streetAddress(g) {
@@ -180,7 +174,7 @@ function streetAddress(g) {
  * The town an address names, taken from the words before the PIN code. The data
  * mixes real localities with descriptors ("Pune District", "South Pune"), so
  * anything Pune-ish is published as Pune and Pimpri-Chinchwad keeps its own
- * name. Covers all 107 records today: 92 Pune, 15 Pimpri-Chinchwad.
+ * name. Covers all 71 records today: 67 Pune, 4 Pimpri-Chinchwad.
  */
 function locality(address) {
   const match = /([A-Za-z][A-Za-z .'-]*?)\s*,?\s*4\d{5}/.exec(address || '');
@@ -194,7 +188,7 @@ function locality(address) {
  * One pandal as a place. Only what the page itself shows or the record actually
  * holds: no opening hours (the aarti times are prose, not machine-readable) and
  * no founding date unless `est` starts with a plain year, which it does for 7 of
- * the 107 records; the rest read like "Temple: 15th century; Public
+ * the 71 records; the rest read like "Temple: 15th century; Public
  * Ganeshotsav: 1893".
  */
 function ganpatiPlace(g) {

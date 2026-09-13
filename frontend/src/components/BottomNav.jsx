@@ -7,12 +7,10 @@ const ACTIVE = '#6B1E2E';
 const INACTIVE = 'rgba(107,30,46,0.3)';
 const ACTIVE_FILL = 'rgba(107,30,46,0.08)';
 
-// flex-1 spreads the four tabs across the full width on a phone, which is the
-// right mobile behaviour. On desktop the column is 1100px wide, so the tabs
-// take their natural width and cluster in the middle instead of drifting
-// hundreds of pixels apart.
-const ITEM_CLASS =
-  'relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-1.5 sm:w-28 sm:flex-none';
+// flex-1 spreads the four tabs across the full width, which is the right
+// behaviour on the only screens that see this bar. Desktop hides it entirely
+// (see below), so it no longer needs a cluster-in-the-middle fallback.
+const ITEM_CLASS = 'relative flex flex-1 cursor-pointer flex-col items-center gap-1 py-1.5';
 
 function NavItemBody({ color, label, icon, badge }) {
   return (
@@ -43,14 +41,18 @@ function NavLink({ to, ...body }) {
 // Fixed bottom tab bar with Home / Explore / Route / Ask. The Route tab carries
 // a badge with the number of stops currently on the darshan route. The Ask tab
 // opens the chat bottom sheet instead of navigating.
+//
+// Phones only. A thumb-reachable tab bar is a phone pattern; stretched across
+// the bottom of a laptop it made each tab ~475px wide and read as a phone app
+// glued to a monitor. Navbar carries the same four destinations on `lg:`.
 export default function BottomNav({ page, routeLen, askOpen, onAsk }) {
   const homeActive = page === 'home';
   const exploreActive = page === 'explore' || page === 'detail';
   const routeActive = page === 'route';
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[90] border-t border-maroon/10 bg-cream pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
-      <Container className="flex sm:justify-center">
+    <nav className="fixed inset-x-0 bottom-0 z-[90] border-t border-maroon/10 bg-cream pt-2 pb-[max(8px,env(safe-area-inset-bottom))] lg:hidden">
+      <Container className="flex">
         <NavLink
           to={PATHS.home}
           color={homeActive ? ACTIVE : INACTIVE}

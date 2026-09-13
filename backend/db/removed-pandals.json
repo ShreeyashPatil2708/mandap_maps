@@ -1,0 +1,153 @@
+{
+  "notes": [
+    "Pandal records deliberately left out of the seed data, applied by",
+    "db/generate-seed-data.py over the spreadsheet and by db/schema.sql over the",
+    "rows already in the database. Delete an entry to bring a record back."
+  ],
+  "removed": [
+    {
+      "name_english": "Aundh Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Baner Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Bhosari Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Bibwewadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Hinjewadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Kalyani Nagar Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Kharadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Kondhwa Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Nigdi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Viman Nagar Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Wagholi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Wakad Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Wanowrie Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Akurdi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Balewadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Camp Ganpati Mandal (East Street area)",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Chakan Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Dapodi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Deccan Gymkhana Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "FC Road / JM Road Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Hadapsar Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Katraj Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Kothrud Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Mohammadwadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Moshi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Nanded City Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Paud Road Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Phugewadi Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Pimple Nilakh Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Pimple Saudagar Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Pradhikaran Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Shivajinagar Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Sinhagad Road Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Talawade Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Undri Ganpati Mandal",
+      "reason": "Generic locality entry, not a specific mandal: no mandal name, address still marked TO CONFIRM, pin at the locality centre."
+    },
+    {
+      "name_english": "Akhil Navi Peth Hatti Ganpati",
+      "reason": "Duplicate of Hatti Ganpati Mandal: same address (1159, Hatti Ganpati Road)."
+    }
+  ]
+}

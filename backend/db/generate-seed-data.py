@@ -124,14 +124,31 @@ def load_corrections():
 
 
 def corrected(name, lat, lng, corrections):
-    """The coordinate to seed: the correction when the sheet is still stale."""
+    """
+    The coordinate to seed: the correction when the sheet is still stale. A
+    correction whose "to" is null clears a pin that matched no real place, so
+    the site shows the location as unavailable rather than a guessed spot.
+    """
     fix = corrections.get(name)
     if not fix or lat is None or lng is None:
         return lat, lng
     was_lat, was_lng = fix["from"]
     if round(lat, 6) == round(was_lat, 6) and round(lng, 6) == round(was_lng, 6):
+        if fix["to"] is None:
+            return None, None
         return fix["to"][0], fix["to"][1]
     return lat, lng
+
+
+REMOVED_FILE = Path(__file__).with_name("removed-pandals.json")
+
+
+def load_removed():
+    """Names deliberately left out of the seed data. See the notes in the JSON file."""
+    if not REMOVED_FILE.exists():
+        return set()
+    doc = json.loads(REMOVED_FILE.read_text(encoding="utf-8"))
+    return {r["name_english"] for r in doc.get("removed", [])}
 
 
 def maps_url(sheet_value, lat, lng):
@@ -163,9 +180,12 @@ def main():
     companion = {clean(r[ci["ID"]]): r for r in c_rows}
 
     corrections = load_corrections()
+    removed = load_removed()
 
     records = []
     for r in m_rows:
+        if clean(r[mi["Name (English)"]]) in removed:
+            continue
         rid = clean(r[mi["ID"]])
         comp = companion.get(rid)
 

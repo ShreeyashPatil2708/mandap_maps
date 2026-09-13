@@ -1,15 +1,18 @@
 import { UPI_ID } from '../data/upi.js';
 
-// UPI "Support Us" bottom sheet.
+// UPI "Support Us" bottom sheet, which becomes a centred dialog on desktop.
 
 export default function SupportModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-end justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[300] flex items-end justify-center lg:items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-maroon/60" />
       <div
-        className="relative w-full max-w-[480px] animate-slideUp rounded-t-sheet bg-cream px-gutter-lg pb-9 pt-7"
+        className="relative w-full max-w-[480px] animate-slideUp rounded-t-sheet bg-cream px-gutter-lg pb-9 pt-7 lg:rounded-sheet lg:shadow-[0_18px_50px_rgba(107,30,46,0.28)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -18,7 +21,7 @@ export default function SupportModal({ open, onClose }) {
         >
           ✕
         </div>
-        <div className="mx-auto mb-6 h-1 w-10 rounded-[2px] bg-maroon/10" />
+        <div className="mx-auto mb-6 h-1 w-10 rounded-[2px] bg-maroon/10 lg:hidden" />
         <div className="text-center">
           <div className="mx-auto flex h-[180px] w-[180px] items-center justify-center overflow-hidden rounded-panel border-2 border-gold/30 bg-surface">
             <img

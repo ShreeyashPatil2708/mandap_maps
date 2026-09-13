@@ -10,6 +10,19 @@ import Link from '../components/Link.jsx';
 import { PATHS, ganpatiPath } from '../router.js';
 import GANPATI_FACTS from '../data/facts.js';
 
+// The best-known pandals after the Manache 5. Like the circuit stops, names
+// must match name_english in the backend dataset exactly.
+const VISIT_PICKS = [
+  'Dagdusheth Halwai Ganpati',
+  'Tambat Ali Ganpati (Bhausaheb Rangari Ganpati)',
+  'Akhil Mandai Mandal (Sharda Ganpati)',
+  'Sarasbaug Siddhivinayak (Talyatla Ganpati)',
+  'Hutatma Babu Genu Ganpati (Navsacha Ganpati)',
+  'Hatti Ganpati Mandal',
+  'Twasta Kasar Ganpati Mandal',
+  'Chhatrapati Rajaram Mandal',
+];
+
 // Carousel card for a Manacha Ganpati on the homepage.
 function Manache5Card({ g }) {
   return (
@@ -143,10 +156,14 @@ export default function Home({ enter = 'animate-fadeIn', onFilter }) {
     () => ganpatis.filter((g) => g.manacha).sort((a, b) => a.manacha - b.manacha),
     [ganpatis]
   );
-  // Non-Manache pandals surfaced in the "Visit" section. This used to show
-  // three out of a hundred and seven, which left the homepage looking like it
-  // had nothing on it.
-  const visitPicks = useMemo(() => ganpatis.filter((g) => !g.manacha).slice(0, 8), [ganpatis]);
+  // Hand-picked famous pandals for the "Visit" section, in this order. Taking
+  // the first eight from the API put suburbs like Alandi and Bhosari on the
+  // homepage, because tier 2 is sorted by name. Names that do not resolve are
+  // skipped rather than rendered blank.
+  const visitPicks = useMemo(() => {
+    const byName = new Map(ganpatis.map((g) => [g.name, g]));
+    return VISIT_PICKS.map((name) => byName.get(name)).filter(Boolean);
+  }, [ganpatis]);
   // Areas worth browsing, same source as the Explore filter chips.
   const areas = useMemo(() => areaFilters(ganpatis).slice(0, 8), [ganpatis]);
 

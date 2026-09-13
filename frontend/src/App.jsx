@@ -15,7 +15,6 @@ import Privacy from './pages/Privacy.jsx';
 import Splash from './pages/Splash.jsx';
 import Container from './components/Container.jsx';
 import Footer from './components/Footer.jsx';
-import Team from './pages/Team.jsx';
 import { useDocumentHead } from './hooks/useDocumentHead.js';
 import { slugify } from './data/helpers.js';
 import {
@@ -101,75 +100,79 @@ export default function App({ initialPath, ssr = false }) {
   const showPage = !loading && !error && !notFound;
 
   return (
-    <div className="relative min-h-screen bg-cream">
+    <div className="relative flex min-h-screen flex-col bg-cream">
       {showSplash && (
         <Splash
           onEnter={() => {
             writeSplashSeen();
             setShowSplash(false);
           }}
-          onTeam={() => {
-            writeSplashSeen();
-            setShowSplash(false);
-            navigate(PATHS.team);
-          }}
         />
       )}
 
-      <Navbar onToggleMenu={() => setShowMenu((v) => !v)} />
+      <Navbar
+        onToggleMenu={() => setShowMenu((v) => !v)}
+        routeLen={route.length}
+        askOpen={showAsk}
+        onAsk={() => setShowAsk((v) => !v)}
+        onSupport={() => setShowModal(true)}
+      />
 
-      {loading && (
-        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-1 text-center">
-          <div className="font-serif text-xl text-maroon">Loading pandals...</div>
-          <div className="font-devanagari text-[13px] text-maroon/40">क्षणभर थांबा</div>
-        </Container>
-      )}
+      {/* Grows to fill the viewport so the footer sits at the bottom on a
+          short page (an empty route, a 404) rather than floating mid-screen
+          with dead space under it. */}
+      <div className="flex flex-1 flex-col">
+        {loading && (
+          <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-1 text-center">
+            <div className="font-serif text-xl text-maroon">Loading pandals...</div>
+            <div className="font-devanagari text-[13px] text-maroon/40">क्षणभर थांबा</div>
+          </Container>
+        )}
 
-      {!loading && error && (
-        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
-          <div className="font-serif text-xl text-maroon">Could not load pandals</div>
-          <div className="font-sans text-sm text-maroon/50">
-            Please check your connection and try again.
-          </div>
-        </Container>
-      )}
+        {!loading && error && (
+          <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
+            <div className="font-serif text-xl text-maroon">Could not load pandals</div>
+            <div className="font-sans text-sm text-maroon/50">
+              Please check your connection and try again.
+            </div>
+          </Container>
+        )}
 
-      {!loading && !error && notFound && (
-        <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
-          <div className="font-serif text-xl text-maroon">Page not found</div>
-          <div className="font-sans text-sm text-maroon/50">
-            This page does not exist, or the pandal has moved.
-          </div>
-          <Link
-            to={PATHS.explore}
-            className="mt-3 rounded-pill bg-gold px-7 py-3 font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
-          >
-            Explore Pandals
-          </Link>
-        </Container>
-      )}
+        {!loading && !error && notFound && (
+          <Container className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
+            <div className="font-serif text-xl text-maroon">Page not found</div>
+            <div className="font-sans text-sm text-maroon/50">
+              This page does not exist, or the pandal has moved.
+            </div>
+            <Link
+              to={PATHS.explore}
+              className="mt-3 rounded-pill bg-gold px-7 py-3 font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
+            >
+              Explore Pandals
+            </Link>
+          </Container>
+        )}
 
-      {showPage && page === 'home' && <Home enter={enter} onFilter={setFilter} />}
+        {showPage && page === 'home' && <Home enter={enter} onFilter={setFilter} />}
 
-      {showPage && page === 'explore' && (
-        <Explore
-          enter={enter}
-          query={query}
-          onQuery={setQuery}
-          activeFilter={filter}
-          onFilter={setFilter}
-        />
-      )}
+        {showPage && page === 'explore' && (
+          <Explore
+            enter={enter}
+            query={query}
+            onQuery={setQuery}
+            activeFilter={filter}
+            onFilter={setFilter}
+          />
+        )}
 
-      {showPage && page === 'detail' && detailGanpati && (
-        <Detail enter={enter} ganpati={detailGanpati} prevPage={lastListRef.current} />
-      )}
+        {showPage && page === 'detail' && detailGanpati && (
+          <Detail enter={enter} ganpati={detailGanpati} prevPage={lastListRef.current} />
+        )}
 
-      {showPage && page === 'route' && <Route enter={enter} />}
+        {showPage && page === 'route' && <Route enter={enter} />}
 
-      {showPage && page === 'privacy' && <Privacy enter={enter} />}
-
-      {showPage && page === 'team' && <Team enter={enter} />}
+        {showPage && page === 'privacy' && <Privacy enter={enter} />}
+      </div>
 
       {showPage && (
         <Footer

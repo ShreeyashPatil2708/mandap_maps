@@ -1,3 +1,12 @@
+-- NOT IN USE. Nothing applies this file and no code reads or writes these
+-- tables: the chatbot has no Postgres client, and session memory lives only in
+-- Redis with a one hour TTL (app/core/memory.py). It is kept as a sketch of
+-- what durable chat logging would look like if it were ever added.
+--
+-- Do not treat it as a description of what happens today. If it is applied,
+-- the privacy policy has to change: it would store verbatim user and assistant
+-- messages against a session id, indefinitely.
+
 -- Optional persistence layer for Ekdanta chat logs.
 -- Redis handles live session memory; Postgres is for durable history,
 -- analytics, and academic evaluation (e.g. query volume by category).

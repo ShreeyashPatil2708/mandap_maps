@@ -98,6 +98,16 @@ export async function getCombinedCrowdLevelsByName() {
 }
 
 /**
+ * Drop crowd taps once they are far past the window that reads them
+ * (WINDOW_MINUTES). Nothing purged this table before, so it grew forever while
+ * only its last 45 minutes were ever used. A day's worth is kept as slack for
+ * debugging a bad festival evening.
+ */
+export async function purgeOldCrowdReports() {
+  await query(`DELETE FROM crowd_reports WHERE reported_at < NOW() - INTERVAL '24 hours'`);
+}
+
+/**
  * Housekeeping only. route_interest is no longer read, but rows written before
  * the interest signal was removed still carry anonymous session ids, so keep
  * draining the table until it is empty.

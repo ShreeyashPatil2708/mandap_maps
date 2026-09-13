@@ -15,6 +15,10 @@ export default [
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
+      // The SSR bundle is normally deleted by scripts/prerender.mjs, but that
+      // step is skipped when no pandal data is available, leaving generated
+      // code behind for lint to trip over.
+      '**/dist-ssr/**',
       '**/build/**',
       '**/coverage/**',
       'frontend/design-reference/**',

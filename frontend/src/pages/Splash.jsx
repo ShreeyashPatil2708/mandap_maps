@@ -148,9 +148,8 @@ function LoadingIntro() {
 }
 
 // First-visit landing screen. Shown once (App.jsx gates it behind
-// localStorage) before Home. onTeam leaves the splash for /team, which is a
-// real page now, so nothing returns here and the intro only ever plays once.
-export default function Splash({ onEnter, onTeam }) {
+// localStorage) before Home, so the intro only ever plays once.
+export default function Splash({ onEnter }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -226,12 +225,6 @@ export default function Splash({ onEnter, onTeam }) {
           <span className="relative flex items-center justify-center gap-2">
             Begin the Darshan <span className="text-lg">→</span>
           </span>
-        </button>
-        <button
-          onClick={onTeam}
-          className="font-sans text-[11px] uppercase tracking-[1.5px] text-light/50 underline decoration-gold/30 underline-offset-4 transition hover:text-light/80"
-        >
-          Team MandapMaps
         </button>
       </div>
     </div>
