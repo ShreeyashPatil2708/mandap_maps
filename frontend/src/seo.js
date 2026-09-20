@@ -69,6 +69,12 @@ const STATIC_SEO = {
     description: 'The darshan route you have planned across Pune this Ganeshotsav.',
     robots: NO_INDEX,
   },
+  join: {
+    path: PATHS.join,
+    title: 'Join a Route | MandapMaps',
+    description: 'Enter a route code shared by a friend and join their darshan route.',
+    robots: NO_INDEX,
+  },
   privacy: {
     path: PATHS.privacy,
     title: 'Privacy | MandapMaps',

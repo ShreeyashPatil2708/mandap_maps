@@ -7,11 +7,18 @@ import {
   useRef,
   useState,
 } from 'react';
+import { SITE_URL } from '../seo.js';
+import { PATHS } from '../router.js';
 
 // Shared darshan route state. The list of selected Ganpati IDs lives here so
 // the detail page (Add to Route button) and the route page stay in sync. The
 // list is persisted to localStorage so it survives a page refresh. Wire this to
 // a backend "saved routes" endpoint in a later phase.
+//
+// A route can be shared with friends as a code on the fresh URL
+// `/route?stops=1-5-3-7-9`: the ordered IDs joined with dashes. The route page
+// builds this URL (and a native share sheet) for the visitor, and a friend who
+// opens it — or types the code on /join — gets the same stops loaded locally.
 const RouteContext = createContext(null);
 const STORAGE_KEY = 'mandapmaps.route';
 
@@ -23,6 +30,36 @@ function loadRoute() {
   } catch {
     return [];
   }
+}
+
+/**
+ * Ordered Ganpati IDs from a shared route code ("1-5-3-7-9"), or null when the
+ * text holds no valid route. Tolerant on purpose: the /join box accepts the
+ * code however it was pasted (spaces, commas) and keeps only numeric ids.
+ */
+export function parseRouteCode(code) {
+  if (typeof code !== 'string') return null;
+  const ids = (code.match(/\d+/g) || [])
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0);
+  return ids.length ? ids : null;
+}
+
+/** The shareable code for an ordered list of ids: "1-5-3-7-9". */
+export function routeCode(ids) {
+  return (ids || []).map((id) => id).join('-');
+}
+
+/** The absolute shareable URL for a route, or null when there is no route. */
+export function shareUrlFor(ids) {
+  const code = routeCode(ids);
+  return code ? `${SITE_URL}${PATHS.route}?stops=${encodeURIComponent(code)}` : null;
+}
+
+/** The ordered ids a visitor landed with via `/route?stops=...`, else null. */
+export function readSharedRouteFromUrl() {
+  if (typeof window === 'undefined') return null;
+  return parseRouteCode(new URLSearchParams(window.location.search).get('stops'));
 }
 
 export function RouteProvider({ children }) {

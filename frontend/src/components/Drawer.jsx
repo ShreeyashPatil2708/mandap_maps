@@ -53,6 +53,13 @@ export default function Drawer({ open, onClose, onAsk, onSupport }) {
             About
           </Link>
           <div className="mt-auto pt-6">
+            <Link
+              to={PATHS.join}
+              onClick={onClose}
+              className="mb-3 block cursor-pointer rounded-[10px] bg-gold px-[18px] py-3 text-center font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
+            >
+              Join Route
+            </Link>
             <div
               className="cursor-pointer rounded-[10px] bg-maroon px-[18px] py-3.5 text-center"
               onClick={onSupport}

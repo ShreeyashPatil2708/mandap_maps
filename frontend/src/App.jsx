@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGanpatis } from './context/GanpatisContext.jsx';
-import { useRoute } from './context/RouteContext.jsx';
+import { useRoute, readSharedRouteFromUrl } from './context/RouteContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import Drawer from './components/Drawer.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import SupportModal from './components/SupportModal.jsx';
 import AskSheet from './components/AskSheet.jsx';
+import SharedRouteDialog from './components/SharedRouteDialog.jsx';
 import Link from './components/Link.jsx';
 import Home from './pages/Home.jsx';
 import Explore from './pages/Explore.jsx';
 import Detail from './pages/Detail.jsx';
 import Route from './pages/Route.jsx';
+import Join from './pages/Join.jsx';
 import Privacy from './pages/Privacy.jsx';
 import About from './pages/About.jsx';
 import Terms from './pages/Terms.jsx';
@@ -21,6 +23,7 @@ import Footer from './components/Footer.jsx';
 import { useDocumentHead } from './hooks/useDocumentHead.js';
 import { slugify } from './data/helpers.js';
 import {
+  NAV_EVENT,
   PATHS,
   ganpatiPath,
   navigate,
@@ -51,7 +54,7 @@ export default function App({ initialPath, ssr = false }) {
   const { page, slug } = parsePath(pathname);
 
   const { ganpatis, loading, error } = useGanpatis();
-  const { route } = useRoute();
+  const { route, replaceRoute } = useRoute();
   const [showSplash, setShowSplash] = useState(() => !ssr && page === 'home' && !readSplashSeen());
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -88,6 +91,47 @@ export default function App({ initialPath, ssr = false }) {
     if (match) replacePath(ganpatiPath(match));
     setLegacyId(null);
   }, [legacyId, loading, ganpatis]);
+
+  // A route shared by a friend travels as the ordered ids in `/route?stops=...`
+  // (see RouteContext). Track them from the URL so a direct link and the /join
+  // code box both land here; accepting or declining a shared route clears the
+  // parameter, which keeps the /route URL clean for the visitor's own route.
+  const [sharedIds, setSharedIds] = useState(() => (ssr ? null : readSharedRouteFromUrl()));
+  useEffect(() => {
+    const sync = () => setSharedIds(readSharedRouteFromUrl());
+    sync();
+    window.addEventListener(NAV_EVENT, sync);
+    window.addEventListener('popstate', sync);
+    return () => {
+      window.removeEventListener(NAV_EVENT, sync);
+      window.removeEventListener('popstate', sync);
+    };
+  }, []);
+
+  const clearSharedParam = () => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('stops')) {
+      replacePath(PATHS.route);
+    }
+  };
+  const sameRoute = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
+
+  // Load a shared route straight in when the visitor has none yet (or already
+  // planned the same order). When their route differs, the dialog below asks
+  // before replacing it. Invalid ids in a shared code are simply ignored by the
+  // route page, which only renders stops it knows.
+  useEffect(() => {
+    if (!sharedIds) return;
+    if (route.length === 0 || sameRoute(sharedIds, route)) {
+      if (route.length === 0) replaceRoute(sharedIds);
+      clearSharedParam();
+      setSharedIds(null);
+    }
+  }, [sharedIds, route, replaceRoute]);
+
+  const hasPendingSharedRoute = !!sharedIds && route.length > 0 && !sameRoute(sharedIds, route);
+  const sharedNames = sharedIds
+    ? sharedIds.map((id) => ganpatis.find((g) => g.id === id)?.name).filter(Boolean)
+    : [];
 
   const headPage = notFound ? 'notfound' : page;
   useDocumentHead(
@@ -182,6 +226,8 @@ export default function App({ initialPath, ssr = false }) {
 
         {showPage && page === 'route' && <Route enter={enter} />}
 
+        {showPage && page === 'join' && <Join enter={enter} />}
+
         {showPage && page === 'privacy' && <Privacy enter={enter} />}
 
         {showPage && page === 'about' && <About enter={enter} />}
@@ -220,6 +266,22 @@ export default function App({ initialPath, ssr = false }) {
       />
 
       <SupportModal open={showModal} onClose={() => setShowModal(false)} />
+
+      {hasPendingSharedRoute && (
+        <SharedRouteDialog
+          count={sharedIds.length}
+          names={sharedNames}
+          onAccept={() => {
+            replaceRoute(sharedIds);
+            clearSharedParam();
+            setSharedIds(null);
+          }}
+          onDecline={() => {
+            clearSharedParam();
+            setSharedIds(null);
+          }}
+        />
+      )}
 
       {showAsk && (
         <AskSheet

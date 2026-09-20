@@ -1,10 +1,12 @@
 import { Fragment, useState } from 'react';
 import { useGanpatis } from '../context/GanpatisContext.jsx';
-import { useRoute } from '../context/RouteContext.jsx';
+import { useRoute, routeCode, shareUrlFor } from '../context/RouteContext.jsx';
 import { directionsUrl, formatDistance } from '../data/helpers.js';
 import { hasLocation, optimizeOrder, routeStats, walkKm, walkMinutes } from '../data/walk.js';
 import Container from '../components/Container.jsx';
 import Link from '../components/Link.jsx';
+import RouteMap from '../components/RouteMap.jsx';
+import { ShareIcon } from '../components/icons.jsx';
 import { PATHS } from '../router.js';
 
 function ChevronUp() {
@@ -44,6 +46,8 @@ export default function Route({ enter = 'animate-fadeIn' }) {
   const canOptimize = items.filter(hasLocation).length >= 3;
   // What the last "Best walking order" tap did, cleared by any other change.
   const [optimizeNote, setOptimizeNote] = useState('');
+  // Feedback after sharing / copying the route link. Cleared by the next share.
+  const [shareNote, setShareNote] = useState('');
 
   const optimize = () => {
     const next = optimizeOrder(items);
@@ -52,6 +56,36 @@ export default function Route({ enter = 'animate-fadeIn' }) {
     setOptimizeNote(
       unchanged ? 'Already the shortest order we can find.' : 'Reordered for the shortest walk.'
     );
+  };
+
+  // Share the route with friends: native share sheet where the browser has one
+  // (Android/iOS/desktop), otherwise copy the link and confirm. The route code
+  // below is the same payload the link carries, for a friend to type into /join.
+  const share = async () => {
+    setShareNote('');
+    const url = shareUrlFor(route);
+    if (!url) return;
+    const payload = {
+      title: 'My Ganpati Darshan Route',
+      text: `Join my ${count} ${count === 1 ? 'stop' : 'stops'} darshan route of Pune's Ganpati pandals on MandapMaps`,
+      url,
+    };
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share(payload);
+        return;
+      } catch (err) {
+        // Closing the sheet is a cancel, not an error; anything else drops the
+        // user into the copy fallback below.
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareNote('Link copied — send it to your friends');
+    } catch {
+      setShareNote(url); // last resort: surface the link to copy by hand
+    }
   };
 
   return (
@@ -76,13 +110,19 @@ export default function Route({ enter = 'animate-fadeIn' }) {
         <div className="mx-auto max-w-prose rounded-2xl border border-maroon/[0.06] bg-surface px-gutter py-[60px] text-center">
           <div className="mb-2 font-serif text-xl text-maroon">No Ganpatis added yet</div>
           <div className="mb-6 font-sans text-sm leading-[1.6] text-maroon/50">
-            Add Ganpatis from the Explore page to build your darshan route
+            Add Ganpatis from the Explore page to build your darshan route or join Route
           </div>
           <Link
             to={PATHS.explore}
             className="inline-block cursor-pointer rounded-pill bg-gold px-7 py-3 font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
           >
             Explore Pandals
+          </Link>
+          <Link
+            to={PATHS.join}
+            className="inline-block cursor-pointer rounded-pill bg-gold px-7 py-3 font-sans text-sm font-semibold text-maroon hover:bg-gold-dark"
+          >
+            Join Route
           </Link>
         </div>
       ) : (
@@ -196,6 +236,23 @@ export default function Route({ enter = 'animate-fadeIn' }) {
                 </div>
               </>
             )}
+            <button
+              type="button"
+              onClick={share}
+              className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-card border-[1.5px] border-maroon/15 p-3.5 font-sans text-[15px] font-medium text-maroon hover:border-maroon/40 hover:bg-maroon/5"
+            >
+              <ShareIcon /> Share Route
+            </button>
+            <div className="mb-3 text-center font-sans text-xs leading-relaxed text-maroon/45">
+              {shareNote ? (
+                <span className="text-gold">{shareNote}</span>
+              ) : (
+                <>
+                  Friends can join with code <span className="font-semibold text-maroon/60">{routeCode(route)}</span>{' '}
+                  on <a href={PATHS.join}>Join</a>
+                </>
+              )}
+            </div>
             <div className="text-center">
               <span
                 className="cursor-pointer font-sans text-sm font-medium text-gold"
@@ -204,6 +261,9 @@ export default function Route({ enter = 'animate-fadeIn' }) {
                 Clear all
               </span>
             </div>
+            {/* The route on a small map: reloads from Google whenever the
+                stops change, showing them in the current order. */}
+            <RouteMap stops={items} />
           </aside>
         </div>
       )}

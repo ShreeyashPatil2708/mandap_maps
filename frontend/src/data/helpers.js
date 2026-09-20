@@ -29,9 +29,19 @@ export function formatDistance(km) {
 }
 
 /**
+ * The point a Google Maps direction/embed link should target for a pandal.
+ * Without a verified pin, hand Google the name and cleaned address to search,
+ * which finds a real mandal far more often than a guessed coordinate would.
+ */
+export function mapsPoint(s) {
+  return s.lat != null && s.lng != null
+    ? `${s.lat},${s.lng}`
+    : [s.name, stripEditorialNotes(s.address)].filter(Boolean).join(', ');
+}
+
+/**
  * Google Maps directions URL (no API key needed) through `stops`, in order;
- * the last stop is the destination. Each point prefers exact coordinates and
- * falls back to the address, then the name.
+ * the last stop is the destination.
  *
  * By default no origin is set, so Maps starts from the user's current location
  * and every stop but the last becomes a waypoint. With `originFromFirst`, the
@@ -39,23 +49,36 @@ export function formatDistance(km) {
  * does this: its first stop is the plan's start point).
  */
 export function directionsUrl(stops, { originFromFirst = false, travelmode } = {}) {
-  // Without a verified pin, hand Google the name and cleaned address to search,
-  // which finds a real mandal far more often than a guessed coordinate would.
-  const point = (s) =>
-    s.lat != null && s.lng != null
-      ? `${s.lat},${s.lng}`
-      : [s.name, stripEditorialNotes(s.address)].filter(Boolean).join(', ');
-  const destination = encodeURIComponent(point(stops[stops.length - 1]));
+  const destination = encodeURIComponent(mapsPoint(stops[stops.length - 1]));
   let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
   if (travelmode) url += `&travelmode=${travelmode}`;
   const useOrigin = originFromFirst && stops.length > 1;
-  if (useOrigin) url += `&origin=${encodeURIComponent(point(stops[0]))}`;
+  if (useOrigin) url += `&origin=${encodeURIComponent(mapsPoint(stops[0]))}`;
   const waypoints = stops
     .slice(useOrigin ? 1 : 0, -1)
-    .map((s) => encodeURIComponent(point(s)))
+    .map((s) => encodeURIComponent(mapsPoint(s)))
     .join('|');
   if (waypoints) url += `&waypoints=${waypoints}`;
   return url;
+}
+
+/**
+ * Keyless Google Maps embed URL (legacy `output=embed`) through `stops`, in
+ * order. One stop shows the location (`?q=`); two or more draw a route from the
+ * first stop through the rest (`saddr`/`daddr ... +to:` waypoints). No API key,
+ * but it is a legacy surface Google can change at any time.
+ */
+export function mapsEmbedUrl(stops) {
+  if (stops.length < 1) return null;
+  if (stops.length === 1) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(mapsPoint(stops[0]))}&output=embed`;
+  }
+  const saddr = encodeURIComponent(mapsPoint(stops[0]));
+  const daddr = stops
+    .slice(1)
+    .map((s) => encodeURIComponent(mapsPoint(s)))
+    .join('+to:');
+  return `https://maps.google.com/maps?saddr=${saddr}&daddr=${daddr}&output=embed`;
 }
 
 // Working notes the maintainers left inside brackets in free-text fields, as

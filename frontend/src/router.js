@@ -4,6 +4,7 @@
 //   /                       home
 //   /explore                the pandal grid / map
 //   /route                  the darshan route (private to the visitor, noindex)
+//   /join                   enter a route code shared by a friend (noindex)
 //   /privacy                privacy policy
 //   /about                  about the project
 //   /terms                  terms of use
@@ -17,7 +18,7 @@
 import { useEffect, useState } from 'react';
 import { slugify } from './data/helpers.js';
 
-const NAV_EVENT = 'mm:navigate';
+export const NAV_EVENT = 'mm:navigate';
 const isBrowser = typeof window !== 'undefined';
 
 // Static (non-pandal) paths, in the order they appear in the bottom nav.
@@ -25,6 +26,7 @@ export const PATHS = {
   home: '/',
   explore: '/explore',
   route: '/route',
+  join: '/join',
   privacy: '/privacy',
   about: '/about',
   terms: '/terms',
@@ -51,6 +53,7 @@ export function parsePath(pathname) {
   if (path === PATHS.home) return { page: 'home', slug: null };
   if (path === PATHS.explore) return { page: 'explore', slug: null };
   if (path === PATHS.route) return { page: 'route', slug: null };
+  if (path === PATHS.join) return { page: 'join', slug: null };
   if (path === PATHS.privacy) return { page: 'privacy', slug: null };
   if (path === PATHS.about) return { page: 'about', slug: null };
   if (path === PATHS.terms) return { page: 'terms', slug: null };

@@ -43,6 +43,7 @@ const STATIC_PAGES = [
   { page: 'terms', file: 'terms/index.html', inSitemap: true },
   { page: 'disclaimer', file: 'disclaimer/index.html', inSitemap: true },
   { page: 'route', file: 'route/index.html', inSitemap: false },
+  { page: 'join', file: 'join/index.html', inSitemap: false },
   { page: 'notfound', file: '404.html', inSitemap: false },
 ];
 

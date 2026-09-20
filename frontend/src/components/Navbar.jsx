@@ -55,6 +55,12 @@ export default function Navbar({ onToggleMenu, routeLen = 0, askOpen, onAsk, onS
           >
             Support Us
           </button>
+          <Link
+            to={PATHS.join}
+            className="ml-2 cursor-pointer rounded-pill bg-gold px-4 py-2 font-sans text-sm font-semibold text-maroon transition-colors hover:bg-gold-dark"
+          >
+            Join Route
+          </Link>
         </nav>
 
         <div

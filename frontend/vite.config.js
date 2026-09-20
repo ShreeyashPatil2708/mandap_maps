@@ -6,8 +6,8 @@ import react from '@vitejs/plugin-react';
  * only (dev relies on inline HMR scripts). Scripts may only come from our own
  * origin, so injected markup can't run code. Styles allow 'unsafe-inline' for
  * the inline style attributes React and Leaflet set; images allow any https
- * host (OSM tiles, future photos; images can't execute). frame-ancestors can't
- * be set from a meta tag: clickjacking is covered by the X-Frame-Options header
+ * host (OSM tiles, future photos; images can't execute). Google Maps embeds
+ * are the only framed content. frame-ancestors can't be set from a meta tag: clickjacking is covered by the X-Frame-Options header
  * from the CloudFront security headers policy.
  */
 function contentSecurityPolicy() {
@@ -19,6 +19,7 @@ function contentSecurityPolicy() {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https:",
+    "frame-src https://maps.google.com https://www.google.com",
     `connect-src ${connect.join(' ')}`,
     "object-src 'none'",
     "base-uri 'self'",
